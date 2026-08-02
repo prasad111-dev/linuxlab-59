@@ -1,0 +1,164 @@
+import { Suspense, lazy } from 'react';
+import { Routes, Route, Outlet, Navigate, Link } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Protected from './components/ProtectedRoute';
+import { FullPageSpinner } from './components/Spinner';
+
+const Landing = lazy(() => import('./pages/Landing'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Practicals = lazy(() => import('./pages/Practicals'));
+const TaskDetail = lazy(() => import('./pages/TaskDetail'));
+const LabPage = lazy(() => import('./pages/LabPage'));
+const History = lazy(() => import('./pages/History'));
+const AttemptReview = lazy(() => import('./pages/AttemptReview'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const Achievements = lazy(() => import('./pages/Achievements'));
+const Profile = lazy(() => import('./pages/Profile'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminTasks = lazy(() => import('./pages/admin/AdminTasks'));
+const TaskEditor = lazy(() => import('./pages/admin/TaskEditor'));
+const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+
+function AppLayout() {
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navbar />
+      <main className="flex-1">
+        <Suspense fallback={<FullPageSpinner />}>
+          <Outlet />
+        </Suspense>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Landing />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/practicals" element={<Practicals />} />
+        <Route path="/practical/:id" element={<TaskDetail />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <Protected>
+              <Dashboard />
+            </Protected>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <Protected>
+              <History />
+            </Protected>
+          }
+        />
+        <Route
+          path="/history/:id"
+          element={
+            <Protected>
+              <AttemptReview />
+            </Protected>
+          }
+        />
+        <Route
+          path="/achievements"
+          element={
+            <Protected>
+              <Achievements />
+            </Protected>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <Protected>
+              <Profile />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <Protected admin>
+              <AdminDashboard />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin/tasks"
+          element={
+            <Protected admin>
+              <AdminTasks />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin/tasks/new"
+          element={
+            <Protected admin>
+              <TaskEditor />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin/tasks/:id/edit"
+          element={
+            <Protected admin>
+              <TaskEditor />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin/categories"
+          element={
+            <Protected admin>
+              <AdminCategories />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <Protected admin>
+              <AdminUsers />
+            </Protected>
+          }
+        />
+      </Route>
+
+      <Route
+        path="/lab/:attemptId"
+        element={
+          <Protected>
+            <LabPage />
+          </Protected>
+        }
+      />
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
+function NotFound() {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+      <div className="text-6xl">🛰️</div>
+      <h1 className="text-2xl font-extrabold">404 — lost in space</h1>
+      <p className="text-slate-500 dark:text-slate-400">The page you're looking for doesn't exist.</p>
+      <Link to="/" className="btn-primary">
+        Go home
+      </Link>
+    </div>
+  );
+}

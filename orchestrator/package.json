@@ -1,0 +1,19 @@
+{
+  "name": "linuxlab-orchestrator",
+  "version": "1.0.0",
+  "description": "LinuxLab lab orchestrator — manages per-student Docker containers on the lab VPS",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dockerode": "^4.0.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "ws": "^8.18.0"
+  }
+}

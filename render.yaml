@@ -1,0 +1,67 @@
+# LinuxLab — Render Blueprint
+# Deploys the frontend (static site) and backend (web service) on Render.
+# The lab VPS (Docker orchestrator) lives outside Render — see README.md.
+#
+# After importing this blueprint set the "sync: false" env vars in the dashboard.
+# IMPORTANT: the frontend static service URL must be known before the backend
+# GOOGLE_REDIRECT_URI / FRONTEND_URL can be final. Deploy once, then update env.
+
+services:
+  - type: static
+    name: linuxlab-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://linuxlab-backend.onrender.com/api
+      - key: VITE_WS_URL
+        value: wss://linuxlab-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  - type: web
+    name: linuxlab-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: ORCHESTRATOR_URL
+        sync: false
+      - key: ORCHESTRATOR_TOKEN
+        sync: false
+      - key: ORCHESTRATOR_WS_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: SESSION_TTL_MINUTES
+        value: "60"
+      - key: CONTAINER_MEM_MB
+        value: "512"

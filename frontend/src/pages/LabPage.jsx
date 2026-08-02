@@ -1,0 +1,414 @@
+import { useEffect, useState, useCallback } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  Lightbulb,
+  BookOpen,
+  Send,
+  LogOut,
+  Timer,
+  CheckCircle2,
+  XCircle,
+  RefreshCcw,
+  Eye,
+  Loader2,
+  PanelRight,
+  Terminal as TerminalIcon,
+} from 'lucide-react';
+import { api } from '../lib/api';
+import XTerm from '../components/XTerm';
+import { FullPageSpinner } from '../components/Spinner';
+import { formatClock, formatDuration, cn } from '../lib/format';
+
+export default function LabPage() {
+  const { attemptId } = useParams();
+  const navigate = useNavigate();
+  const [attempt, setAttempt] = useState(null);
+  const [task, setTask] = useState(null);
+  const [status, setStatus] = useState('loading');
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [hint, setHint] = useState('');
+  const [explain, setExplain] = useState('');
+  const [busy, setBusy] = useState('');
+  const [result, setResult] = useState(null);
+  const [resultLoading, setResultLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [remaining, setRemaining] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api(`/sessions/${attemptId}`);
+        setAttempt(data.attempt);
+        setStatus(data.status);
+        if (data.attempt?.task?.id) {
+          const t = await api(`/tasks/${data.attempt.task.id}`);
+          setTask(t);
+        }
+      } catch (e) {
+        setError(e.message);
+        setStatus('error');
+      }
+    })();
+  }, [attemptId]);
+
+  useEffect(() => {
+    if (!task || !attempt) return;
+    const tick = () => {
+      const elapsed = (Date.now() - new Date(attempt.startedAt).getTime()) / 1000;
+      setRemaining(Math.max(0, task.estimatedMinutes * 60 - elapsed));
+    };
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [task, attempt]);
+
+  // Keep the orchestrator idle-timer fresh while a lab is open
+  useEffect(() => {
+    if (status !== 'running') return;
+    const iv = setInterval(() => {
+      api(`/sessions/${attemptId}/ping`, { method: 'POST' }).catch(() => {});
+    }, 30000);
+    return () => clearInterval(iv);
+  }, [status, attemptId]);
+
+  const getHint = async () => {
+    setBusy('hint');
+    setHint('');
+    try {
+      const { hint } = await api(`/attempts/${attemptId}/hint`, { method: 'POST' });
+      setHint(hint);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const getExplain = async () => {
+    setBusy('explain');
+    setExplain('');
+    try {
+      const { explanation } = await api(`/attempts/${attemptId}/explain`, { method: 'POST' });
+      setExplain(explanation);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const submit = async () => {
+    if (!window.confirm('Submit your work for evaluation? The lab container will be destroyed after evaluation.')) return;
+    setResultLoading(true);
+    setError('');
+    try {
+      const data = await api(`/attempts/${attemptId}/submit`, { method: 'POST' });
+      setResult(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setResultLoading(false);
+    }
+  };
+
+  const exitLab = async () => {
+    if (!window.confirm('Exit this lab? The container will be destroyed.')) return;
+    setBusy('exit');
+    try {
+      await api(`/attempts/${attemptId}/exit`, { method: 'POST' });
+      navigate('/history');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const practiceAgain = async () => {
+    if (!task) return;
+    setBusy('again');
+    try {
+      const { attempt: a } = await api(`/attempts/${task.id}/practice-again`, { method: 'POST' });
+      navigate(`/lab/${a.id}`);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const onConnected = useCallback(() => setError(''), []);
+
+  if (status === 'loading') return <FullPageSpinner label="Booting your lab container…" />;
+
+  if (status === 'error' || !attempt) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-center">
+        <div className="text-5xl">💥</div>
+        <p className="font-semibold text-red-500">{error || 'Failed to load the lab'}</p>
+        <Link to="/history" className="btn-primary">Back to history</Link>
+      </div>
+    );
+  }
+
+  if (status !== 'running') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-center px-4">
+        <div className="text-5xl">🕐</div>
+        <h1 className="text-2xl font-extrabold">Session {status}</h1>
+        <p className="max-w-md text-slate-500 dark:text-slate-400">
+          {status === 'terminated'
+            ? 'This lab session has ended — the container was cleaned up. You can start a fresh one anytime.'
+            : 'This attempt has already been submitted.'}
+        </p>
+        <div className="flex gap-3">
+          <Link to="/history" className="btn-ghost">View history</Link>
+          {task && (
+            <button onClick={practiceAgain} className="btn-primary">
+              <RefreshCcw size={16} /> Practice again
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
+      {/* Top bar */}
+      <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900">
+        <Link to="/dashboard" className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5">
+          <ArrowLeft size={18} />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold">{task?.title || 'Lab session'}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Isolated Ubuntu container · root@lab</p>
+        </div>
+
+        {remaining !== null && (
+          <span
+            className={cn(
+              'badge font-mono',
+              remaining < 120
+                ? 'animate-pulse-slow bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400'
+                : 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300'
+            )}
+          >
+            <Timer size={14} /> {formatClock(remaining)}
+          </span>
+        )}
+
+        <button onClick={() => setPanelOpen((v) => !v)} className="btn-ghost !px-3 lg:hidden" aria-label="Task panel">
+          <PanelRight size={18} />
+        </button>
+
+        <div className="hidden items-center gap-2 md:flex">
+          <button onClick={getHint} disabled={busy === 'hint'} className="btn-ghost">
+            {busy === 'hint' ? <Loader2 size={16} className="animate-spin" /> : <Lightbulb size={16} className="text-amber-500" />}
+            Hint
+          </button>
+          <button onClick={getExplain} disabled={busy === 'explain'} className="btn-ghost">
+            {busy === 'explain' ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} className="text-violet-500" />}
+            Explain
+          </button>
+          <button onClick={submit} disabled={resultLoading} className="btn-secondary">
+            <Send size={16} /> Submit
+          </button>
+          <button onClick={exitLab} disabled={busy === 'exit'} className="btn-danger">
+            <LogOut size={16} /> Exit
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile action row */}
+      <div className="flex gap-2 border-b border-slate-200 bg-white px-3 py-2 md:hidden dark:border-white/10 dark:bg-slate-900">
+        <button onClick={getHint} disabled={busy === 'hint'} className="btn-ghost flex-1">
+          <Lightbulb size={15} className="text-amber-500" /> Hint
+        </button>
+        <button onClick={getExplain} disabled={busy === 'explain'} className="btn-ghost flex-1">
+          <BookOpen size={15} className="text-violet-500" /> Explain
+        </button>
+        <button onClick={submit} disabled={resultLoading} className="btn-secondary flex-1">
+          <Send size={15} /> Submit
+        </button>
+        <button onClick={exitLab} className="btn-danger !px-3">
+          <LogOut size={15} />
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 px-4 py-2 text-center text-sm font-medium text-red-600 dark:bg-red-500/10 dark:text-red-400">
+          {error}
+          <button className="ml-2 underline" onClick={() => setError('')}>dismiss</button>
+        </div>
+      )}
+
+      {/* Body */}
+      <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex-1 overflow-hidden bg-slate-950">
+          <XTerm attemptId={attemptId} ticket={attempt.wsTicket} onConnected={onConnected} />
+          <div className="pointer-events-none absolute top-2 left-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+            <TerminalIcon size={12} /> ubuntu:24.04 · tty
+          </div>
+        </div>
+
+        {/* Help panel */}
+        {(panelOpen || (hint || explain)) && (
+          <aside className="w-full overflow-y-auto border-l border-slate-200 bg-white p-4 lg:w-96 dark:border-white/10 dark:bg-slate-900">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold">AI help</h3>
+              <button onClick={() => { setPanelOpen(false); setHint(''); setExplain(''); }} className="text-sm text-slate-400">
+                Clear
+              </button>
+            </div>
+
+            {busy === 'hint' && <p className="mt-3 animate-pulse text-sm text-slate-400">Thinking…</p>}
+            {hint && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-500/20 dark:bg-amber-500/10">
+                <p className="mb-1 flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-400">
+                  <Lightbulb size={15} /> Hint
+                </p>
+                <p className="text-slate-700 dark:text-slate-200">{hint}</p>
+              </div>
+            )}
+
+            {busy === 'explain' && <p className="mt-3 animate-pulse text-sm text-slate-400">Explaining the concept…</p>}
+            {explain && (
+              <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm dark:border-violet-500/20 dark:bg-violet-500/10">
+                <p className="mb-1 flex items-center gap-1.5 font-bold text-violet-700 dark:text-violet-400">
+                  <BookOpen size={15} /> Concept
+                </p>
+                <p className="text-slate-700 dark:text-slate-200">{explain}</p>
+              </div>
+            )}
+
+            {!hint && !explain && busy !== 'hint' && busy !== 'explain' && (
+              <div className="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                <div>
+                  <p className="flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400">
+                    <Lightbulb size={15} /> Hint
+                  </p>
+                  <p className="mt-1">A small, progressive clue — the more you ask, the more you learn.</p>
+                </div>
+                <div>
+                  <p className="flex items-center gap-1.5 font-bold text-violet-600 dark:text-violet-400">
+                    <BookOpen size={15} /> Explain
+                  </p>
+                  <p className="mt-1">Understand the Linux concept behind this task, without the exact solution.</p>
+                </div>
+              </div>
+            )}
+
+            {task && (
+              <>
+                <div className="mt-6 border-t border-slate-100 pt-4 dark:border-white/10">
+                  <h4 className="font-bold">Objectives</h4>
+                  <ul className="mt-2 space-y-1.5">
+                    {task.objectives?.map((o, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-500" /> {o}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="mt-4 border-t border-slate-100 pt-4 dark:border-white/10">
+                  <h4 className="font-bold">Requirements</h4>
+                  <ul className="mt-2 space-y-1.5">
+                    {task.requirements?.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" /> {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
+          </aside>
+        )}
+      </div>
+
+      {/* Result modal */}
+      {result && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full text-3xl"
+                style={{ backgroundColor: result.result.passed ? '#d1fae5' : '#fee2e2' }}>
+                {result.result.passed ? '🎉' : '💪'}
+              </div>
+              <h2 className="mt-4 text-2xl font-extrabold">
+                {result.result.passed ? 'Task completed!' : 'Almost there!'}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {task?.title}
+              </p>
+              <div className="mt-4 text-5xl font-black gradient-text">
+                {result.result.score}<span className="text-2xl text-slate-400">/{result.result.maxScore}</span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Time taken: {formatDuration(result.result.timeTakenSeconds)}
+              </p>
+            </div>
+
+            {result.result.mistakes.length > 0 ? (
+              <div className="mt-6">
+                <h3 className="flex items-center gap-2 font-bold">
+                  <XCircle size={18} className="text-red-500" /> Missed checks
+                </h3>
+                <ul className="mt-2 space-y-2">
+                  {result.result.mistakes.map((m, i) => (
+                    <li key={i} className="rounded-xl bg-red-50 p-3 text-sm dark:bg-red-500/10">
+                      <p className="font-semibold text-red-700 dark:text-red-400">{m.label}</p>
+                      {m.actual && m.actual !== 'OK' && (
+                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Observed: {m.actual}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                Every check passed — this is a production-ready configuration. 🏆
+              </div>
+            )}
+
+            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm dark:bg-white/5">
+              <p className="font-bold">Feedback</p>
+              <p className="mt-1 whitespace-pre-line text-slate-600 dark:text-slate-300">{result.result.feedback}</p>
+            </div>
+
+            {result.result.optimization && (
+              <div className="mt-4 rounded-xl bg-indigo-50 p-4 text-sm dark:bg-indigo-500/10">
+                <p className="font-bold text-indigo-700 dark:text-indigo-400">Improvements</p>
+                <p className="mt-1 text-slate-600 dark:text-slate-300">{result.result.optimization}</p>
+              </div>
+            )}
+
+            {result.result.correctSolution && (
+              <div className="mt-4 rounded-xl bg-slate-950 p-4">
+                <p className="flex items-center gap-2 text-sm font-bold text-slate-300">
+                  <Eye size={15} /> Reference solution
+                </p>
+                <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-emerald-300">{result.result.correctSolution}</pre>
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              <Link to={`/history/${attemptId}`} className="btn-ghost flex-1">Full review</Link>
+              <button onClick={practiceAgain} className="btn-primary flex-1">
+                <RefreshCcw size={16} /> Practice again
+              </button>
+              <Link to="/practicals" className="btn-secondary flex-1">More practicals</Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resultLoading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/70 backdrop-blur-sm">
+          <Loader2 size={36} className="animate-spin text-indigo-400" />
+          <p className="text-sm font-semibold text-white">Evaluating your work…</p>
+        </div>
+      )}
+    </div>
+  );
+}

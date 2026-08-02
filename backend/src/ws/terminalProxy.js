@@ -1,0 +1,101 @@
+const { WebSocket } = require('ws');
+const Attempt = require('../models/Attempt');
+const orchestrator = require('../services/orchestratorClient');
+const { createCommandLogger } = require('./commandLogger');
+
+/**
+ * Proxies the browser terminal WebSocket to the lab orchestrator.
+ * Auth is via a per-attempt ticket (never the JWT) so the token is not
+ * leaked into URL logs on the VPS hop.
+ */
+function setupTerminalProxy(server) {
+  const { WebSocketServer } = require('ws');
+  const wss = new WebSocketServer({ server, path: '/api/ws/terminal' });
+
+  wss.on('connection', async (ws, req) => {
+    let interval;
+    try {
+      const url = new URL(req.url, 'http://localhost');
+      const attemptId = url.searchParams.get('attemptId');
+      const ticket = url.searchParams.get('ticket');
+
+      if (!attemptId || !ticket) {
+        return ws.close(4001, 'missing attemptId or ticket');
+      }
+
+      const attempt = await Attempt.findById(attemptId);
+      if (!attempt) return ws.close(4004, 'attempt not found');
+      if (attempt.wsTicket !== ticket) return ws.close(4003, 'invalid ticket');
+      if (attempt.status !== 'running') return ws.close(4003, 'attempt is not running');
+
+      const upstream = new WebSocket(orchestrator.terminalUrl(attempt.containerId));
+      const logger = createCommandLogger();
+      const buffered = [];
+
+      const persist = () => {
+        if (logger.commands.length > 0) {
+          attempt.commandHistory = attempt.commandHistory.concat(logger.commands);
+          logger.flush();
+          attempt.save().catch(() => {});
+        }
+      };
+
+      upstream.on('open', () => {
+        for (const m of buffered) upstream.send(m);
+        buffered.length = 0;
+      });
+
+      ws.on('message', (data) => {
+        logger.ingest(data);
+        if (upstream.readyState === WebSocket.OPEN) upstream.send(data);
+        else buffered.push(data);
+      });
+
+      const teardown = () => {
+        clearInterval(interval);
+        persist();
+        try {
+          upstream.close();
+        } catch {
+          /* noop */
+        }
+      };
+
+      ws.on('close', teardown);
+      ws.on('error', teardown);
+      upstream.on('message', (data) => {
+        if (ws.readyState === ws.OPEN) ws.send(data);
+      });
+      upstream.on('close', () => {
+        clearInterval(interval);
+        persist();
+        try {
+          ws.close();
+        } catch {
+          /* noop */
+        }
+      });
+      upstream.on('error', () => {
+        clearInterval(interval);
+        try {
+          ws.close();
+        } catch {
+          /* noop */
+        }
+      });
+
+      interval = setInterval(persist, 30_000);
+    } catch (e) {
+      clearInterval(interval);
+      try {
+        ws.close(1011, e.message);
+      } catch {
+        /* noop */
+      }
+    }
+  });
+
+  wss.on('error', () => {});
+}
+
+module.exports = { setupTerminalProxy };
