@@ -7,7 +7,7 @@
 # GOOGLE_REDIRECT_URI / FRONTEND_URL can be final. Deploy once, then update env.
 
 services:
-  - type: static
+  - type: web
     name: linuxlab-frontend
     runtime: static
     rootDir: frontend
