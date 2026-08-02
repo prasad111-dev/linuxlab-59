@@ -18,7 +18,7 @@ module.exports = async function authRoutes(app) {
     '/google/callback',
     { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } },
     async (req, reply) => {
-      const { jwt } = await authService.handleCallback(req.query);
+      const { jwt } = await authService.handleCallback(req.raw);
       reply.redirect(`${config.frontendUrl}/#/auth?token=${encodeURIComponent(jwt)}`);
     }
   );

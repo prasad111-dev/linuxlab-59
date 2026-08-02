@@ -45,9 +45,9 @@ function buildAuthUrl() {
   });
 }
 
-async function handleCallback(query) {
+async function handleCallback(req) {
   const client = await getClient();
-  const params = client.callbackParams(query);
+  const params = client.callbackParams(req);
   const stored = pendingStates.get(params.state);
   pendingStates.delete(params.state);
   if (!stored) {
