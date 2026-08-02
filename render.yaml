@@ -60,7 +60,7 @@ services:
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
       - key: ADMIN_EMAILS
-        sync: false
+        value: prasadghavghave0@gmail.com
       - key: SESSION_TTL_MINUTES
         value: "60"
       - key: CONTAINER_MEM_MB
