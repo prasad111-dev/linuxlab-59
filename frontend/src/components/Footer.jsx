@@ -39,7 +39,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 border-t border-slate-200/70 pt-6 text-center text-xs text-slate-400 dark:border-white/10">
-          © {new Date().getFullYear()} LinuxLab-59. Built for students of Linux Administration & DevOps. Developed by Prasad with tea and love.
+          © {new Date().getFullYear()} LinuxLab-59. Developed by Prasad with tea and love.
         </div>
       </div>
     </footer>
