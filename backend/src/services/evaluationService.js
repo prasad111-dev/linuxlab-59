@@ -39,6 +39,41 @@ function humanLabel(rule, passed) {
   return rule.label;
 }
 
+/**
+ * Run every validation rule against the live container.
+ * Returns { checks, passedCount, totalRules, updatedAt }.
+ */
+async function runLiveChecks(task, containerId, timeoutMs = 10000) {
+  const results = await Promise.all(
+    (task.validationRules || []).map(async (rule, index) => {
+      const command = buildRuleCommand(rule);
+      if (!command) {
+        return { index, label: rule.label, type: rule.type, passed: false, actual: 'unsupported rule type' };
+      }
+      try {
+        const out = await orchestrator.execInContainer(containerId, command, timeoutMs);
+        const passed = String(out.stdout || '').trim().split('\n').pop() === 'OK';
+        return {
+          index,
+          label: rule.label,
+          type: rule.type,
+          passed,
+          actual: passed ? 'OK' : (out.stdout || out.stderr || '').trim().slice(0, 120),
+        };
+      } catch {
+        return { index, label: rule.label, type: rule.type, passed: false, actual: 'container unreachable' };
+      }
+    })
+  );
+  const checks = results.sort((a, b) => a.index - b.index);
+  return {
+    checks,
+    passedCount: checks.filter((c) => c.passed).length,
+    totalRules: checks.length,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 async function evaluateAttempt(attempt, task) {
   const results = [];
   let containerOk = true;
@@ -137,4 +172,4 @@ async function evaluateAttempt(attempt, task) {
   };
 }
 
-module.exports = { evaluateAttempt, buildRuleCommand };
+module.exports = { evaluateAttempt, buildRuleCommand, runLiveChecks };

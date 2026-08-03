@@ -5,7 +5,7 @@ const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { serializeAttempt } = require('../utils/serialize');
-const { evaluateAttempt, buildRuleCommand } = require('../services/evaluationService');
+const { evaluateAttempt, buildRuleCommand, runLiveChecks } = require('../services/evaluationService');
 const { generateHint, generateExplain } = require('../services/geminiService');
 const { checkAndUnlock } = require('../services/achievementService');
 const { startSession, terminateRunning } = require('../services/sessionService');
@@ -50,8 +50,11 @@ module.exports = async function attemptRoutes(app) {
     if (attempt.hintsUsed < (task.hints || []).length) {
       hint = task.hints[attempt.hintsUsed];
     } else {
+      const live = attempt.containerId
+        ? await runLiveChecks(task, attempt.containerId).catch(() => null)
+        : null;
       try {
-        hint = await generateHint(task, attempt);
+        hint = await generateHint(task, attempt, live);
       } catch {
         hint = 'No more hints available. Review your man pages and check each requirement one by one.';
       }
@@ -65,7 +68,10 @@ module.exports = async function attemptRoutes(app) {
     const attempt = await findOwnAttempt(req, { running: true });
     const task = await Task.findById(attempt.task).populate('category');
     if (!task) throw new HttpError(404, 'Task not found');
-    const explanation = await generateExplain(task);
+    const live = attempt.containerId
+      ? await runLiveChecks(task, attempt.containerId).catch(() => null)
+      : null;
+    const explanation = await generateExplain(task, live);
     attempt.explainUsed += 1;
     await attempt.save();
     return { explanation };
@@ -77,35 +83,7 @@ module.exports = async function attemptRoutes(app) {
     if (!task) throw new HttpError(404, 'Task not found');
     if (!attempt.containerId) throw new HttpError(409, 'No container attached to this session');
 
-    const results = await Promise.all(
-      (task.validationRules || []).map(async (rule, index) => {
-        const command = buildRuleCommand(rule);
-        if (!command) {
-          return { index, label: rule.label, type: rule.type, passed: false, actual: 'unsupported rule type' };
-        }
-        try {
-          const out = await orchestrator.execInContainer(attempt.containerId, command, 10000);
-          const passed = String(out.stdout || '').trim().split('\n').pop() === 'OK';
-          return {
-            index,
-            label: rule.label,
-            type: rule.type,
-            passed,
-            actual: passed ? 'OK' : (out.stdout || out.stderr || '').trim().slice(0, 120),
-          };
-        } catch {
-          return { index, label: rule.label, type: rule.type, passed: false, actual: 'container unreachable' };
-        }
-      })
-    );
-
-    const checks = results.sort((a, b) => a.index - b.index);
-    return {
-      checks,
-      passedCount: checks.filter((c) => c.passed).length,
-      totalRules: checks.length,
-      updatedAt: new Date().toISOString(),
-    };
+    return runLiveChecks(task, attempt.containerId);
   });
 
   app.post('/:id/submit', { preHandler: [requireAuth] }, async (req) => {

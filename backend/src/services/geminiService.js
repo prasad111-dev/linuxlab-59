@@ -45,24 +45,48 @@ async function callGemini(system, user, opts = {}) {
   return text;
 }
 
-async function generateHint(task, attempt) {
+function formatLiveState(live) {
+  if (!live || !live.checks || live.checks.length === 0) return '';
+  const failed = live.checks.filter((c) => !c.passed);
+  const parts = [`Current progress: passed ${live.passedCount} of ${live.totalRules} validation checks.`];
+  if (failed.length > 0) {
+    parts.push(
+      'Failed checks:' +
+        failed
+          .map((c) => `\n- ${c.label} (observed: ${c.actual || 'not satisfied'})`)
+          .join('')
+    );
+  }
+  parts.push(
+    'Use read-only commands like `cat`, `less`, `ls`, `getent`, `systemctl status` to inspect the server state when relevant.'
+  );
+  return parts.join('\n');
+}
+
+async function generateHint(task, attempt, live) {
   return callGemini(
     'You are a Linux instructor helping a student inside an isolated lab container. ' +
       'Give ONLY a small, partial clue (2-4 sentences) that points them in the right direction. ' +
-      'Do NOT reveal the full solution or exact commands.',
+      'Do NOT reveal the full solution or exact commands. Use their recent commands and current progress ' +
+      'to see where they are stuck, and tell them which read-only commands (cat/less/getent/systemctl status) ' +
+      'to run to inspect the server themselves.',
     `Task: ${task.title}\nScenario: ${task.scenario}\nObjectives: ${(task.objectives || []).join('; ')}\n\n` +
-      `Recent student commands:\n${(attempt.commandHistory || []).slice(-10).join('\n') || '(none yet)'}\n\n` +
+      `Student's recent commands:\n${(attempt.commandHistory || []).slice(-10).join('\n') || '(none yet)'}\n\n` +
+      `${formatLiveState(live)}\n\n` +
       `Give a small clue for the next step.`,
     { temperature: 0.5, maxTokens: 300 }
   );
 }
 
-async function generateExplain(task) {
+async function generateExplain(task, live) {
   return callGemini(
     'You are a Linux instructor. Explain the relevant Linux concept for this task clearly and simply ' +
-      '(max 160 words). Do NOT give the exact solution steps or commands to run.',
+      '(max 160 words). Do NOT give the exact solution steps or commands to run. Reference what the student ' +
+      'has already done and which checks are still failing, and suggest read-only commands (cat/less) to inspect ' +
+      'the current state themselves.',
     `Task: ${task.title}\nCategory: ${task.category?.name || 'Linux'}\nScenario: ${task.scenario}\n\n` +
       `Learning outcomes: ${(task.learningOutcomes || []).join('; ')}\n\n` +
+      `${formatLiveState(live)}\n\n` +
       `Explain the core concept the student needs to understand for this task.`,
     { temperature: 0.4, maxTokens: 500 }
   );
