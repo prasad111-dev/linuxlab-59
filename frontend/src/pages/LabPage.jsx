@@ -13,6 +13,7 @@ import {
   Eye,
   Loader2,
   PanelRight,
+  ListChecks,
   Terminal as TerminalIcon,
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -34,6 +35,27 @@ export default function LabPage() {
   const [resultLoading, setResultLoading] = useState(false);
   const [error, setError] = useState('');
   const [remaining, setRemaining] = useState(null);
+  const [checks, setChecks] = useState(null);
+
+  // Real-time validation checklist — poll the running container every 5s
+  useEffect(() => {
+    if (status !== 'running') return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const data = await api(`/attempts/${attemptId}/live-check`);
+        if (!cancelled) setChecks(data);
+      } catch {
+        /* container may be warming up — keep polling */
+      }
+    };
+    run();
+    const iv = setInterval(run, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
+  }, [status, attemptId]);
 
   useEffect(() => {
     (async () => {
@@ -251,9 +273,72 @@ export default function LabPage() {
           </div>
         </div>
 
-        {/* Help panel */}
-        {(panelOpen || (hint || explain)) && (
-          <aside className="w-full overflow-y-auto border-l border-slate-200 bg-white p-4 lg:w-96 dark:border-white/10 dark:bg-slate-900">
+        {/* Help panel + live task checklist */}
+        <aside
+          className={cn(
+            'w-full overflow-y-auto border-l border-slate-200 bg-white p-4 lg:block lg:w-96 dark:border-white/10 dark:bg-slate-900',
+            panelOpen || hint || explain ? 'block' : 'hidden'
+          )}
+        >
+          <div className="border-b border-slate-100 pb-4 dark:border-white/10">
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 font-extrabold">
+                <ListChecks size={17} className="text-emerald-500" /> Task checklist
+              </h3>
+              {checks && checks.totalRules > 0 && (
+                <span
+                  className={cn(
+                    'rounded-full px-2 py-0.5 text-xs font-bold',
+                    checks.passedCount === checks.totalRules
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+                      : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
+                  )}
+                >
+                  {checks.passedCount}/{checks.totalRules}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Live from your lab container — refreshes automatically.
+            </p>
+            {!checks && task?.validationRules?.length > 0 && (
+              <ul className="mt-3 space-y-2">
+                {task.validationRules.map((r, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <Loader2 size={15} className="mt-0.5 shrink-0 animate-spin text-slate-400" /> {r.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!checks && !task?.validationRules?.length && (
+              <p className="mt-3 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <Loader2 size={15} className="animate-spin text-slate-400" /> Checking your container…
+              </p>
+            )}
+            {checks && (
+              <ul className="mt-3 space-y-2">
+                {checks.checks.map((c) => (
+                  <li
+                    key={c.index}
+                    className={cn('flex items-start gap-2 text-sm',
+                      c.passed ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400')}
+                  >
+                    {c.passed ? (
+                      <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-500" />
+                    ) : (
+                      <XCircle size={15} className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600" />
+                    )}
+                    <span>{c.label}</span>
+                  </li>
+                ))}
+                {checks.totalRules === 0 && (
+                  <li className="text-sm text-slate-400">No automated checks configured for this task.</li>
+                )}
+              </ul>
+            )}
+          </div>
+
+          <div className="mt-4">
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold">AI help</h3>
               <button onClick={() => { setPanelOpen(false); setHint(''); setExplain(''); }} className="text-sm text-slate-400">
@@ -297,8 +382,9 @@ export default function LabPage() {
                 </div>
               </div>
             )}
+          </div>
 
-            {task && (
+          {task && (
               <>
                 <div className="mt-6 border-t border-slate-100 pt-4 dark:border-white/10">
                   <h4 className="font-bold">Objectives</h4>
@@ -323,7 +409,6 @@ export default function LabPage() {
               </>
             )}
           </aside>
-        )}
       </div>
 
       {/* Result modal */}

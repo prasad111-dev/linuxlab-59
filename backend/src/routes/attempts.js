@@ -5,7 +5,7 @@ const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { serializeAttempt } = require('../utils/serialize');
-const { evaluateAttempt } = require('../services/evaluationService');
+const { evaluateAttempt, buildRuleCommand } = require('../services/evaluationService');
 const { generateHint, generateExplain } = require('../services/geminiService');
 const { checkAndUnlock } = require('../services/achievementService');
 const { startSession, terminateRunning } = require('../services/sessionService');
@@ -69,6 +69,43 @@ module.exports = async function attemptRoutes(app) {
     attempt.explainUsed += 1;
     await attempt.save();
     return { explanation };
+  });
+
+  app.get('/:id/live-check', { preHandler: [requireAuth] }, async (req) => {
+    const attempt = await findOwnAttempt(req, { running: true });
+    const task = await Task.findById(attempt.task).populate('category');
+    if (!task) throw new HttpError(404, 'Task not found');
+    if (!attempt.containerId) throw new HttpError(409, 'No container attached to this session');
+
+    const results = await Promise.all(
+      (task.validationRules || []).map(async (rule, index) => {
+        const command = buildRuleCommand(rule);
+        if (!command) {
+          return { index, label: rule.label, type: rule.type, passed: false, actual: 'unsupported rule type' };
+        }
+        try {
+          const out = await orchestrator.execInContainer(attempt.containerId, command, 10000);
+          const passed = String(out.stdout || '').trim().split('\n').pop() === 'OK';
+          return {
+            index,
+            label: rule.label,
+            type: rule.type,
+            passed,
+            actual: passed ? 'OK' : (out.stdout || out.stderr || '').trim().slice(0, 120),
+          };
+        } catch {
+          return { index, label: rule.label, type: rule.type, passed: false, actual: 'container unreachable' };
+        }
+      })
+    );
+
+    const checks = results.sort((a, b) => a.index - b.index);
+    return {
+      checks,
+      passedCount: checks.filter((c) => c.passed).length,
+      totalRules: checks.length,
+      updatedAt: new Date().toISOString(),
+    };
   });
 
   app.post('/:id/submit', { preHandler: [requireAuth] }, async (req) => {
