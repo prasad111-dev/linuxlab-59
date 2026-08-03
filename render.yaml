@@ -49,6 +49,8 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: FRONTEND_ORIGINS
+        sync: false
       - key: ORCHESTRATOR_URL
         sync: false
       - key: ORCHESTRATOR_TOKEN
