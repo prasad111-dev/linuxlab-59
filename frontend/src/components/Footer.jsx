@@ -1,7 +1,18 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Terminal } from 'lucide-react';
 
 export default function Footer() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const goToSection = (id) => {
+    if (pathname === '/') {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate('/');
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 150);
+    }
+  };
   return (
     <footer className="border-t border-slate-200/70 bg-white/50 dark:border-white/10 dark:bg-slate-950/50">
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
@@ -31,10 +42,10 @@ export default function Footer() {
           <div>
             <h4 className="mb-3 text-sm font-bold">Company</h4>
             <ul className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
-              <li><a href="#features" className="hover:text-indigo-500">Features</a></li>
-              <li><a href="#roadmap" className="hover:text-indigo-500">Roadmap</a></li>
-              <li><a href="#faq" className="hover:text-indigo-500">FAQ</a></li>
-              <li><a href="#contact" className="hover:text-indigo-500">Contact</a></li>
+              <li><button onClick={() => goToSection('features')} className="hover:text-indigo-500">Features</button></li>
+              <li><button onClick={() => goToSection('roadmap')} className="hover:text-indigo-500">Roadmap</button></li>
+              <li><button onClick={() => goToSection('faq')} className="hover:text-indigo-500">FAQ</button></li>
+              <li><button onClick={() => goToSection('contact')} className="hover:text-indigo-500">Contact</button></li>
             </ul>
           </div>
         </div>
