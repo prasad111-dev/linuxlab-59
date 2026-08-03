@@ -150,9 +150,19 @@ function buildPolicy(task) {
     }
   }
 
+  // User/group tasks legitimately need to check or edit credential files.
+  if (users.size > 0 || groups.size > 0) {
+    for (const f of ['/etc/passwd', '/etc/shadow', '/etc/group', '/etc/gshadow', '/etc/sudoers']) {
+      paths.add(f);
+    }
+  }
+
   const hints = [];
   if (packages) hints.push('package management (apt/apt-get/dpkg)');
-  if (users.size > 0) hints.push(`user commands for: ${[...users].join(', ')}`);
+  if (users.size > 0) {
+    hints.push(`user commands for: ${[...users].join(', ')}`);
+    hints.push('check credentials with: cat /etc/passwd, getent passwd <user>, passwd <user>');
+  }
   if (groups.size > 0) hints.push(`group commands for: ${[...groups].join(', ')}`);
   if (services.size > 0) hints.push(`service commands for: ${[...services].join(', ')}`);
   if (paths.size > 0) hints.push('file commands (only for the files in this task)');
@@ -177,7 +187,13 @@ function isAllowedAction(segment, policy) {
   if (READ_ONLY.has(word)) return true;
 
   if (PACKAGE_WORDS.has(word)) return policy.packages;
-  if (USER_WORDS.has(word)) return policy.users.size > 0 && targetName(segment, policy.users);
+  if (USER_WORDS.has(word)) {
+    if (policy.users.size === 0) return false;
+    // passwd/chpasswd may run interactively (bare) to set/check the account password
+    if (word === 'passwd' || word === 'chpasswd' || word === 'login') return true;
+    return targetName(segment, policy.users);
+  }
+  if (word === 'visudo') return policy.users.size > 0 || policy.groups.size > 0;
   if (GROUP_WORDS.has(word)) return policy.groups.size > 0 && targetName(segment, policy.groups);
   if (PORT_WORDS.has(word)) return policy.ports;
 
