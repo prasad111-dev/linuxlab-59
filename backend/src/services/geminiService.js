@@ -13,7 +13,9 @@ async function callGemini(system, user, opts = {}) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.gemini.model}:generateContent`;
   const body = {
     systemInstruction: system ? { parts: [{ text: system }] } : undefined,
-    contents: [{ role: 'user', parts: [{ text: user }] }],
+    contents:
+      opts.contents ||
+      [{ role: 'user', parts: [{ text: user }] }],
     generationConfig: {
       maxOutputTokens: opts.maxTokens ?? 1024,
     },
@@ -92,4 +94,27 @@ async function generateExplain(task, live) {
   );
 }
 
-module.exports = { callGemini, generateHint, generateExplain };
+/**
+ * Multi-turn lab tutor chat. `history` is [{ role: 'user'|'assistant', text }],
+ * `live` is the result of runLiveChecks (current validation state).
+ */
+async function chatWithAi(task, attempt, history, message, live) {
+  const facts =
+    `You are the AI lab tutor inside a student's Linux container. The student is doing the task below. ` +
+    `Use their progress and commands to answer. Be concise and practical; never give the full solution unless asked; ` +
+    `guide them with read-only inspection commands (cat/less/getent/systemctl status) when relevant. ` +
+    `You can also reference which validation checks are failing.\n\n` +
+    `Task: ${task.title}\nScenario: ${task.scenario}\nObjectives: ${(task.objectives || []).join('; ')}\n\n` +
+    `Student's recent commands:\n${(attempt.commandHistory || []).slice(-12).join('\n') || '(none yet)'}\n\n` +
+    `${formatLiveState(live)}`;
+
+  const contents = [];
+  for (const m of history || []) {
+    if (m && m.text) contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.text }] });
+  }
+  contents.push({ role: 'user', parts: [{ text: String(message) }] });
+
+  return callGemini(facts, null, { contents, temperature: 0.5, maxTokens: 700 });
+}
+
+module.exports = { callGemini, generateHint, generateExplain, chatWithAi };

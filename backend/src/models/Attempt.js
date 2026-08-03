@@ -40,6 +40,16 @@ const attemptSchema = new mongoose.Schema(
     explainUsed: { type: Number, default: 0 },
     commandHistory: { type: [String], default: [] },
     terminalLog: { type: [String], default: [] },
+    aiChat: {
+      type: [
+        {
+          role: { type: String, enum: ['user', 'assistant'], default: 'user' },
+          text: { type: String, default: '' },
+          at: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
     startedAt: { type: Date, default: Date.now },
     submittedAt: { type: Date, default: null },
     evaluation: {

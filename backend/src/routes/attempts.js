@@ -6,7 +6,7 @@ const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { serializeAttempt } = require('../utils/serialize');
 const { evaluateAttempt, buildRuleCommand, runLiveChecks } = require('../services/evaluationService');
-const { generateHint, generateExplain } = require('../services/geminiService');
+const { generateHint, generateExplain, chatWithAi } = require('../services/geminiService');
 const { checkAndUnlock } = require('../services/achievementService');
 const { startSession, terminateRunning } = require('../services/sessionService');
 const orchestrator = require('../services/orchestratorClient');
@@ -75,6 +75,30 @@ module.exports = async function attemptRoutes(app) {
     attempt.explainUsed += 1;
     await attempt.save();
     return { explanation };
+  });
+
+  app.post('/:id/chat', { preHandler: [requireAuth] }, async (req) => {
+    const attempt = await findOwnAttempt(req, { running: true });
+    const task = await Task.findById(attempt.task).populate('category');
+    if (!task) throw new HttpError(404, 'Task not found');
+    const message = String(req.body?.message || '').trim().slice(0, 1000);
+    if (!message) throw new HttpError(400, 'message is required');
+
+    const live = attempt.containerId
+      ? await runLiveChecks(task, attempt.containerId).catch(() => null)
+      : null;
+    const history = attempt.aiChat || [];
+
+    const reply = await chatWithAi(task, attempt, history, message, live);
+
+    attempt.aiChat = history.concat([
+      { role: 'user', text: message, at: new Date() },
+      { role: 'assistant', text: reply, at: new Date() },
+    ]);
+    if (attempt.aiChat.length > 40) attempt.aiChat = attempt.aiChat.slice(-40);
+    await attempt.save();
+
+    return { reply, history: attempt.aiChat };
   });
 
   app.get('/:id/live-check', { preHandler: [requireAuth] }, async (req) => {

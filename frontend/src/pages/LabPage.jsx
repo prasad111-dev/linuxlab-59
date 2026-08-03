@@ -14,6 +14,7 @@ import {
   Loader2,
   PanelRight,
   ListChecks,
+  MessageCircle,
   Terminal as TerminalIcon,
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -28,8 +29,6 @@ export default function LabPage() {
   const [task, setTask] = useState(null);
   const [status, setStatus] = useState('loading');
   const [panelOpen, setPanelOpen] = useState(false);
-  const [hint, setHint] = useState('');
-  const [explain, setExplain] = useState('');
   const [busy, setBusy] = useState('');
   const [result, setResult] = useState(null);
   const [resultLoading, setResultLoading] = useState(false);
@@ -94,30 +93,34 @@ export default function LabPage() {
     return () => clearInterval(iv);
   }, [status, attemptId]);
 
-  const getHint = async () => {
-    setBusy('hint');
-    setHint('');
+  const [chat, setChat] = useState([]);
+  const [chatText, setChatText] = useState('');
+  const [chatBusy, setChatBusy] = useState(false);
+
+  const sendChat = async (text) => {
+    const msg = String(text || chatText).trim();
+    if (!msg || chatBusy) return;
+    setChatText('');
+    setChatBusy(true);
+    setChat((c) => [...c, { role: 'user', text: msg }]);
     try {
-      const { hint } = await api(`/attempts/${attemptId}/hint`, { method: 'POST' });
-      setHint(hint);
+      const data = await api(`/attempts/${attemptId}/chat`, { method: 'POST', body: { message: msg } });
+      setChat((data.history || []).map((m) => ({ role: m.role === 'assistant' ? 'ai' : 'user', text: m.text })));
     } catch (e) {
-      setError(e.message);
+      setChat((c) => [...c, { role: 'ai', text: `⚠️ ${e.message}` }]);
     } finally {
-      setBusy('');
+      setChatBusy(false);
     }
   };
 
-  const getExplain = async () => {
-    setBusy('explain');
-    setExplain('');
-    try {
-      const { explanation } = await api(`/attempts/${attemptId}/explain`, { method: 'POST' });
-      setExplain(explanation);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy('');
-    }
+  const getHint = () => {
+    setPanelOpen(true);
+    sendChat('Give me a small hint to guide me toward the next step, without revealing the full solution or exact commands.');
+  };
+
+  const getExplain = () => {
+    setPanelOpen(true);
+    sendChat('Explain the core concept of this task and what I need to do. Tell me which commands to run to inspect the current server state.');
   };
 
   const submit = async () => {
@@ -224,12 +227,12 @@ export default function LabPage() {
         </button>
 
         <div className="hidden items-center gap-2 md:flex">
-          <button onClick={getHint} disabled={busy === 'hint'} className="btn-ghost">
-            {busy === 'hint' ? <Loader2 size={16} className="animate-spin" /> : <Lightbulb size={16} className="text-amber-500" />}
+          <button onClick={getHint} disabled={chatBusy} className="btn-ghost">
+            {chatBusy ? <Loader2 size={16} className="animate-spin" /> : <Lightbulb size={16} className="text-amber-500" />}
             Hint
           </button>
-          <button onClick={getExplain} disabled={busy === 'explain'} className="btn-ghost">
-            {busy === 'explain' ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} className="text-violet-500" />}
+          <button onClick={getExplain} disabled={chatBusy} className="btn-ghost">
+            {chatBusy ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} className="text-violet-500" />}
             Explain
           </button>
           <button onClick={submit} disabled={resultLoading} className="btn-secondary">
@@ -243,10 +246,10 @@ export default function LabPage() {
 
       {/* Mobile action row */}
       <div className="flex gap-2 border-b border-slate-200 bg-white px-3 py-2 md:hidden dark:border-white/10 dark:bg-slate-900">
-        <button onClick={getHint} disabled={busy === 'hint'} className="btn-ghost flex-1">
+        <button onClick={getHint} disabled={chatBusy} className="btn-ghost flex-1">
           <Lightbulb size={15} className="text-amber-500" /> Hint
         </button>
-        <button onClick={getExplain} disabled={busy === 'explain'} className="btn-ghost flex-1">
+        <button onClick={getExplain} disabled={chatBusy} className="btn-ghost flex-1">
           <BookOpen size={15} className="text-violet-500" /> Explain
         </button>
         <button onClick={submit} disabled={resultLoading} className="btn-secondary flex-1">
@@ -277,7 +280,7 @@ export default function LabPage() {
         <aside
           className={cn(
             'w-full overflow-y-auto border-l border-slate-200 bg-white p-4 lg:block lg:w-96 dark:border-white/10 dark:bg-slate-900',
-            panelOpen || hint || explain ? 'block' : 'hidden'
+            panelOpen ? 'block' : 'hidden'
           )}
         >
           <div className="border-b border-slate-100 pb-4 dark:border-white/10">
@@ -340,48 +343,58 @@ export default function LabPage() {
 
           <div className="mt-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-extrabold">AI help</h3>
-              <button onClick={() => { setPanelOpen(false); setHint(''); setExplain(''); }} className="text-sm text-slate-400">
-                Clear
-              </button>
+              <h3 className="flex items-center gap-2 font-extrabold">
+                <MessageCircle size={17} className="text-violet-500" /> AI tutor chat
+              </h3>
+              {chat.length > 0 && (
+                <button onClick={() => setChat([])} className="text-sm text-slate-400">
+                  Clear chat
+                </button>
+              )}
             </div>
 
-            {busy === 'hint' && <p className="mt-3 animate-pulse text-sm text-slate-400">Thinking…</p>}
-            {hint && (
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-500/20 dark:bg-amber-500/10">
-                <p className="mb-1 flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-400">
-                  <Lightbulb size={15} /> Hint
+            <div className="mt-3 max-h-64 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3 dark:bg-white/5">
+              {chat.length === 0 && (
+                <p className="text-xs leading-relaxed text-slate-400">
+                  Ask me anything about this task. I can see your terminal — your commands and which checks are
+                  passing. Try <button onClick={() => sendChat('What should I check first with cat or ls?')} className="font-semibold text-indigo-500 underline">"What should I check first?"</button>
                 </p>
-                <p className="text-slate-700 dark:text-slate-200">{hint}</p>
-              </div>
-            )}
-
-            {busy === 'explain' && <p className="mt-3 animate-pulse text-sm text-slate-400">Explaining the concept…</p>}
-            {explain && (
-              <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm dark:border-violet-500/20 dark:bg-violet-500/10">
-                <p className="mb-1 flex items-center gap-1.5 font-bold text-violet-700 dark:text-violet-400">
-                  <BookOpen size={15} /> Concept
+              )}
+              {chat.map((m, i) => (
+                <div key={i} className={cn('text-sm', m.role === 'user' ? 'text-right' : 'text-left')}>
+                  <div
+                    className={cn(
+                      'inline-block max-w-full rounded-2xl px-3 py-2 text-left whitespace-pre-line',
+                      m.role === 'user'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                    )}
+                  >
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              {chatBusy && (
+                <p className="text-xs text-slate-400">
+                  <Loader2 size={12} className="mr-1 inline animate-spin" /> thinking…
                 </p>
-                <p className="text-slate-700 dark:text-slate-200">{explain}</p>
-              </div>
-            )}
+              )}
+            </div>
 
-            {!hint && !explain && busy !== 'hint' && busy !== 'explain' && (
-              <div className="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                <div>
-                  <p className="flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400">
-                    <Lightbulb size={15} /> Hint
-                  </p>
-                  <p className="mt-1">A small, progressive clue — the more you ask, the more you learn.</p>
-                </div>
-                <div>
-                  <p className="flex items-center gap-1.5 font-bold text-violet-600 dark:text-violet-400">
-                    <BookOpen size={15} /> Explain
-                  </p>
-                  <p className="mt-1">Understand the Linux concept behind this task, without the exact solution.</p>
-                </div>
-              </div>
-            )}
+            <form
+              onSubmit={(e) => { e.preventDefault(); sendChat(); }}
+              className="mt-2 flex items-center gap-2"
+            >
+              <input
+                value={chatText}
+                onChange={(e) => setChatText(e.target.value)}
+                placeholder="Ask about this task…"
+                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 dark:border-white/10 dark:bg-slate-800"
+              />
+              <button type="submit" disabled={chatBusy} className="btn-primary !px-3" aria-label="Send">
+                {chatBusy ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+              </button>
+            </form>
           </div>
 
           {task && (
