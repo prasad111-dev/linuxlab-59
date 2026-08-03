@@ -268,7 +268,7 @@ export default function LabPage() {
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1 overflow-hidden bg-slate-950">
           <XTerm attemptId={attemptId} ticket={attempt.wsTicket} onConnected={onConnected} />
-          <div className="pointer-events-none absolute top-2 left-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+          <div className="pointer-events-none absolute top-2 right-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
             <TerminalIcon size={12} /> ubuntu:24.04 · tty
           </div>
         </div>
