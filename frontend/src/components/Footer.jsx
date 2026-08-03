@@ -12,7 +12,7 @@ export default function Footer() {
                 <Terminal size={16} />
               </div>
               <span className="font-extrabold">
-                Linux<span className="gradient-text">Lab</span>
+                Linux<span className="gradient-text">Lab</span>-59
               </span>
             </Link>
             <p className="mt-3 max-w-sm text-sm text-slate-500 dark:text-slate-400">
@@ -39,7 +39,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 border-t border-slate-200/70 pt-6 text-center text-xs text-slate-400 dark:border-white/10">
-          © {new Date().getFullYear()} LinuxLab. Built for students of Linux Administration & DevOps.
+          © {new Date().getFullYear()} LinuxLab-59. Built for students of Linux Administration & DevOps. Developed by Prasad with tea and love.
         </div>
       </div>
     </footer>

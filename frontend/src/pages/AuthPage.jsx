@@ -36,7 +36,7 @@ export default function AuthPage() {
             <Terminal size={28} />
           </div>
           <h1 className="mt-5 text-2xl font-extrabold">
-            Welcome to <span className="gradient-text">LinuxLab</span>
+            Welcome to <span className="gradient-text">LinuxLab-59</span>
           </h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
             Sign in to start solving real Linux Administration practicals.

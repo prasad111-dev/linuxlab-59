@@ -83,7 +83,7 @@ export default function Navbar() {
             <Terminal size={20} />
           </div>
           <span className="text-lg font-extrabold tracking-tight">
-            Linux<span className="gradient-text">Lab</span>
+            Linux<span className="gradient-text">Lab</span>-59
           </span>
         </Link>
 
