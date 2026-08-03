@@ -34,12 +34,14 @@ async function buildApp() {
   await app.register(cors, {
     origin(origin, cb) {
       if (!origin) return cb(null, true);
+      const norm = (o) => String(o).replace(/\/+$/, '');
       const allowed = [
         config.frontendUrl,
+        ...config.frontendOrigins,
         /^https?:\/\/localhost:\d+$/,
         /^https?:\/\/127\.0\.0\.1:\d+$/,
       ];
-      const ok = allowed.some((a) => (a instanceof RegExp ? a.test(origin) : a === origin));
+      const ok = allowed.some((a) => (a instanceof RegExp ? a.test(origin) : norm(a) === norm(origin)));
       cb(null, ok);
     },
     credentials: true,

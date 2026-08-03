@@ -50,5 +50,5 @@ export function terminalSocketUrl(attemptId, ticket) {
 }
 
 export function googleAuthUrl() {
-  return `${API_URL}/auth/google`;
+  return `${API_URL}/auth/google?frontend=${encodeURIComponent(window.location.origin)}`;
 }

@@ -1,4 +1,3 @@
-const config = require('../config');
 const User = require('../models/User');
 const authService = require('../services/authService');
 const { requireAuth } = require('../middleware/auth');
@@ -9,7 +8,7 @@ module.exports = async function authRoutes(app) {
     '/google',
     { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
     async (req, reply) => {
-      const url = await authService.buildAuthUrl();
+      const url = await authService.buildAuthUrl(req.query.frontend);
       reply.redirect(url);
     }
   );
@@ -18,8 +17,8 @@ module.exports = async function authRoutes(app) {
     '/google/callback',
     { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } },
     async (req, reply) => {
-      const { jwt } = await authService.handleCallback(req.raw);
-      reply.redirect(`${config.frontendUrl}/#/auth?token=${encodeURIComponent(jwt)}`);
+      const { jwt, frontend } = await authService.handleCallback(req.raw);
+      reply.redirect(`${frontend}/#/auth?token=${encodeURIComponent(jwt)}`);
     }
   );
 

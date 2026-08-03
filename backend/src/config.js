@@ -28,6 +28,10 @@ module.exports = {
     redirectUri: process.env.GOOGLE_REDIRECT_URI || '',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendOrigins: (process.env.FRONTEND_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim().replace(/\/+$/, ''))
+    .filter(Boolean),
   orchestrator: {
     url: (process.env.ORCHESTRATOR_URL || 'http://localhost:8080').replace(/\/+$/, ''),
     wsUrl: (process.env.ORCHESTRATOR_WS_URL || 'ws://localhost:8080').replace(/\/+$/, ''),

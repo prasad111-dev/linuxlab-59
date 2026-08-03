@@ -27,11 +27,30 @@ function getClient() {
 // In-memory OAuth state store (single-instance on free Render, acceptable).
 const pendingStates = new Map();
 
-function buildAuthUrl() {
+function normalizeOrigin(value) {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
+function allowedFrontendOrigins() {
+  return new Set(
+    [config.frontendUrl, ...config.frontendOrigins].map(normalizeOrigin).filter(Boolean)
+  );
+}
+
+function resolveFrontend(frontend) {
+  const origin = normalizeOrigin(frontend);
+  return origin && allowedFrontendOrigins().has(origin) ? origin : config.frontendUrl;
+}
+
+function buildAuthUrl(frontend) {
   return getClient().then((client) => {
     const state = generators.state();
     const nonce = generators.nonce();
-    pendingStates.set(state, { nonce, at: Date.now() });
+    pendingStates.set(state, { nonce, at: Date.now(), frontend: resolveFrontend(frontend) });
     // Clear stale entries
     for (const [k, v] of pendingStates) {
       if (Date.now() - v.at > 10 * 60 * 1000) pendingStates.delete(k);
@@ -67,7 +86,7 @@ async function handleCallback(req) {
   });
 
   const jwt = await issueToken(user);
-  return { user: user.toSafeJSON(), jwt };
+  return { user: user.toSafeJSON(), jwt, frontend: stored.frontend || config.frontendUrl };
 }
 
 async function upsertUser({ googleId, email, name, picture }) {
