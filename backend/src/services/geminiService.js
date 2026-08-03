@@ -15,7 +15,6 @@ async function callGemini(system, user, opts = {}) {
     systemInstruction: system ? { parts: [{ text: system }] } : undefined,
     contents: [{ role: 'user', parts: [{ text: user }] }],
     generationConfig: {
-      temperature: opts.temperature ?? 0.4,
       maxOutputTokens: opts.maxTokens ?? 1024,
     },
   };
