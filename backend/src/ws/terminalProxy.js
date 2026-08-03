@@ -1,12 +1,18 @@
 const { WebSocket } = require('ws');
 const Attempt = require('../models/Attempt');
+const Task = require('../models/Task');
 const orchestrator = require('../services/orchestratorClient');
 const { createCommandLogger } = require('./commandLogger');
+const { createCommandGate } = require('./commandGate');
+const { buildPolicy } = require('../services/commandPolicy');
 
 /**
  * Proxies the browser terminal WebSocket to the lab orchestrator.
  * Auth is via a per-attempt ticket (never the JWT) so the token is not
  * leaked into URL logs on the VPS hop.
+ *
+ * Every typed command line is checked against a policy derived from the
+ * task's validation rules — students can only run task-related commands.
  */
 function setupTerminalProxy(server) {
   const { WebSocketServer } = require('ws');
@@ -28,9 +34,19 @@ function setupTerminalProxy(server) {
       if (attempt.wsTicket !== ticket) return ws.close(4003, 'invalid ticket');
       if (attempt.status !== 'running') return ws.close(4003, 'attempt is not running');
 
+      const task = await Task.findById(attempt.task).lean().catch(() => null);
+      const policy = buildPolicy(task);
+
       const upstream = new WebSocket(orchestrator.terminalUrl(attempt.containerId));
       const logger = createCommandLogger();
-      const buffered = [];
+      const gateOutput = [];
+
+      const send = (bytes) => {
+        if (upstream.readyState === WebSocket.OPEN) upstream.send(bytes);
+        else gateOutput.push(bytes);
+      };
+
+      const gate = createCommandGate(policy, send);
 
       const persist = () => {
         if (logger.commands.length > 0) {
@@ -46,18 +62,18 @@ function setupTerminalProxy(server) {
       };
 
       upstream.on('open', () => {
-        for (const m of buffered) upstream.send(m);
-        buffered.length = 0;
+        for (const m of gateOutput) upstream.send(m);
+        gateOutput.length = 0;
       });
 
       ws.on('message', (data) => {
         logger.ingest(data);
-        if (upstream.readyState === WebSocket.OPEN) upstream.send(data);
-        else buffered.push(data);
+        gate.push(data);
       });
 
       const teardown = () => {
         clearInterval(interval);
+        gate.flush();
         persist();
         try {
           upstream.close();
@@ -73,6 +89,7 @@ function setupTerminalProxy(server) {
       });
       upstream.on('close', () => {
         clearInterval(interval);
+        gate.flush();
         persist();
         try {
           ws.close();

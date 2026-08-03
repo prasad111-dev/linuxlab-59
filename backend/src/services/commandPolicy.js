@@ -1,0 +1,238 @@
+/**
+ * Task-based command policy.
+ *
+ * Derives an allow-list from a task's validation rules so students can only run
+ * commands their task actually needs (e.g. package management for a package
+ * task, useradd for a user task). Everything else is blocked. Read-only /
+ * inspection commands are always allowed.
+ */
+
+const READ_ONLY = new Set([
+  'ls', 'pwd', 'cd', 'cat', 'less', 'more', 'head', 'tail',
+  'grep', 'egrep', 'fgrep', 'man', 'info', 'whatis', 'apropos', 'help',
+  'clear', 'reset', 'history', 'fc', 'whoami', 'who', 'w', 'id', 'getent',
+  'groups', 'stat', 'uname', 'hostname', 'uptime', 'which', 'type',
+  'whereis', 'env', 'printenv', 'export', 'source', 'echo', 'printf',
+  'date', 'sleep', 'true', 'false', 'exit', 'logout', 'df', 'du', 'free',
+  'top', 'ps', 'pgrep', 'pidof', 'wc', 'sort', 'uniq', 'cut', 'tr', 'awk',
+  'xargs', 'nl', 'od', 'hexdump', 'file', 'readlink', 'realpath',
+  'basename', 'dirname', 'seq', 'test', 'time', 'tty', 'stty', 'yes',
+  'sha256sum', 'sha1sum', 'md5sum', 'cksum', 'tar',
+]);
+
+const PIPE_FILTERS = new Set([
+  'grep', 'egrep', 'fgrep', 'head', 'tail', 'less', 'more', 'wc',
+  'sort', 'uniq', 'cut', 'tr', 'awk', 'xargs', 'nl', 'od', 'hexdump',
+  'sed', 'iconv', 'column',
+]);
+
+const PACKAGE_WORDS = new Set([
+  'apt', 'apt-get', 'aptitude', 'dpkg', 'snap', 'apt-cache', 'apt-mark', 'add-apt-repository',
+]);
+
+const USER_WORDS = new Set([
+  'useradd', 'adduser', 'usermod', 'userdel', 'passwd', 'chpasswd', 'chsh', 'chfn', 'login',
+]);
+
+const GROUP_WORDS = new Set([
+  'groupadd', 'addgroup', 'gpasswd', 'groupdel', 'groupmems',
+]);
+
+const FILE_WORDS = new Set([
+  'mkdir', 'touch', 'chmod', 'chown', 'chgrp', 'ln', 'rm', 'cp', 'mv',
+  'nano', 'vi', 'vim', 'tee', 'sed', 'install', 'truncate',
+]);
+
+const SERVICE_WORDS = new Set(['systemctl', 'service', 'systemd-run', 'initctl']);
+
+const PORT_WORDS = new Set(['ufw', 'iptables', 'ip6tables', 'firewall-cmd']);
+
+const SERVICE_INSPECT = new Set(['status', 'is-active', 'is-enabled', 'is-failed', 'is-system-running', 'show', 'cat']);
+
+function cleanTerminalLine(raw) {
+  return String(raw)
+    .replace(/\x1b\]\d+;.*?(\x07|\x1b\\)/g, '')
+    .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, '')
+    .replace(/\x1b[()][0-9A-B]/g, '')
+    .replace(/\x1b[=>]/g, '')
+    .replace(/\x00/g, '');
+}
+
+function applyBackspaces(line) {
+  const chars = [];
+  for (const ch of line) {
+    if (ch === '\b' || ch === '\x7f') chars.pop();
+    else if (ch === '\x00') continue;
+    else chars.push(ch);
+  }
+  return chars.join('');
+}
+
+function firstWord(segment) {
+  return (segment.match(/^[^\s;|&()]+/) || [''])[0].trim();
+}
+
+function stripPrefix(segment) {
+  let s = segment.trim().replace(/^\(\s*/, '').replace(/\s*\)$/, '');
+  s = s.replace(/(^|\s)sudo(\s|$)/g, ' ');
+  s = s.replace(/^env\s+[A-Z_]+=[^\s]+(\s|$)/, '');
+  return s.trim();
+}
+
+function splitSegments(line) {
+  return String(line).split(/\s*(?:&&|\|\||;)\s*/);
+}
+
+function splitPipeline(segment) {
+  return String(segment)
+    .split('|')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function targetPath(segment, paths) {
+  for (const p of paths) {
+    if (segment.includes(p)) return true;
+    const base = p.split('/').filter(Boolean).pop();
+    if (base && new RegExp(`(^|\\s|/|['\"])${base}(\\s|$|['\"])`).test(segment)) return true;
+  }
+  return false;
+}
+
+function targetName(segment, names) {
+  const seg = ` ${segment.replace(/[=:]/g, ' ')} `;
+  for (const n of names) {
+    if (seg.includes(` ${n} `) || seg.includes(`'${n}'`) || seg.includes(`"${n}"`)) return true;
+  }
+  return false;
+}
+
+/**
+ * Build a policy object from a task document.
+ */
+function buildPolicy(task) {
+  const rules = (task && task.validationRules) || [];
+  const users = new Set();
+  const groups = new Set();
+  const paths = new Set();
+  const services = new Set();
+  let packages = false;
+  let ports = false;
+
+  for (const r of rules) {
+    const p = r.params || {};
+    switch (r.type) {
+      case 'user_exists':
+        if (p.username) users.add(String(p.username));
+        break;
+      case 'group_exists':
+        if (p.group) groups.add(String(p.group));
+        break;
+      case 'package_installed':
+        packages = true;
+        break;
+      case 'service_active':
+      case 'service_enabled':
+        if (p.service) services.add(String(p.service));
+        break;
+      case 'file_exists':
+      case 'dir_exists':
+      case 'file_contains':
+      case 'file_permissions':
+      case 'file_owner':
+        if (p.path) paths.add(String(p.path));
+        break;
+      case 'port_open':
+        ports = true;
+        break;
+      default:
+        break;
+    }
+  }
+
+  const hints = [];
+  if (packages) hints.push('package management (apt/apt-get/dpkg)');
+  if (users.size > 0) hints.push(`user commands for: ${[...users].join(', ')}`);
+  if (groups.size > 0) hints.push(`group commands for: ${[...groups].join(', ')}`);
+  if (services.size > 0) hints.push(`service commands for: ${[...services].join(', ')}`);
+  if (paths.size > 0) hints.push('file commands (only for the files in this task)');
+  if (ports) hints.push('firewall (ufw/iptables)');
+
+  return {
+    allowAll: rules.length === 0,
+    users,
+    groups,
+    paths,
+    services,
+    packages,
+    ports,
+    hint: hints.join('; ') || 'read-only commands',
+  };
+}
+
+function isAllowedAction(segment, policy) {
+  if (policy.allowAll) return true;
+
+  const word = firstWord(segment);
+  if (READ_ONLY.has(word)) return true;
+
+  if (PACKAGE_WORDS.has(word)) return policy.packages;
+  if (USER_WORDS.has(word)) return policy.users.size > 0 && targetName(segment, policy.users);
+  if (GROUP_WORDS.has(word)) return policy.groups.size > 0 && targetName(segment, policy.groups);
+  if (PORT_WORDS.has(word)) return policy.ports;
+
+  if (SERVICE_WORDS.has(word)) {
+    const arg = firstWord(segment.replace(word, '').trim()) || '';
+    if (SERVICE_INSPECT.has(arg)) return true;
+    return policy.services.size > 0 && targetName(segment, policy.services);
+  }
+
+  if (FILE_WORDS.has(word)) {
+    if (policy.paths.size === 0) return false;
+    return targetPath(segment, policy.paths);
+  }
+
+  return false;
+}
+
+/**
+ * Validate a typed command line against the policy.
+ * Returns { allowed: boolean, command: string, hint: string }.
+ */
+function checkCommand(line, policy) {
+  if (!line || !String(line).trim()) return { allowed: true };
+  const cleaned = cleanTerminalLine(line);
+  const text = applyBackspaces(cleaned).trim();
+  if (!text) return { allowed: true };
+
+  const segments = splitSegments(text);
+  for (const rawSeg of segments) {
+    const seg = stripPrefix(rawSeg);
+    if (!seg) continue;
+
+    const pipeline = splitPipeline(seg);
+    const main = pipeline[0];
+    if (!main) continue;
+    if (!isAllowedAction(main, policy)) {
+      return { allowed: false, command: firstWord(main), hint: policy.hint };
+    }
+    for (let i = 1; i < pipeline.length; i++) {
+      const w = firstWord(stripPrefix(pipeline[i]));
+      if (w && !PIPE_FILTERS.has(w)) {
+        return { allowed: false, command: w, hint: policy.hint };
+      }
+    }
+  }
+  return { allowed: true };
+}
+
+function blockMessage(res) {
+  return `Blocked by task policy: "${res.command}" is not allowed. This task allows: ${res.hint}.`;
+}
+
+/** Reduce a raw terminal line (with escape/control bytes) to its visible text. */
+function cleanLineForDisplay(raw) {
+  return applyBackspaces(cleanTerminalLine(raw));
+}
+
+module.exports = { buildPolicy, checkCommand, blockMessage, cleanLineForDisplay };
