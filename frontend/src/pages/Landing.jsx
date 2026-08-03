@@ -9,8 +9,8 @@ import {
   BarChart3,
   Clock,
   CheckCircle2,
-  Github,
   Mail,
+  Phone,
   MapPin,
   Star,
   ChevronDown,
@@ -336,14 +336,14 @@ export default function Landing() {
               <Mail className="text-indigo-500" />
               <div>
                 <p className="text-sm font-bold">Email</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">hello@linuxlab.dev</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">prasadghavghave0@gmail.com</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Github className="text-indigo-500" />
+              <Phone className="text-indigo-500" />
               <div>
-                <p className="text-sm font-bold">Open source</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">github.com/linuxlab</p>
+                <p className="text-sm font-bold">Contact</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">9322860752</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
