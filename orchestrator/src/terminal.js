@@ -4,19 +4,23 @@ const { markActivity } = require('./state');
 
 async function attachTerminal(ws, containerId) {
   const container = docker.getContainer(containerId);
-  const stream = await container.attach({
-    stream: true,
-    stdin: true,
-    stdout: true,
-    stderr: true,
-    hijack: true,
-  });
 
   try {
     await container.start();
   } catch {
     /* already running */
   }
+
+  // Spawn a root login shell instead of attaching to the container console,
+  // whose systemd getty would otherwise prompt for a username/password.
+  const exec = await container.exec({
+    Cmd: ['/bin/bash', '-l'],
+    AttachStdin: true,
+    AttachStdout: true,
+    AttachStderr: true,
+    Tty: true,
+  });
+  const stream = await exec.start({ Detach: false, Tty: true, hijack: true, stdin: true });
 
   markActivity(containerId);
 
@@ -35,6 +39,11 @@ async function attachTerminal(ws, containerId) {
   const onClose = () => {
     try {
       stream.destroy();
+    } catch {
+      /* noop */
+    }
+    try {
+      ws.close();
     } catch {
       /* noop */
     }
