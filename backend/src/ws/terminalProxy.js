@@ -34,9 +34,14 @@ function setupTerminalProxy(server) {
 
       const persist = () => {
         if (logger.commands.length > 0) {
-          attempt.commandHistory = attempt.commandHistory.concat(logger.commands);
+          const cmds = logger.commands;
           logger.flush();
-          attempt.save().catch(() => {});
+          // Lightweight write: only append the new commands, keep the last 250
+          // so the DB stays small and the server handles many concurrent users.
+          Attempt.updateOne(
+            { _id: attempt._id },
+            { $push: { commandHistory: { $each: cmds, $slice: -250 } } }
+          ).catch(() => {});
         }
       };
 
