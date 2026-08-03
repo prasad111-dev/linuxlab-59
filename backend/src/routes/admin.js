@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Task = require('../models/Task');
 const Attempt = require('../models/Attempt');
 const Category = require('../models/Category');
+const Suggestion = require('../models/Suggestion');
 const { requireAdmin } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { getLeaderboard } = require('../services/leaderboardService');
@@ -28,13 +29,14 @@ module.exports = async function adminRoutes(app) {
   });
 
   app.get('/stats', { preHandler: [requireAdmin] }, async (req) => {
-    const [users, tasks, attempts, categories, publishedTasks, runningAttempts] = await Promise.all([
+    const [users, tasks, attempts, categories, publishedTasks, runningAttempts, pendingSuggestions] = await Promise.all([
       User.countDocuments(),
       Task.countDocuments(),
       Attempt.countDocuments(),
       Category.countDocuments(),
       Task.countDocuments({ status: 'published' }),
       Attempt.countDocuments({ status: 'running' }),
+      Suggestion.countDocuments({ status: 'pending' }),
     ]);
 
     const [avgAgg, byCategory, last7] = await Promise.all([
@@ -60,7 +62,7 @@ module.exports = async function adminRoutes(app) {
     const topPerformers = (await getLeaderboard('all')).slice(0, 5);
 
     return {
-      counts: { users, tasks, publishedTasks, attempts, runningAttempts, categories },
+      counts: { users, tasks, publishedTasks, attempts, runningAttempts, categories, pendingSuggestions },
       avgScore: Math.round((avgAgg[0] && avgAgg[0].avg) || 0),
       attemptsByCategory: byCategory.map((b) => ({
         category: catNameMap.get(b._id && b._id.toString()) || { name: 'Unknown', icon: '❓' },
@@ -77,5 +79,28 @@ module.exports = async function adminRoutes(app) {
     } catch (e) {
       throw new HttpError(502, 'Orchestrator is unreachable from the backend');
     }
+  });
+
+  app.get('/suggestions', { preHandler: [requireAdmin] }, async (req) => {
+    const items = await Suggestion.find()
+      .populate('user', 'name email')
+      .populate('category', 'name icon color')
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+    return items.map((s) => ({ ...s, id: s._id.toString() }));
+  });
+
+  app.patch('/suggestions/:id', { preHandler: [requireAdmin] }, async (req) => {
+    const { status, adminNote } = req.body || {};
+    if (status && !['pending', 'approved', 'rejected'].includes(status)) {
+      throw new HttpError(400, 'invalid status');
+    }
+    const suggestion = await Suggestion.findById(req.params.id);
+    if (!suggestion) throw new HttpError(404, 'Suggestion not found');
+    if (status) suggestion.status = status;
+    if (adminNote !== undefined) suggestion.adminNote = String(adminNote).slice(0, 500);
+    await suggestion.save();
+    return suggestion.toSuggestionJSON();
   });
 };

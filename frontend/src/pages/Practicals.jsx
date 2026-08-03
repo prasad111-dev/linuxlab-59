@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, Lightbulb } from 'lucide-react';
 import { api } from '../lib/api';
 import { FullPageSpinner } from '../components/Spinner';
 import TaskCard from '../components/TaskCard';
+import SuggestTaskModal from '../components/SuggestTaskModal';
 import { cn } from '../lib/format';
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'];
@@ -14,6 +15,7 @@ export default function Practicals() {
   const [cat, setCat] = useState('');
   const [diff, setDiff] = useState('');
   const [q, setQ] = useState('');
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,14 +48,19 @@ export default function Practicals() {
             Real IT support tickets. Each one spins up an isolated Linux container.
           </p>
         </div>
-        <div className="relative">
-          <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search tasks…"
-            className="input !w-64 !pl-9"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search tasks…"
+              className="input !w-64 !pl-9"
+            />
+          </div>
+          <button onClick={() => setSuggestOpen(true)} className="btn-ghost whitespace-nowrap">
+            <Lightbulb size={16} /> Suggest
+          </button>
         </div>
       </div>
 
@@ -121,6 +128,8 @@ export default function Practicals() {
           </div>
         )}
       </div>
+
+      {suggestOpen && <SuggestTaskModal onClose={() => setSuggestOpen(false)} />}
     </div>
   );
 }

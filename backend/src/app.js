@@ -14,6 +14,7 @@ const attemptRoutes = require('./routes/attempts');
 const leaderboardRoutes = require('./routes/leaderboard');
 const achievementRoutes = require('./routes/achievements');
 const notificationRoutes = require('./routes/notifications');
+const suggestionRoutes = require('./routes/suggestions');
 const adminRoutes = require('./routes/admin');
 
 async function buildApp() {
@@ -80,6 +81,7 @@ async function buildApp() {
   app.register(leaderboardRoutes, { prefix: '/api/leaderboard' });
   app.register(achievementRoutes, { prefix: '/api/achievements' });
   app.register(notificationRoutes, { prefix: '/api/notifications' });
+  app.register(suggestionRoutes, { prefix: '/api/suggestions' });
   app.register(adminRoutes, { prefix: '/api/admin' });
 
   return app;

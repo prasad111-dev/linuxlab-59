@@ -10,6 +10,7 @@ import {
   Trophy,
   Server,
   Plus,
+  Lightbulb,
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { FullPageSpinner } from '../../components/Spinner';
@@ -59,6 +60,19 @@ export default function AdminDashboard() {
           <Plus size={16} /> New task
         </Link>
       </div>
+
+      {stats.counts.pendingSuggestions > 0 && (
+        <Link
+          to="/admin/suggestions"
+          className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 transition hover:border-amber-300 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+        >
+          <span className="flex items-center gap-2">
+            <Lightbulb size={16} />
+            {stats.counts.pendingSuggestions} student suggestion{stats.counts.pendingSuggestions > 1 ? 's' : ''} waiting for review
+          </span>
+          <span className="text-indigo-600 dark:text-indigo-400">Review →</span>
+        </Link>
+      )}
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {cards.map((card) => {

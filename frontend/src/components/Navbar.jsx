@@ -15,6 +15,7 @@ import {
   History,
   Award,
   Shield,
+  Lightbulb,
   ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
@@ -187,7 +188,10 @@ export default function Navbar() {
                       <MenuItem icon={History} label="Practice history" to="/history" onClick={() => setMenuOpen(false)} />
                       <MenuItem icon={Award} label="Achievements" to="/achievements" onClick={() => setMenuOpen(false)} />
                       {user.role === 'admin' && (
-                        <MenuItem icon={Shield} label="Admin panel" to="/admin" onClick={() => setMenuOpen(false)} />
+                        <>
+                          <MenuItem icon={Shield} label="Admin panel" to="/admin" onClick={() => setMenuOpen(false)} />
+                          <MenuItem icon={Lightbulb} label="Suggestions" to="/admin/suggestions" onClick={() => setMenuOpen(false)} />
+                        </>
                       )}
                     </div>
                     <button
