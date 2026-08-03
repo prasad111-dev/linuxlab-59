@@ -2,6 +2,7 @@ const { WebSocket } = require('ws');
 const Attempt = require('../models/Attempt');
 const Task = require('../models/Task');
 const orchestrator = require('../services/orchestratorClient');
+const config = require('../config');
 const { createCommandLogger } = require('./commandLogger');
 const { createCommandGate } = require('./commandGate');
 const { buildPolicy } = require('../services/commandPolicy');
@@ -34,8 +35,8 @@ function setupTerminalProxy(server) {
       if (attempt.wsTicket !== ticket) return ws.close(4003, 'invalid ticket');
       if (attempt.status !== 'running') return ws.close(4003, 'attempt is not running');
 
-      const task = await Task.findById(attempt.task).lean().catch(() => null);
-      const policy = buildPolicy(task);
+      const enforcePolicy = config.terminalPolicy === 'task';
+      const task = enforcePolicy ? await Task.findById(attempt.task).lean().catch(() => null) : null;
 
       const upstream = new WebSocket(orchestrator.terminalUrl(attempt.containerId));
       const logger = createCommandLogger();
@@ -46,7 +47,7 @@ function setupTerminalProxy(server) {
         else gateOutput.push(bytes);
       };
 
-      const gate = createCommandGate(policy, send);
+      const gate = enforcePolicy ? createCommandGate(buildPolicy(task), send) : null;
 
       const persist = () => {
         if (logger.commands.length > 0) {
@@ -68,12 +69,13 @@ function setupTerminalProxy(server) {
 
       ws.on('message', (data) => {
         logger.ingest(data);
-        gate.push(data);
+        if (gate) gate.push(data);
+        else send(data);
       });
 
       const teardown = () => {
         clearInterval(interval);
-        gate.flush();
+        if (gate) gate.flush();
         persist();
         try {
           upstream.close();
@@ -89,7 +91,7 @@ function setupTerminalProxy(server) {
       });
       upstream.on('close', () => {
         clearInterval(interval);
-        gate.flush();
+        if (gate) gate.flush();
         persist();
         try {
           ws.close();

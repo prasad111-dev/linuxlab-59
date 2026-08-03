@@ -46,6 +46,8 @@ module.exports = {
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean),
   sessionTtlMinutes: int('SESSION_TTL_MINUTES', 60),
+  // 'task' = only commands the task's validation rules allow; anything else = full access
+  terminalPolicy: process.env.TERMINAL_POLICY === 'task' ? 'task' : 'none',
   container: {
     memMb: int('CONTAINER_MEM_MB', 512),
     cpu: Number(process.env.CONTAINER_CPU) || 0.5,
