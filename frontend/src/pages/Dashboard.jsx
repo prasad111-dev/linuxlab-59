@@ -110,9 +110,17 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+    <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      {/* Soft background for glass cards */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="animate-blob absolute -top-20 left-1/4 h-80 w-80 rounded-full bg-indigo-300/30 blur-3xl dark:bg-indigo-600/20" />
+        <div className="animate-blob absolute top-1/3 -right-20 h-72 w-72 rounded-full bg-violet-300/30 blur-3xl [animation-delay:5s] dark:bg-violet-600/20" />
+        <div className="animate-blob absolute bottom-10 left-0 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl [animation-delay:9s] dark:bg-emerald-600/10" />
+        <div className="animate-blob absolute right-1/3 -bottom-24 h-72 w-72 rounded-full bg-amber-200/40 blur-3xl [animation-delay:12s] dark:bg-amber-600/10" />
+      </div>
+
       {/* Header */}
-      <section className="animate-fade-up relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-6 sm:p-7 dark:border-indigo-500/20 dark:from-indigo-500/10 dark:to-slate-900">
+      <section className="animate-fade-up relative overflow-hidden rounded-2xl glass p-6 sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             {user?.picture ? (
@@ -161,7 +169,7 @@ export default function Dashboard() {
             <div
               key={s.label}
               style={{ animationDelay: `${i * 70}ms` }}
-              className="card animate-fade-up flex items-center gap-3 !p-4"
+              className="glass animate-fade-up flex items-center gap-3 !p-4"
             >
               <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', s.chip)}>
                 <Icon size={20} />
@@ -184,7 +192,7 @@ export default function Dashboard() {
               key={a.to}
               to={a.to}
               style={{ animationDelay: `${i * 70}ms` }}
-              className="card group animate-fade-up flex items-center gap-3 !p-4 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:hover:border-indigo-500/40"
+              className="glass group animate-fade-up flex items-center gap-3 !p-4 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:hover:border-indigo-500/40"
             >
               <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-110', a.chip)}>
                 <Icon size={22} />
@@ -207,7 +215,7 @@ export default function Dashboard() {
 
       {/* Streak + badges */}
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <div className="card flex items-center justify-between !p-4">
+        <div className="glass flex items-center justify-between !p-4">
           <div className="flex items-center gap-3">
             <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', streakActive ? 'bg-amber-50 text-amber-500 dark:bg-amber-500/10' : 'bg-slate-100 text-slate-400 dark:bg-slate-800')}>
               <Flame size={22} />
@@ -227,7 +235,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card flex items-center justify-between !p-4">
+        <div className="glass flex items-center justify-between !p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
               <Star size={22} />
@@ -254,7 +262,7 @@ export default function Dashboard() {
           </Link>
         </div>
         {stats.recommended.length === 0 ? (
-          <div className="card py-10 text-center">
+          <div className="glass py-10 text-center">
             <div className="text-4xl">🎉</div>
             <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
               You've attempted every published practical. New ones will appear here!
@@ -276,7 +284,7 @@ export default function Dashboard() {
           {stats.categoryProgress
             .filter((c) => c.total > 0)
             .map((c) => (
-              <div key={c.category.id} className="card !p-4 transition hover:border-indigo-200 dark:hover:border-indigo-500/30">
+              <div key={c.category.id} className="glass !p-4 transition hover:border-indigo-200 dark:hover:border-indigo-500/30">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-slate-700 dark:text-slate-200">
                     {c.category.icon} {c.category.name}
@@ -302,7 +310,7 @@ export default function Dashboard() {
           <h2 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Recent activity</h2>
           <div className="space-y-2.5">
             {stats.recentActivity.length === 0 && (
-              <div className="card py-10 text-center">
+              <div className="glass py-10 text-center">
                 <div className="text-4xl">🚀</div>
                 <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   No activity yet. Start your first practical!
@@ -313,7 +321,7 @@ export default function Dashboard() {
               </div>
             )}
             {stats.recentActivity.map((a) => (
-              <Link key={a.id} to={`/history/${a.id}`} className="card flex items-center gap-3 !p-3.5 transition hover:border-indigo-300 dark:hover:border-indigo-500/40">
+              <Link key={a.id} to={`/history/${a.id}`} className="glass flex items-center gap-3 !p-3.5 transition hover:border-indigo-300 dark:hover:border-indigo-500/40">
                 <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', a.passed ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400')}>
                   {a.passed ? <CheckCircle2 size={18} /> : <Clock size={18} />}
                 </div>
@@ -337,7 +345,7 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             {stats.achievements.map((a) => (
-              <div key={a.code} className={cn('card flex items-center gap-3 !p-3.5 transition hover:border-indigo-200 dark:hover:border-indigo-500/30', !a.unlocked && 'opacity-40 grayscale')}>
+              <div key={a.code} className={cn('glass flex items-center gap-3 !p-3.5 transition hover:border-indigo-200 dark:hover:border-indigo-500/30', !a.unlocked && 'opacity-40 grayscale')}>
                 <span className="text-2xl">{a.icon}</span>
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">{a.name}</p>
