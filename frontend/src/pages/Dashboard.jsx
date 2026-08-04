@@ -159,29 +159,25 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-      </section>
 
-      {/* Stat cards */}
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {statsRow.map((s, i) => {
-          const Icon = s.icon;
-          return (
-            <div
-              key={s.label}
-              style={{ animationDelay: `${i * 70}ms` }}
-              className="glass animate-fade-up flex items-center gap-3 !p-4"
-            >
-              <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', s.chip)}>
-                <Icon size={20} />
+        {/* Slim stat strip inside the header card */}
+        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+          {statsRow.map((s) => {
+            const Icon = s.icon;
+            return (
+              <div key={s.label} className="flex items-center gap-2.5 rounded-2xl bg-slate-100/60 px-3.5 py-2.5 dark:bg-white/5">
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', s.chip)}>
+                  <Icon size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-lg leading-tight font-bold text-slate-900 dark:text-white">{s.value}</p>
+                  <p className="text-[11px] leading-tight font-medium text-slate-500 dark:text-slate-400">{s.label}</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="truncate text-xl font-bold text-slate-900 dark:text-white">{s.value}</p>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{s.label}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Quick actions */}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
