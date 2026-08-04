@@ -32,16 +32,16 @@ const QUICK_ACTIONS = [
     title: 'Linux Practicals',
     desc: 'Real IT tickets · live containers',
     icon: ListChecks,
-    gradient: 'from-indigo-500 to-blue-600',
-    glow: 'shadow-indigo-500/30',
+    gradient: 'from-indigo-500 to-violet-600',
+    glow: 'shadow-indigo-500/20',
   },
   {
     to: '/interview',
     title: 'Interview Prep',
     desc: 'Flashcards · Quest · Typing',
     icon: Brain,
-    gradient: 'from-fuchsia-500 to-purple-600',
-    glow: 'shadow-fuchsia-500/30',
+    gradient: 'from-violet-500 to-purple-700',
+    glow: 'shadow-violet-500/20',
     badge: 'AI',
   },
   {
@@ -49,16 +49,16 @@ const QUICK_ACTIONS = [
     title: 'Leaderboard',
     desc: 'Climb ranks · earn points',
     icon: Medal,
-    gradient: 'from-amber-500 to-orange-600',
-    glow: 'shadow-amber-500/30',
+    gradient: 'from-indigo-500 to-blue-600',
+    glow: 'shadow-blue-500/20',
   },
   {
     to: '/achievements',
     title: 'Achievements',
     desc: 'Unlock every badge',
     icon: Award,
-    gradient: 'from-emerald-500 to-teal-600',
-    glow: 'shadow-emerald-500/30',
+    gradient: 'from-violet-500 to-indigo-600',
+    glow: 'shadow-violet-500/20',
   },
 ];
 
@@ -109,18 +109,18 @@ export default function Dashboard() {
   const streakActive = (stats.streak?.current || 0) > 0;
 
   const statsRow = [
-    { icon: CheckCircle2, label: 'Done', value: `${stats.completed}/${stats.totalTasks}`, chip: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
-    { icon: Target, label: 'Todo', value: stats.pendingTasks, chip: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-    { icon: Trophy, label: 'Points', value: stats.points, chip: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400' },
-    { icon: TrendingUp, label: 'Avg', value: `${stats.avgScore}%`, chip: 'bg-sky-500', text: 'text-sky-600 dark:text-sky-400' },
+    { icon: CheckCircle2, label: 'Done', value: `${stats.completed}/${stats.totalTasks}` },
+    { icon: Target, label: 'Todo', value: stats.pendingTasks },
+    { icon: Trophy, label: 'Points', value: stats.points },
+    { icon: TrendingUp, label: 'Avg', value: `${stats.avgScore}%` },
   ];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       {/* Compact hero */}
-      <section className="animate-fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-6 shadow-2xl shadow-indigo-600/30 sm:p-7">
+      <section className="animate-fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 p-6 shadow-xl shadow-indigo-600/20 sm:p-7">
         <div className="animate-blob pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-        <div className="animate-blob pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-fuchsia-400/20 blur-3xl [animation-delay:4s]" />
+        <div className="animate-blob pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-indigo-400/20 blur-3xl [animation-delay:4s]" />
 
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -164,12 +164,12 @@ export default function Dashboard() {
             const Icon = s.icon;
             return (
               <div key={s.label} className="flex items-center gap-2.5 rounded-2xl bg-white/10 px-3.5 py-2.5 backdrop-blur">
-                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md', s.chip)}>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white shadow-md">
                   <Icon size={18} />
                 </div>
                 <div className="min-w-0">
-                  <p className={cn('truncate text-lg leading-tight font-black', s.text)}>{s.value}</p>
-                  <p className="text-[11px] leading-tight font-semibold text-white/70">{s.label}</p>
+                  <p className="truncate text-lg leading-tight font-black text-white">{s.value}</p>
+                  <p className="text-[11px] leading-tight font-semibold text-indigo-100">{s.label}</p>
                 </div>
               </div>
             );
@@ -237,7 +237,7 @@ export default function Dashboard() {
 
         <div className="card flex items-center justify-between !p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-500/25">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/20">
               <Star size={22} />
             </div>
             <div>
@@ -245,7 +245,7 @@ export default function Dashboard() {
               <p className="text-xs text-slate-500 dark:text-slate-400">Achievements unlocked</p>
             </div>
           </div>
-          <Link to="/achievements" className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+          <Link to="/achievements" className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
             View
           </Link>
         </div>
