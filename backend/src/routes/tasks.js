@@ -22,6 +22,7 @@ const TASK_FIELDS = [
   'hints',
   'solution',
   'validationRules',
+  'setupCommands',
 ];
 
 function cleanTaskBody(body) {
@@ -149,10 +150,16 @@ module.exports = async function taskRoutes(app) {
       '"objectives": string[], "requirements": string[], "instructions": string[], ' +
       '"expectedOutcome": string, "learningOutcomes": string[], ' +
       '"hints": string[] (3 escalating, first is smallest clue), "solution": string, ' +
+      '"setupCommands": string[] (shell commands run inside the lab container BEFORE the student ' +
+      'starts, used to simulate the scenario — e.g. useradd -m asmith, touch /etc/foo.conf; leave ' +
+      'empty if the task starts from a clean system), ' +
       '"validationRules": [ { "type": string, "label": string, "params": object } ] } ' +
-      'where type is one of: file_exists, dir_exists, user_exists, group_exists, package_installed, ' +
+      'where type is one of: file_exists, dir_exists, user_exists, user_absent, group_exists, ' +
+      'group_absent, package_installed, ' +
       'service_active, service_enabled, port_open, file_contains, file_permissions, file_owner, command_contains ' +
-      'and params matches the type (path, username, group, package, service, port, needle, command, expected).';
+      'and params matches the type (path, username, group, package, service, port, needle, command, expected). ' +
+      'IMPORTANT: when a task must remove a user/group that was pre-created by setupCommands, the check ' +
+      'must use user_absent / group_absent (they pass only when the user/group NO LONGER exists).';
 
     const raw = await callGemini(system, String(prompt).trim(), { temperature: 0.7, maxTokens: 2048 });
 

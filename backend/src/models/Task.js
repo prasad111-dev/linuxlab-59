@@ -59,6 +59,7 @@ const taskSchema = new mongoose.Schema(
     hints: { type: [String], default: [] },
     solution: { type: String, default: '' },
     validationRules: { type: [validationRuleSchema], default: [] },
+    setupCommands: { type: [String], default: [] },
     status: { type: String, enum: ['draft', 'published'], default: 'draft' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     publishedAt: { type: Date, default: null },
@@ -72,6 +73,7 @@ taskSchema.index({ title: 'text', scenario: 'text' });
 taskSchema.methods.toStudentJSON = function toStudentJSON() {
   const obj = this.toObject({ virtuals: false });
   delete obj.solution;
+  delete obj.setupCommands;
   return { ...obj, id: obj._id.toString(), category: obj.category };
 };
 

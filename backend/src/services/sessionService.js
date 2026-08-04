@@ -26,7 +26,9 @@ async function startSession(userId, taskId) {
 
   let container;
   try {
-    container = await orchestrator.createContainer(attempt._id.toString());
+    container = await orchestrator.createContainer(attempt._id.toString(), {
+      setup: task.setupCommands || [],
+    });
   } catch (e) {
     await Attempt.deleteOne({ _id: attempt._id });
     throw new HttpError(503, `Could not start a lab container: ${e.message}`);

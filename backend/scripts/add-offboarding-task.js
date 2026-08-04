@@ -54,6 +54,13 @@ const TASK = {
     'groupdel interns\n' +
     'groupadd devops\n' +
     'useradd -m -s /bin/bash -G devops rsingh',
+  setupCommands: [
+    'useradd -m -s /bin/bash tkim',
+    'touch /var/mail/tkim',
+    'groupadd interns',
+    'usermod -aG interns tkim',
+    'groupadd devops',
+  ],
   validationRules: [
     { type: 'user_absent', label: 'User tkim is removed', params: { username: 'tkim' } },
     { type: 'group_absent', label: 'Group interns is removed', params: { group: 'interns' } },

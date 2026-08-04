@@ -7,6 +7,19 @@ const { markActivity } = require('./state');
 
 const router = Router();
 
+async function runSetup(containerId, command, attempts = 12) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await execInContainer(containerId, command, 20000);
+    } catch (e) {
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
+  throw lastErr;
+}
+
 router.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'linuxlab-orchestrator', time: new Date().toISOString() });
 });
@@ -23,8 +36,9 @@ router.get('/docker', async (_req, res) => {
 
 router.post('/containers', async (req, res, next) => {
   try {
-    const { sessionId, image, memMb, cpu, pids, ttlMinutes } = req.body || {};
+    const { sessionId, image, memMb, cpu, pids, ttlMinutes, setup } = req.body || {};
     if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
+    const setupCommands = Array.isArray(setup) ? setup.filter((c) => typeof c === 'string' && c.trim()) : [];
 
     const running = await docker.listContainers({ filters: { label: ['linuxlab.session=true'] } });
     if (running.length >= config.maxContainers) {
@@ -40,6 +54,25 @@ router.post('/containers', async (req, res, next) => {
       ttlMinutes: ttlMinutes || config.ttlMinutes,
       maxLifeMinutes: config.maxLifeMinutes,
     });
+
+    if (setupCommands.length > 0) {
+      const errors = [];
+      for (const cmd of setupCommands) {
+        try {
+          const result = await runSetup(container.containerId, cmd);
+          if (result.exitCode !== 0) {
+            errors.push({ command: cmd, exitCode: result.exitCode, stderr: String(result.stderr || '').slice(0, 500) });
+          }
+        } catch (e) {
+          errors.push({ command: cmd, error: e.message });
+        }
+      }
+      if (errors.length > 0) {
+        await destroyContainer(container.containerId).catch(() => {});
+        return res.status(500).json({ error: 'task setup failed', errors });
+      }
+    }
+
     markActivity(container.containerId);
     res.status(201).json(container);
   } catch (e) {

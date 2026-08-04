@@ -93,6 +93,7 @@ const EMPTY = {
   learningOutcomes: [],
   hints: [],
   solution: '',
+  setupCommands: '',
   validationRules: [],
 };
 
@@ -123,6 +124,7 @@ export default function TaskEditor() {
         instructions: listToState(draft.instructions),
         learningOutcomes: listToState(draft.learningOutcomes),
         hints: listToState(draft.hints),
+        setupCommands: listToState(draft.setupCommands).join('\n'),
         validationRules: rulesToState(draft.validationRules),
       });
       return;
@@ -139,6 +141,7 @@ export default function TaskEditor() {
           instructions: listToState(t.instructions),
           learningOutcomes: listToState(t.learningOutcomes),
           hints: listToState(t.hints),
+          setupCommands: listToState(t.setupCommands).join('\n'),
           validationRules: rulesToState(t.validationRules),
         });
       })
@@ -186,6 +189,10 @@ export default function TaskEditor() {
       learningOutcomes: form.learningOutcomes.map((s) => s.trim()).filter(Boolean),
       hints: form.hints.map((s) => s.trim()).filter(Boolean),
       solution: form.solution.trim(),
+      setupCommands: form.setupCommands
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean),
       validationRules: form.validationRules
         .filter((r) => r.label.trim())
         .map((r) => {
@@ -277,6 +284,16 @@ export default function TaskEditor() {
             <span className="label">Requirements (allowed tools / setup)</span>
             <ListEditor value={form.requirements} onChange={(v) => set('requirements', v)} placeholder="User student is already created" />
           </div>
+          <label className="block">
+            <span className="label">Setup commands (run in the container before the student starts)</span>
+            <textarea
+              rows={4}
+              className={input}
+              value={form.setupCommands}
+              onChange={(e) => set('setupCommands', e.target.value)}
+              placeholder={'useradd -m -s /bin/bash asmith\ntouch /var/mail/asmith\n# one command per line — used to simulate the scenario'}
+            />
+          </label>
           <div>
             <span className="label">Instructions</span>
             <ListEditor value={form.instructions} onChange={(v) => set('instructions', v)} placeholder="Connect over SSH and inspect the journal…" />
