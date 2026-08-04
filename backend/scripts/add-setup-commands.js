@@ -18,7 +18,6 @@ const SETUP = {
     'touch /var/mail/tkim && chown tkim:mail /var/mail/tkim',
     'groupadd interns',
     'usermod -aG interns tkim',
-    'groupadd devops',
   ],
 };
 

@@ -59,7 +59,6 @@ const TASK = {
     'touch /var/mail/tkim && chown tkim:mail /var/mail/tkim',
     'groupadd interns',
     'usermod -aG interns tkim',
-    'groupadd devops',
   ],
   validationRules: [
     { type: 'user_absent', label: 'User tkim is removed', params: { username: 'tkim' } },
