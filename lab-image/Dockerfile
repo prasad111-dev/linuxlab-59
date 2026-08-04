@@ -69,6 +69,10 @@ RUN useradd -m -s /bin/bash student && echo 'student:student' | chpasswd \
     && echo 'student ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/student \
     && chmod 440 /etc/sudoers.d/student
 
+# Some Ubuntu base images ship a distro "ubuntu" user — drop it so the lab
+# starts clean (only "student" plus whatever each task provisions).
+RUN userdel -r ubuntu || true
+
 # No default password for root; terminal runs as root (lab-style access)
 RUN passwd -l root
 
