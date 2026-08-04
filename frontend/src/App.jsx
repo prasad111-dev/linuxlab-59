@@ -10,6 +10,7 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Practicals = lazy(() => import('./pages/Practicals'));
 const TaskDetail = lazy(() => import('./pages/TaskDetail'));
+const PreviewPage = lazy(() => import('./pages/PreviewPage'));
 const LabPage = lazy(() => import('./pages/LabPage'));
 const History = lazy(() => import('./pages/History'));
 const AttemptReview = lazy(() => import('./pages/AttemptReview'));
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/practicals" element={<Practicals />} />
         <Route path="/practical/:id" element={<TaskDetail />} />
+        <Route path="/preview/:id" element={<PreviewPage />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
 
         <Route

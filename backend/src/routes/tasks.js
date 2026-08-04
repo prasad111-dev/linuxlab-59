@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
+const config = require('../config');
 const { callGemini } = require('../services/geminiService');
 
 const TASK_FIELDS = [
@@ -77,6 +78,26 @@ module.exports = async function taskRoutes(app) {
     const json = req.userRole === 'admin' ? task.toAdminJSON() : task.toStudentJSON();
     json.myBest = myBest ? { score: myBest.score, passed: myBest.passed, status: myBest.status } : null;
     return json;
+  });
+
+  app.get('/:id/killercoda', { preHandler: [optionalAuth] }, async (req) => {
+    const task = await Task.findById(req.params.id);
+    if (!task) throw new HttpError(404, 'Task not found');
+    if (task.status !== 'published' && req.userRole !== 'admin') {
+      throw new HttpError(404, 'Task not found');
+    }
+    const username = config.killercoda.username;
+    if (!username) {
+      throw new HttpError(503, 'Killercoda preview is not configured on this server');
+    }
+    const slug = String(task.title)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    return {
+      slug,
+      embedUrl: `${config.killercoda.baseUrl}/${encodeURIComponent(username)}/${encodeURIComponent(slug)}`,
+    };
   });
 
   app.post('/', { preHandler: [requireAdmin] }, async (req) => {

@@ -29,3 +29,6 @@ Thumbs.db
 # Misc
 coverage/
 .cache/
+
+# Killercoda scenarios live in a separate repo
+linuxlab-59-killercoda/
