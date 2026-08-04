@@ -24,109 +24,51 @@ import { useAuth } from '../lib/auth';
 import { FullPageSpinner } from '../components/Spinner';
 import TaskCard from '../components/TaskCard';
 import { fireConfetti } from '../lib/confetti';
-import { useCountUp } from '../lib/useCountUp';
 import { timeAgo, cn } from '../lib/format';
-
-const STATS = [
-  {
-    label: 'Completed',
-    value: (s) => s.completed,
-    suffix: (s) => `/${s.totalTasks}`,
-    icon: CheckCircle2,
-    chip: 'bg-emerald-500',
-    tint: 'from-emerald-500/15 to-emerald-500/5',
-    ring: 'border-emerald-200/70 dark:border-emerald-500/20',
-    text: 'text-emerald-600 dark:text-emerald-400',
-  },
-  {
-    label: 'Pending',
-    value: (s) => s.pendingTasks,
-    suffix: () => '',
-    icon: Target,
-    chip: 'bg-amber-500',
-    tint: 'from-amber-500/15 to-amber-500/5',
-    ring: 'border-amber-200/70 dark:border-amber-500/20',
-    text: 'text-amber-600 dark:text-amber-400',
-  },
-  {
-    label: 'Points',
-    value: (s) => s.points,
-    suffix: () => '',
-    icon: Trophy,
-    chip: 'bg-violet-500',
-    tint: 'from-violet-500/15 to-violet-500/5',
-    ring: 'border-violet-200/70 dark:border-violet-500/20',
-    text: 'text-violet-600 dark:text-violet-400',
-  },
-  {
-    label: 'Avg score',
-    value: (s) => s.avgScore,
-    suffix: () => '%',
-    icon: TrendingUp,
-    chip: 'bg-sky-500',
-    tint: 'from-sky-500/15 to-sky-500/5',
-    ring: 'border-sky-200/70 dark:border-sky-500/20',
-    text: 'text-sky-600 dark:text-sky-400',
-  },
-];
 
 const QUICK_ACTIONS = [
   {
     to: '/practicals',
     title: 'Linux Practicals',
-    desc: 'Real IT tickets in isolated containers',
+    desc: 'Real IT tickets · live containers',
     icon: ListChecks,
     gradient: 'from-indigo-500 to-blue-600',
     glow: 'shadow-indigo-500/30',
-    iconCls: 'text-indigo-200',
   },
   {
     to: '/interview',
     title: 'Interview Prep',
-    desc: 'Flashcard Duel · Quest Mode · Typing',
+    desc: 'Flashcards · Quest · Typing',
     icon: Brain,
     gradient: 'from-fuchsia-500 to-purple-600',
     glow: 'shadow-fuchsia-500/30',
-    iconCls: 'text-fuchsia-200',
     badge: 'AI',
   },
   {
     to: '/leaderboard',
     title: 'Leaderboard',
-    desc: 'Climb the ranks and earn points',
+    desc: 'Climb ranks · earn points',
     icon: Medal,
     gradient: 'from-amber-500 to-orange-600',
     glow: 'shadow-amber-500/30',
-    iconCls: 'text-amber-200',
   },
   {
     to: '/achievements',
     title: 'Achievements',
-    desc: 'Unlock every badge on your journey',
+    desc: 'Unlock every badge',
     icon: Award,
     gradient: 'from-emerald-500 to-teal-600',
     glow: 'shadow-emerald-500/30',
-    iconCls: 'text-emerald-200',
   },
 ];
 
 function greeting() {
   const h = new Date().getHours();
-  if (h < 5) return { text: 'Burning the midnight oil', emoji: '🌙' };
-  if (h < 12) return { text: 'Good morning', emoji: '🌅' };
-  if (h < 17) return { text: 'Good afternoon', emoji: '☀️' };
-  if (h < 21) return { text: 'Good evening', emoji: '🌆' };
-  return { text: 'Good night', emoji: '🌙' };
-}
-
-function CountUp({ value, suffix = '', className = '' }) {
-  const n = useCountUp(value);
-  return (
-    <span className={className}>
-      {n}
-      {suffix && <span className="text-lg">{suffix}</span>}
-    </span>
-  );
+  if (h < 5) return 'Burning the midnight oil 🌙';
+  if (h < 12) return 'Good morning 🌅';
+  if (h < 17) return 'Good afternoon ☀️';
+  if (h < 21) return 'Good evening 🌆';
+  return 'Good night 🌙';
 }
 
 export default function Dashboard() {
@@ -135,14 +77,13 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
   const [celebrated, setCelebrated] = useState(false);
-  const g = greeting();
 
   useEffect(() => {
     api('/users/me/stats')
       .then((s) => {
         setStats(s);
         if (!celebrated && (s.completed > 0 || s.points > 0)) {
-          fireConfetti({ count: 60, y: 0.2 });
+          fireConfetti({ count: 50, y: 0.2 });
           setCelebrated(true);
         }
       })
@@ -167,91 +108,86 @@ export default function Dashboard() {
   const streakPct = Math.min(100, (stats.streak?.current || 0) * 4);
   const streakActive = (stats.streak?.current || 0) > 0;
 
+  const statsRow = [
+    { icon: CheckCircle2, label: 'Done', value: `${stats.completed}/${stats.totalTasks}`, chip: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
+    { icon: Target, label: 'Todo', value: stats.pendingTasks, chip: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
+    { icon: Trophy, label: 'Points', value: stats.points, chip: 'bg-violet-500', text: 'text-violet-600 dark:text-violet-400' },
+    { icon: TrendingUp, label: 'Avg', value: `${stats.avgScore}%`, chip: 'bg-sky-500', text: 'text-sky-600 dark:text-sky-400' },
+  ];
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      {/* Hero */}
-      <section className="animate-fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-6 shadow-2xl shadow-indigo-600/30 sm:p-8">
+      {/* Compact hero */}
+      <section className="animate-fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-6 shadow-2xl shadow-indigo-600/30 sm:p-7">
         <div className="animate-blob pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
         <div className="animate-blob pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-fuchsia-400/20 blur-3xl [animation-delay:4s]" />
-        <div className="animate-float pointer-events-none absolute top-4 right-24 hidden text-5xl opacity-20 sm:block">🐧</div>
 
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             {user?.picture ? (
-              <img src={user.picture} alt="" className="h-16 w-16 rounded-2xl border-2 border-white/30 shadow-lg" />
+              <img src={user.picture} alt="" className="h-14 w-14 rounded-2xl border-2 border-white/30 shadow-lg" />
             ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 text-2xl font-black text-white backdrop-blur">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-xl font-black text-white backdrop-blur">
                 {user?.name?.[0]}
               </div>
             )}
             <div>
               <p className="text-xs font-bold tracking-widest text-indigo-100 uppercase">
-                {g.text}, {user?.name?.split(' ')[0]} {g.emoji}
+                {greeting()}, {user?.name?.split(' ')[0]}!
               </p>
               <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
                 Ready for today's mission?
               </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                  <Flame size={13} className="text-amber-300" /> {stats.streak?.current || 0} day streak
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                  <Zap size={13} className="text-amber-300" /> {stats.points} pts
-                </span>
-                {stats.runningAttempt && (
-                  <button
-                    onClick={resume}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-bold text-indigo-600 transition hover:bg-indigo-50"
-                  >
-                    <Play size={13} /> Resume lab
-                  </button>
-                )}
-              </div>
             </div>
           </div>
-          <div className="hidden shrink-0 flex-col items-center gap-1 sm:flex">
-            <p className="animate-pop text-4xl font-black text-white">#{stats.rank || '—'}</p>
-            <p className="text-[11px] font-bold tracking-widest text-indigo-200 uppercase">Your rank</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
+              <Flame size={13} className="text-amber-300" /> {stats.streak?.current || 0}d
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
+              <Zap size={13} className="text-amber-300" /> {stats.points} pts
+            </span>
+            {stats.runningAttempt && (
+              <button
+                onClick={resume}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-indigo-600 transition hover:bg-indigo-50"
+              >
+                <Play size={13} /> Resume
+              </button>
+            )}
           </div>
+        </div>
+
+        {/* Slim stat strip inside hero */}
+        <div className="relative mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+          {statsRow.map((s) => {
+            const Icon = s.icon;
+            return (
+              <div key={s.label} className="flex items-center gap-2.5 rounded-2xl bg-white/10 px-3.5 py-2.5 backdrop-blur">
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md', s.chip)}>
+                  <Icon size={18} />
+                </div>
+                <div className="min-w-0">
+                  <p className={cn('truncate text-lg leading-tight font-black', s.text)}>{s.value}</p>
+                  <p className="text-[11px] leading-tight font-semibold text-white/70">{s.label}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Stat cards */}
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {STATS.map((s, i) => {
-          const Icon = s.icon;
-          return (
-            <div
-              key={s.label}
-              style={{ animationDelay: `${i * 80}ms` }}
-              className={cn('card animate-fade-up bg-gradient-to-br !p-5', s.tint, s.ring)}
-            >
-              <div className="flex items-center justify-between">
-                <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-lg', s.chip)}>
-                  <Icon size={22} />
-                </div>
-                <Sparkles size={16} className="text-slate-300 dark:text-slate-600" />
-              </div>
-              <p className={cn('mt-4 text-3xl font-black', s.text)}>
-                <CountUp value={s.value(stats)} suffix={s.suffix(stats)} />
-              </p>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{s.label}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Quick actions */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Quick actions — compact 2x2 grid */}
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {QUICK_ACTIONS.map((a, i) => {
           const Icon = a.icon;
           return (
             <Link
               key={a.to}
               to={a.to}
-              style={{ animationDelay: `${i * 90}ms` }}
+              style={{ animationDelay: `${i * 70}ms` }}
               className={cn(
-                'group animate-fade-up relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br p-5 shadow-lg transition duration-300 hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-2xl',
+                'group animate-fade-up relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br p-4 shadow-lg transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl sm:p-5',
                 a.gradient,
                 a.glow
               )}
@@ -259,8 +195,8 @@ export default function Dashboard() {
               <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/10 blur-xl" />
               <span className="animate-shine pointer-events-none absolute top-0 left-0 h-full w-1/3 bg-white/10 blur-md" />
               <div className="flex items-start justify-between">
-                <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur transition group-hover:scale-110 group-hover:animate-wiggle', a.iconCls)}>
-                  <Icon size={22} />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur transition group-hover:scale-110 sm:h-10 sm:w-10">
+                  <Icon size={20} />
                 </div>
                 {a.badge && (
                   <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-black tracking-wider text-white uppercase backdrop-blur">
@@ -268,94 +204,72 @@ export default function Dashboard() {
                   </span>
                 )}
               </div>
-              <h3 className="mt-4 text-base font-extrabold text-white">{a.title}</h3>
-              <p className="mt-0.5 text-xs text-white/75">{a.desc}</p>
-              <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-white/90">
-                Open <ArrowRight size={13} className="transition group-hover:translate-x-1" />
-              </span>
+              <div className="mt-3">
+                <h3 className="text-sm font-extrabold text-white sm:text-base">{a.title}</h3>
+                <p className="mt-0.5 hidden text-xs text-white/75 sm:block">{a.desc}</p>
+              </div>
             </Link>
           );
         })}
       </div>
 
-      {/* Progress ring + streak */}
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="card flex items-center gap-5 !p-6">
-          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center">
-            <svg className="h-20 w-20 -rotate-90" viewBox="0 0 80 80">
-              <circle cx="40" cy="40" r="34" fill="none" strokeWidth="8" className="stroke-slate-100 dark:stroke-white/10" />
-              <circle
-                cx="40"
-                cy="40"
-                r="34"
-                fill="none"
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={`${(unlockedPct / 100) * 213.6} 213.6`}
-                className="stroke-emerald-500"
-                style={{ transition: 'stroke-dasharray 1.2s ease' }}
-              />
-            </svg>
-            <div className="absolute text-center">
-              <p className="text-sm font-black">{unlockedPct}%</p>
-            </div>
-          </div>
-          <div>
-            <p className="flex items-center gap-1.5 font-extrabold">
-              <Star size={15} className="text-amber-500" /> {unlocked} badges unlocked
-            </p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              of {stats.achievements.length} total. Keep going, you're doing great!
-            </p>
-            <Link to="/achievements" className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              View badges <ArrowRight size={13} />
-            </Link>
-          </div>
-        </div>
-
-        <div className="card flex items-center justify-between !p-6 lg:col-span-2">
-          <div className="flex items-center gap-4">
-            <div className={cn('flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg shadow-amber-500/30 transition', streakActive ? 'animate-wiggle bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-slate-300 to-slate-400')}>
-              <Flame size={26} />
+      {/* Streak + badges mini row */}
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="card flex items-center justify-between !p-4">
+          <div className="flex items-center gap-3">
+            <div className={cn('flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-lg shadow-amber-500/25', streakActive ? 'animate-wiggle bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-slate-300 to-slate-400')}>
+              <Flame size={22} />
             </div>
             <div>
-              <p className="text-2xl font-black">
-                {stats.streak?.current || 0} day{stats.streak?.current === 1 ? '' : 's'}
-              </p>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {streakActive ? 'Streak active — keep the momentum! 🔥' : 'Start a practical to begin a streak 🔥'}
+              <p className="text-lg font-black">{stats.streak?.current || 0} day streak</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {streakActive ? 'Keep the momentum! 🔥' : 'Complete a practical to start 🔥'}
               </p>
             </div>
           </div>
-          <div className="hidden h-2 w-1/3 overflow-hidden rounded-full bg-slate-100 sm:block dark:bg-white/10">
+          <div className="hidden h-2 w-24 overflow-hidden rounded-full bg-slate-100 sm:block dark:bg-white/10">
             <div
               className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-1000"
               style={{ width: `${streakPct}%` }}
             />
           </div>
         </div>
+
+        <div className="card flex items-center justify-between !p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-500/25">
+              <Star size={22} />
+            </div>
+            <div>
+              <p className="text-lg font-black">{unlocked}/{stats.achievements.length} badges</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Achievements unlocked</p>
+            </div>
+          </div>
+          <Link to="/achievements" className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+            View
+          </Link>
+        </div>
       </div>
 
       {/* Recommended */}
-      <div className="mt-10">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <GraduationCap size={19} className="text-indigo-500" />
-            <h2 className="text-lg font-extrabold">Recommended for you</h2>
-          </div>
-          <Link to="/practicals" className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-            View all <ArrowRight size={15} />
+      <div className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-base font-extrabold">
+            <GraduationCap size={18} className="text-indigo-500" /> Recommended for you
+          </h2>
+          <Link to="/practicals" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+            View all <ArrowRight size={14} />
           </Link>
         </div>
         {stats.recommended.length === 0 ? (
-          <div className="card py-12 text-center">
-            <div className="text-5xl">🎉</div>
-            <p className="mt-3 font-semibold text-slate-500 dark:text-slate-400">
+          <div className="card py-10 text-center">
+            <div className="text-4xl">🎉</div>
+            <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
               You've attempted every published practical. New ones will appear here!
             </p>
           </div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {stats.recommended.map((t) => (
               <TaskCard key={t.id} task={{ ...t, category: t.category }} />
             ))}
@@ -364,13 +278,13 @@ export default function Dashboard() {
       </div>
 
       {/* Category progress */}
-      <div className="mt-10">
-        <h2 className="mb-4 text-lg font-extrabold">Progress by category</h2>
+      <div className="mt-8">
+        <h2 className="mb-3 text-base font-extrabold">Progress by category</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {stats.categoryProgress
             .filter((c) => c.total > 0)
             .map((c) => (
-              <div key={c.category.id} className="card group transition hover:border-indigo-200 dark:hover:border-indigo-500/30">
+              <div key={c.category.id} className="card !p-4 transition hover:border-indigo-200 dark:hover:border-indigo-500/30">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold">
                     {c.category.icon} {c.category.name}
@@ -379,23 +293,22 @@ export default function Dashboard() {
                     {c.completed}/{c.total}
                   </span>
                 </div>
-                <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
                   <div
-                    className="h-full rounded-full transition-all duration-1000 group-hover:brightness-110"
+                    className="h-full rounded-full transition-all duration-1000"
                     style={{ width: `${c.percent}%`, backgroundColor: c.category.color || '#6366f1' }}
                   />
                 </div>
-                <p className="mt-1.5 text-[11px] font-semibold text-slate-400">{c.percent}% complete</p>
               </div>
             ))}
         </div>
       </div>
 
       {/* Recent activity + achievements */}
-      <div className="mt-10 grid gap-6 lg:grid-cols-2">
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
-          <h2 className="mb-4 text-lg font-extrabold">Recent activity</h2>
-          <div className="space-y-3">
+          <h2 className="mb-3 text-base font-extrabold">Recent activity</h2>
+          <div className="space-y-2.5">
             {stats.recentActivity.length === 0 && (
               <div className="card py-10 text-center">
                 <div className="animate-float text-4xl">🚀</div>
@@ -408,9 +321,9 @@ export default function Dashboard() {
               </div>
             )}
             {stats.recentActivity.map((a) => (
-              <Link key={a.id} to={`/history/${a.id}`} className="card flex items-center gap-3 !p-4 transition hover:border-indigo-300 dark:hover:border-indigo-500/40">
-                <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-md', a.passed ? 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/25' : 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/25')}>
-                  {a.passed ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+              <Link key={a.id} to={`/history/${a.id}`} className="card flex items-center gap-3 !p-3.5 transition hover:border-indigo-300 dark:hover:border-indigo-500/40">
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md', a.passed ? 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/25' : 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/25')}>
+                  {a.passed ? <CheckCircle2 size={18} /> : <Clock size={18} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold">{a.taskTitle}</p>
@@ -426,13 +339,13 @@ export default function Dashboard() {
 
         {/* Achievements preview */}
         <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-extrabold">Recent achievements</h2>
-            <Link to="/achievements" className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">View all</Link>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-extrabold">Recent achievements</h2>
+            <Link to="/achievements" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">View all</Link>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             {stats.achievements.map((a) => (
-              <div key={a.code} className={cn('card flex items-center gap-3 !p-4 transition hover:border-indigo-200 dark:hover:border-indigo-500/30', !a.unlocked && 'opacity-40 grayscale')}>
+              <div key={a.code} className={cn('card flex items-center gap-3 !p-3.5 transition hover:border-indigo-200 dark:hover:border-indigo-500/30', !a.unlocked && 'opacity-40 grayscale')}>
                 <span className="animate-float text-2xl" style={{ animationDelay: `${(a.code.length % 5) * 0.3}s` }}>{a.icon}</span>
                 <div>
                   <p className="text-sm font-bold">{a.name}</p>
