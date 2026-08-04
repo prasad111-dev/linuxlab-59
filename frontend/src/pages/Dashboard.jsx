@@ -116,7 +116,7 @@ export default function Dashboard() {
       </div>
 
       {/* Header */}
-      <section className="animate-fade-up relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:p-7 dark:border-white/10 dark:bg-white/5">
+      <section className="animate-fade-up relative overflow-hidden rounded-3xl border border-slate-300 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:p-7 dark:border-white/10 dark:bg-white/5">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-600 via-brand-500 to-brand-400" />
 
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -163,7 +163,7 @@ export default function Dashboard() {
           {statsRow.map((s) => {
             const Icon = s.icon;
             return (
-              <div key={s.label} className="flex items-center gap-2.5 rounded-2xl border border-slate-200/70 bg-slate-50/70 px-3.5 py-2.5 dark:border-white/10 dark:bg-white/5">
+              <div key={s.label} className="flex items-center gap-2.5 rounded-2xl border border-slate-300 bg-slate-50/80 px-3.5 py-2.5 dark:border-white/10 dark:bg-white/5">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500 text-white shadow-md shadow-brand-500/25">
                   <Icon size={18} />
                 </div>
@@ -186,7 +186,7 @@ export default function Dashboard() {
               key={a.to}
               to={a.to}
               style={{ animationDelay: `${i * 70}ms` }}
-              className="group animate-fade-up relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 p-4 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-500/10 sm:p-5 dark:border-white/10 dark:bg-white/5 dark:hover:border-brand-500/40"
+              className="group animate-fade-up relative overflow-hidden rounded-2xl border border-slate-300 bg-white/90 p-4 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-500/10 sm:p-5 dark:border-white/10 dark:bg-white/5 dark:hover:border-brand-500/40"
             >
               <div className="pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full bg-brand-500/10 blur-2xl transition group-hover:bg-brand-500/20" />
               <div className="relative flex items-start justify-between">
