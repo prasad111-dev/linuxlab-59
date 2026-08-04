@@ -105,7 +105,16 @@ module.exports = async function attemptRoutes(app) {
     const attempt = await findOwnAttempt(req, { running: true });
     const task = await Task.findById(attempt.task).populate('category');
     if (!task) throw new HttpError(404, 'Task not found');
-    if (!attempt.containerId) throw new HttpError(409, 'No container attached to this session');
+    if (!attempt.containerId) {
+      return {
+        checks: (task.validationRules || []).map((r, i) => ({
+          index: i, label: r.label, type: r.type, passed: false, actual: 'container not ready',
+        })),
+        passedCount: 0,
+        totalRules: (task.validationRules || []).length,
+        updatedAt: new Date().toISOString(),
+      };
+    }
 
     return runLiveChecks(task, attempt.containerId);
   });
