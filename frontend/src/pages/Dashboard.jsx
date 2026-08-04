@@ -31,14 +31,18 @@ const QUICK_ACTIONS = [
     title: 'Linux Practicals',
     desc: 'Real IT tickets · live containers',
     icon: ListChecks,
-    chip: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300',
+    tint: 'from-indigo-500/10 to-blue-500/10 hover:shadow-indigo-500/30',
+    chip: 'from-indigo-500 to-blue-600',
+    text: 'text-indigo-600 dark:text-indigo-300',
   },
   {
     to: '/interview',
     title: 'Interview Prep',
     desc: 'Flashcards · Quest · Typing',
     icon: Brain,
-    chip: 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300',
+    tint: 'from-fuchsia-500/10 to-violet-500/10 hover:shadow-fuchsia-500/30',
+    chip: 'from-fuchsia-500 to-violet-600',
+    text: 'text-fuchsia-600 dark:text-fuchsia-300',
     badge: 'AI',
   },
   {
@@ -46,14 +50,18 @@ const QUICK_ACTIONS = [
     title: 'Leaderboard',
     desc: 'Climb ranks · earn points',
     icon: Medal,
-    chip: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300',
+    tint: 'from-amber-500/10 to-orange-500/10 hover:shadow-amber-500/30',
+    chip: 'from-amber-400 to-orange-500',
+    text: 'text-amber-600 dark:text-amber-300',
   },
   {
     to: '/achievements',
     title: 'Achievements',
     desc: 'Unlock every badge',
     icon: Award,
-    chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
+    tint: 'from-emerald-500/10 to-teal-500/10 hover:shadow-emerald-500/30',
+    chip: 'from-emerald-400 to-teal-500',
+    text: 'text-emerald-600 dark:text-emerald-300',
   },
 ];
 
@@ -103,39 +111,45 @@ export default function Dashboard() {
   const streakActive = (stats.streak?.current || 0) > 0;
 
   const statsRow = [
-    { icon: CheckCircle2, label: 'Completed', value: `${stats.completed}/${stats.totalTasks}`, chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' },
-    { icon: Target, label: 'Pending', value: stats.pendingTasks, chip: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400' },
-    { icon: Trophy, label: 'Points', value: stats.points, chip: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' },
-    { icon: TrendingUp, label: 'Avg score', value: `${stats.avgScore}%`, chip: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400' },
+    { icon: CheckCircle2, label: 'Completed', value: `${stats.completed}/${stats.totalTasks}`, tint: 'from-emerald-500/15 to-teal-500/10', chip: 'from-emerald-400 to-teal-500', valueText: 'text-emerald-600 dark:text-emerald-300' },
+    { icon: Target, label: 'Pending', value: stats.pendingTasks, tint: 'from-amber-500/15 to-orange-500/10', chip: 'from-amber-400 to-orange-500', valueText: 'text-amber-600 dark:text-amber-300' },
+    { icon: Trophy, label: 'Points', value: stats.points, tint: 'from-violet-500/15 to-indigo-500/10', chip: 'from-violet-500 to-indigo-600', valueText: 'text-violet-600 dark:text-violet-300' },
+    { icon: TrendingUp, label: 'Avg score', value: `${stats.avgScore}%`, tint: 'from-sky-500/15 to-cyan-500/10', chip: 'from-sky-400 to-cyan-500', valueText: 'text-sky-600 dark:text-sky-300' },
   ];
 
   return (
     <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      {/* Soft background for glass cards */}
+      {/* Aurora background */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="animate-blob absolute -top-20 left-1/4 h-80 w-80 rounded-full bg-indigo-300/30 blur-3xl dark:bg-indigo-600/20" />
-        <div className="animate-blob absolute top-1/3 -right-20 h-72 w-72 rounded-full bg-violet-300/30 blur-3xl [animation-delay:5s] dark:bg-violet-600/20" />
-        <div className="animate-blob absolute bottom-10 left-0 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl [animation-delay:9s] dark:bg-emerald-600/10" />
-        <div className="animate-blob absolute right-1/3 -bottom-24 h-72 w-72 rounded-full bg-amber-200/40 blur-3xl [animation-delay:12s] dark:bg-amber-600/10" />
+        <div className="animate-blob absolute -top-24 left-1/4 h-96 w-96 rounded-full bg-indigo-400/40 blur-3xl dark:bg-indigo-600/25" />
+        <div className="animate-blob absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-fuchsia-400/35 blur-3xl [animation-delay:5s] dark:bg-fuchsia-600/20" />
+        <div className="animate-blob absolute bottom-16 left-0 h-80 w-80 rounded-full bg-cyan-300/40 blur-3xl [animation-delay:9s] dark:bg-cyan-500/15" />
+        <div className="animate-blob absolute right-1/4 -bottom-24 h-80 w-80 rounded-full bg-amber-300/40 blur-3xl [animation-delay:12s] dark:bg-amber-500/15" />
+        <div className="absolute top-0 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-violet-300/40 blur-3xl dark:bg-violet-600/20" />
       </div>
 
       {/* Header */}
-      <section className="animate-fade-up relative overflow-hidden rounded-2xl glass p-6 sm:p-7">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <section className="animate-fade-up relative overflow-hidden rounded-3xl border border-white/50 bg-white/70 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:p-7 dark:border-white/10 dark:bg-white/5">
+        <div className="pointer-events-none absolute -top-20 -right-20 h-52 w-52 rounded-full bg-gradient-to-br from-indigo-400/30 to-fuchsia-400/30 blur-2xl" />
+
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            {user?.picture ? (
-              <img src={user.picture} alt="" className="h-14 w-14 rounded-full border-2 border-indigo-100 dark:border-indigo-500/30" />
-            ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-xl font-black text-white">
-                {user?.name?.[0]}
-              </div>
-            )}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500 via-fuchsia-500 to-amber-400 blur-sm" />
+              {user?.picture ? (
+                <img src={user.picture} alt="" className="relative h-14 w-14 rounded-full border-2 border-white object-cover dark:border-white/20" />
+              ) : (
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-xl font-black text-white backdrop-blur">
+                  {user?.name?.[0]}
+                </div>
+              )}
+            </div>
             <div>
-              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+              <p className="text-xs font-bold tracking-wide text-slate-500 dark:text-slate-300">
                 {greeting()}, {user?.name?.split(' ')[0]}!
               </p>
-              <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-                Welcome back
+              <h1 className="mt-0.5 bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-amber-500 bg-clip-text text-2xl font-black tracking-tight text-transparent sm:text-3xl dark:from-indigo-400 dark:via-fuchsia-400 dark:to-amber-300">
+                Welcome back!
               </h1>
               <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
                 What would you like to practice today?
@@ -143,16 +157,16 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">
-              <Flame size={13} className="text-amber-500" /> {stats.streak?.current || 0}d
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-amber-500/30">
+              <Flame size={13} /> {stats.streak?.current || 0}d
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">
-              <Zap size={13} className="text-indigo-500" /> {stats.points} pts
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-violet-500/30">
+              <Zap size={13} /> {stats.points} pts
             </span>
             {stats.runningAttempt && (
               <button
                 onClick={resume}
-                className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700"
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
               >
                 <Play size={13} /> Resume
               </button>
@@ -161,17 +175,17 @@ export default function Dashboard() {
         </div>
 
         {/* Slim stat strip inside the header card */}
-        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        <div className="relative mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {statsRow.map((s) => {
             const Icon = s.icon;
             return (
-              <div key={s.label} className="flex items-center gap-2.5 rounded-2xl bg-slate-100/60 px-3.5 py-2.5 dark:bg-white/5">
-                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', s.chip)}>
+              <div key={s.label} className={cn('flex items-center gap-2.5 rounded-2xl border border-white/60 bg-gradient-to-br px-3.5 py-2.5 backdrop-blur dark:border-white/10', s.tint)}>
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md', s.chip)}>
                   <Icon size={18} />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-lg leading-tight font-bold text-slate-900 dark:text-white">{s.value}</p>
-                  <p className="text-[11px] leading-tight font-medium text-slate-500 dark:text-slate-400">{s.label}</p>
+                  <p className={cn('truncate text-lg leading-tight font-black', s.valueText)}>{s.value}</p>
+                  <p className="text-[11px] leading-tight font-semibold text-slate-500 dark:text-slate-400">{s.label}</p>
                 </div>
               </div>
             );
@@ -188,21 +202,24 @@ export default function Dashboard() {
               key={a.to}
               to={a.to}
               style={{ animationDelay: `${i * 70}ms` }}
-              className="glass group animate-fade-up flex items-center gap-3 !p-4 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:hover:border-indigo-500/40"
+              className={cn(
+                'group animate-fade-up relative overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br p-4 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-white/10',
+                a.tint
+              )}
             >
-              <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-110', a.chip)}>
-                <Icon size={22} />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="truncate text-sm font-bold text-slate-900 dark:text-white">{a.title}</h3>
-                  {a.badge && (
-                    <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
-                      {a.badge}
-                    </span>
-                  )}
+              <div className="flex items-start justify-between">
+                <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg transition group-hover:scale-110 group-hover:rotate-3', a.chip)}>
+                  <Icon size={20} />
                 </div>
-                <p className="mt-0.5 hidden truncate text-xs text-slate-500 sm:block dark:text-slate-400">{a.desc}</p>
+                {a.badge && (
+                  <span className="rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 px-2 py-0.5 text-[10px] font-black tracking-wider text-white uppercase shadow-lg shadow-fuchsia-500/30">
+                    {a.badge}
+                  </span>
+                )}
+              </div>
+              <div className="mt-3">
+                <h3 className={cn('text-sm font-extrabold sm:text-base', a.text)}>{a.title}</h3>
+                <p className="mt-0.5 hidden text-xs text-slate-500 sm:block dark:text-slate-400">{a.desc}</p>
               </div>
             </Link>
           );
@@ -213,7 +230,7 @@ export default function Dashboard() {
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="glass flex items-center justify-between !p-4">
           <div className="flex items-center gap-3">
-            <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', streakActive ? 'bg-amber-50 text-amber-500 dark:bg-amber-500/10' : 'bg-slate-100 text-slate-400 dark:bg-slate-800')}>
+            <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl shadow-lg', streakActive ? 'animate-wiggle bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-amber-500/40' : 'bg-slate-200 text-slate-400 dark:bg-white/10')}>
               <Flame size={22} />
             </div>
             <div>
@@ -223,9 +240,9 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-          <div className="hidden h-2 w-24 overflow-hidden rounded-full bg-slate-100 sm:block dark:bg-slate-800">
+          <div className="hidden h-2 w-24 overflow-hidden rounded-full bg-slate-100 sm:block dark:bg-white/10">
             <div
-              className="h-full rounded-full bg-amber-400 transition-all duration-1000"
+              className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-1000"
               style={{ width: `${streakPct}%` }}
             />
           </div>
@@ -233,7 +250,7 @@ export default function Dashboard() {
 
         <div className="glass flex items-center justify-between !p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-violet-500/40">
               <Star size={22} />
             </div>
             <div>
@@ -241,7 +258,7 @@ export default function Dashboard() {
               <p className="text-xs text-slate-500 dark:text-slate-400">Achievements unlocked</p>
             </div>
           </div>
-          <Link to="/achievements" className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+          <Link to="/achievements" className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
             View
           </Link>
         </div>
@@ -250,7 +267,7 @@ export default function Dashboard() {
       {/* Recommended */}
       <div className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+          <h2 className="flex items-center gap-2 text-sm font-extrabold text-slate-900 dark:text-white">
             <GraduationCap size={18} className="text-indigo-500" /> Recommended for you
           </h2>
           <Link to="/practicals" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
@@ -275,7 +292,7 @@ export default function Dashboard() {
 
       {/* Category progress */}
       <div className="mt-8">
-        <h2 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Progress by category</h2>
+        <h2 className="mb-3 text-sm font-extrabold text-slate-900 dark:text-white">Progress by category</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {stats.categoryProgress
             .filter((c) => c.total > 0)
@@ -289,9 +306,9 @@ export default function Dashboard() {
                     {c.completed}/{c.total}
                   </span>
                 </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
                   <div
-                    className="h-full rounded-full transition-all duration-1000"
+                    className="h-full rounded-full bg-gradient-to-r transition-all duration-1000"
                     style={{ width: `${c.percent}%`, backgroundColor: c.category.color || '#6366f1' }}
                   />
                 </div>
@@ -303,11 +320,11 @@ export default function Dashboard() {
       {/* Recent activity + achievements */}
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
-          <h2 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Recent activity</h2>
+          <h2 className="mb-3 text-sm font-extrabold text-slate-900 dark:text-white">Recent activity</h2>
           <div className="space-y-2.5">
             {stats.recentActivity.length === 0 && (
               <div className="glass py-10 text-center">
-                <div className="text-4xl">🚀</div>
+                <div className="animate-float text-4xl">🚀</div>
                 <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   No activity yet. Start your first practical!
                 </p>
@@ -318,7 +335,7 @@ export default function Dashboard() {
             )}
             {stats.recentActivity.map((a) => (
               <Link key={a.id} to={`/history/${a.id}`} className="glass flex items-center gap-3 !p-3.5 transition hover:border-indigo-300 dark:hover:border-indigo-500/40">
-                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', a.passed ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400')}>
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md', a.passed ? 'from-emerald-400 to-teal-500 shadow-emerald-500/30' : 'from-amber-400 to-orange-500 shadow-amber-500/30')}>
                   {a.passed ? <CheckCircle2 size={18} /> : <Clock size={18} />}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -336,7 +353,7 @@ export default function Dashboard() {
         {/* Achievements preview */}
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Recent achievements</h2>
+            <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">Recent achievements</h2>
             <Link to="/achievements" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">View all</Link>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
