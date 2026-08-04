@@ -17,6 +17,7 @@ import {
   Shield,
   Lightbulb,
   ChevronDown,
+  Brain,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
@@ -27,6 +28,7 @@ import { cn } from '../lib/format';
 const NAV = [
   { to: '/practicals', label: 'Practicals', icon: ListChecks },
   { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+  { to: '/interview', label: 'Interview Prep', icon: Brain },
 ];
 
 export default function Navbar() {

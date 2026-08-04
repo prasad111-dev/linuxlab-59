@@ -11,6 +11,8 @@ import {
   Award,
   ChevronRight,
   ArrowRight,
+  Brain,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -82,9 +84,30 @@ export default function Dashboard() {
         <StatCard icon={TrendingUp} label="Avg score" value={`${stats.avgScore}%`} color="text-sky-500" />
       </div>
 
+      {/* Interview prep banner */}
+      <Link
+        to="/interview"
+        className="group mt-6 flex items-center gap-4 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 p-5 shadow-lg shadow-indigo-600/25 transition hover:shadow-xl hover:shadow-indigo-600/40"
+      >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
+          <Brain size={24} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-white">
+            <h2 className="text-base font-extrabold sm:text-lg">Interview Preparation</h2>
+            <span className="hidden rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-bold sm:inline-flex">
+              <Sparkles size={11} className="mr-1" /> AI analysis
+            </span>
+          </div>
+          <p className="mt-0.5 text-sm text-indigo-100">
+            Flashcard Duel · Quest Mode · Typing Shooter — get ready for Linux interviews.
+          </p>
+        </div>
+        <ChevronRight size={20} className="shrink-0 text-white/70 transition group-hover:translate-x-1" />
+      </Link>
+
       {/* Streak + rank */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="card flex items-center gap-4">
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">        <div className="card flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-500 dark:bg-orange-500/15">
             <Flame size={24} />
           </div>

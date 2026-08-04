@@ -16,6 +16,11 @@ const AttemptReview = lazy(() => import('./pages/AttemptReview'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Achievements = lazy(() => import('./pages/Achievements'));
 const Profile = lazy(() => import('./pages/Profile'));
+const InterviewPrep = lazy(() => import('./pages/InterviewPrep'));
+const FlashcardDuel = lazy(() => import('./pages/FlashcardDuel'));
+const QuestMode = lazy(() => import('./pages/QuestMode'));
+const TypingShooter = lazy(() => import('./pages/TypingShooter'));
+const InterviewSessionDetail = lazy(() => import('./pages/InterviewSessionDetail'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminTasks = lazy(() => import('./pages/admin/AdminTasks'));
 const TaskEditor = lazy(() => import('./pages/admin/TaskEditor'));
@@ -84,6 +89,46 @@ export default function App() {
           element={
             <Protected>
               <Profile />
+            </Protected>
+          }
+        />
+        <Route
+          path="/interview"
+          element={
+            <Protected>
+              <InterviewPrep />
+            </Protected>
+          }
+        />
+        <Route
+          path="/interview/flashcard"
+          element={
+            <Protected>
+              <FlashcardDuel />
+            </Protected>
+          }
+        />
+        <Route
+          path="/interview/quest"
+          element={
+            <Protected>
+              <QuestMode />
+            </Protected>
+          }
+        />
+        <Route
+          path="/interview/typing"
+          element={
+            <Protected>
+              <TypingShooter />
+            </Protected>
+          }
+        />
+        <Route
+          path="/interview/session/:id"
+          element={
+            <Protected>
+              <InterviewSessionDetail />
             </Protected>
           }
         />

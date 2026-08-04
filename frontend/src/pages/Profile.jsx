@@ -8,11 +8,13 @@ import {
   CheckCircle2,
   TrendingUp,
   Sparkles,
+  Brain,
+  ChevronRight,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { FullPageSpinner } from '../components/Spinner';
-import { cn } from '../lib/format';
+import { cn, timeAgo } from '../lib/format';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -20,6 +22,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [saved, setSaved] = useState(false);
+  const [interviewSessions, setInterviewSessions] = useState(null);
 
   useEffect(() => {
     api('/users/me/stats')
@@ -28,6 +31,9 @@ export default function Profile() {
         setName(p.user?.name || name);
       })
       .catch(() => setProfile(null));
+    api('/interview/sessions')
+      .then((s) => setInterviewSessions(Array.isArray(s) ? s : []))
+      .catch(() => setInterviewSessions([]));
   }, []);
 
   const save = async () => {
@@ -115,6 +121,51 @@ export default function Profile() {
           <p className="text-xs text-slate-500 dark:text-slate-400">Finish a task under its suggested time to earn +20% points.</p>
         </div>
         <Link to="/history" className="btn-secondary">View history</Link>
+      </div>
+
+      <div className="mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-lg font-extrabold">
+            <Brain size={18} className="text-indigo-500" /> Interview drills
+          </h2>
+          <Link to="/interview" className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+            Open hub <ChevronRight size={15} />
+          </Link>
+        </div>
+        {interviewSessions === null ? (
+          <p className="text-sm text-slate-400">Loading…</p>
+        ) : interviewSessions.length === 0 ? (
+          <div className="card flex items-center gap-3">
+            <span className="text-2xl">🧠</span>
+            <div>
+              <p className="text-sm font-semibold">No interview drills yet</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Try a Flashcard Duel or Quest Mode to get an AI analysis.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {interviewSessions.slice(0, 5).map((s) => (
+              <Link
+                key={s.id}
+                to={`/interview/session/${s.id}`}
+                className="card flex items-center gap-3 !p-3.5 transition hover:border-indigo-300 dark:hover:border-indigo-500/40"
+              >
+                <span className="text-xl">{s.mode === 'flashcard' ? '🧠' : s.mode === 'quest' ? '🗺️' : '⌨️'}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold capitalize">
+                    {s.mode === 'flashcard' ? 'Flashcard Duel' : s.mode === 'quest' ? 'Quest Mode' : 'Typing Shooter'}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {s.score}/{s.maxScore} · {s.accuracy}% · {timeAgo(s.createdAt)}
+                  </p>
+                </div>
+                <ChevronRight size={16} className="shrink-0 text-slate-400" />
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

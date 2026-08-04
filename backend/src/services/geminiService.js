@@ -117,4 +117,49 @@ async function chatWithAi(task, attempt, history, message, live) {
   return callGemini(facts, null, { contents, temperature: 0.5, maxTokens: 700 });
 }
 
-module.exports = { callGemini, generateHint, generateExplain, chatWithAi };
+/**
+ * Interview prep AI analysis. `session` is { mode, score, maxScore, accuracy,
+ * wpm, answers: [{prompt, answer, userAnswer, correct, topic}], weakTopics }.
+ * Returns a structured markdown report the frontend renders as-is.
+ */
+async function generateInterviewReport(session) {
+  const total = Math.max(1, session.answers.length || 1);
+  const correct = session.answers.filter((a) => a.correct).length;
+  const wrong = session.answers.filter((a) => !a.correct);
+  const lines = session.answers.map(
+    (a, i) =>
+      `${i + 1}. [${a.correct ? 'correct' : 'WRONG'}] ${a.topic || 'Linux'}: ${a.prompt}\n` +
+      `   expected: ${a.answer}\n` +
+      `   you answered: ${a.userAnswer || '(blank)'}`
+  );
+
+  const modeFacts = {
+    flashcard:
+      'The student was doing a FLASHCARD DUEL: 125 multiple-choice command flashcards across 25 topic tiers (Navigation, Help, Files, Search, Text, Permissions, Processes, System info, Disk, Archives, Networking, DNS, Packages, Users, Groups, Links, Env vars, Scheduling, Bash, Scripting, Redirection, Signals, Security, Hardware).',
+    quest:
+      'The student was doing QUEST MODE: real-world Linux scenarios where they had to type the correct command or pipeline to solve each task.',
+    typing:
+      'The student was doing a TYPING SHOOTER: rapid typing of real Linux commands. Focus your analysis on command accuracy, typing speed (WPM) and which commands are most error prone.',
+  }[session.mode] || '';
+
+  return callGemini(
+    'You are a senior Linux technical interviewer and career coach. The student has completed an interview-prep drill. ' +
+      'Write a concise, encouraging, and actionable analysis (markdown). Structure it exactly with these sections: ' +
+      '## Verdict (one or two sentences summarizing readiness), ## Score (score/max, accuracy %, and for typing WPM), ' +
+      '## Strengths (bullets), ## Areas to improve (bullets naming specific commands/topics from their mistakes), ' +
+      '## Study plan (3 concrete next steps, listing specific commands to practice). ' +
+      'Keep the whole report under 280 words. Use their actual mistakes below.',
+    `${modeFacts}\n\nScore: ${session.score}/${session.maxScore} · Accuracy ${Math.round(session.accuracy || 0)}%` +
+      `${session.mode === 'typing' && session.wpm ? ` · ${Math.round(session.wpm)} WPM` : ''}` +
+      `\n\nWeak topics flagged: ${(session.weakTopics || []).join(', ') || 'none'}\n\n` +
+      `Answers (${correct}/${total} correct):\n${lines.join('\n') || '(no answers recorded)'}\n\n` +
+      (wrong.length > 0
+        ? `Focus your critique mainly on these wrong answers:\n${wrong
+            .map((a) => `- ${a.prompt} -> correct: ${a.answer}, user gave: ${a.userAnswer || '(blank)'}`)
+            .join('\n')}`
+        : ''),
+    { temperature: 0.4, maxTokens: 900 }
+  );
+}
+
+module.exports = { callGemini, generateHint, generateExplain, chatWithAi, generateInterviewReport };
