@@ -9,6 +9,26 @@ const { callGemini } = require('../services/geminiService');
 const { checkAndUnlock } = require('../services/achievementService');
 const config = require('../config');
 
+const KC_BASE = 'https://killercoda.com';
+
+async function proxyKillercoda(scenarioPath) {
+  const url = `${KC_BASE}${scenarioPath}`;
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; LinuxLab/1.0)',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    },
+  });
+
+  if (!res.ok) return null;
+
+  let html = await res.text();
+
+  html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${KC_BASE}/">`);
+
+  return html;
+}
+
 function kcSecret() {
   return new TextEncoder().encode(config.jwtSecret);
 }
@@ -32,6 +52,24 @@ async function verifyKcToken(token) {
 }
 
 async function killercodaRoutes(app) {
+  app.get('/proxy', async (req, reply) => {
+    const { path, token } = req.query || {};
+    if (!path) throw new HttpError(400, 'path is required');
+
+    let kcPath = path;
+    if (token) {
+      kcPath += (kcPath.includes('?') ? '&' : '?') + `LINUXLAB_TOKEN=${encodeURIComponent(token)}`;
+    }
+
+    const html = await proxyKillercoda(kcPath);
+    if (!html) throw new HttpError(502, 'Could not fetch from Killercoda');
+
+    reply.header('Content-Type', 'text/html; charset=utf-8');
+    reply.header('X-Frame-Options', 'ALLOWALL');
+    reply.header('Cache-Control', 'no-store');
+    reply.send(html);
+  });
+
   app.post('/register', async (req) => {
     const { token } = req.body || {};
     if (!token) throw new HttpError(400, 'token is required');

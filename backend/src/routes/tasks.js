@@ -96,7 +96,9 @@ module.exports = async function taskRoutes(app) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    const embedUrl = new URL(`${config.killercoda.baseUrl}/${encodeURIComponent(username)}/${encodeURIComponent(slug)}`);
+    const kcPath = `/embed/scenario/${encodeURIComponent(username)}/${encodeURIComponent(slug)}`;
+    const directUrl = `https://killercoda.com${kcPath}`;
+    const embedUrl = new URL(directUrl);
 
     const { attemptId } = req.query || {};
     if (attemptId && req.userId) {
@@ -112,9 +114,12 @@ module.exports = async function taskRoutes(app) {
       }
     }
 
+    const proxyUrl = `/api/killercoda/proxy?path=${encodeURIComponent(kcPath)}${attemptId && embedUrl.searchParams.get('LINUXLAB_TOKEN') ? '&token=' + encodeURIComponent(embedUrl.searchParams.get('LINUXLAB_TOKEN')) : ''}`;
+
     return {
       slug,
       embedUrl: embedUrl.toString(),
+      proxyUrl,
     };
   });
 

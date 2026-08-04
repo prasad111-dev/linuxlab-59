@@ -47,7 +47,7 @@ export default function LabPage() {
           const t = await api(`/tasks/${data.attempt.task.id}`);
           setTask(t);
           const kdata = await api(`/tasks/${data.attempt.task.id}/killercoda?attemptId=${attemptId}`);
-          setKcUrl(kdata.embedUrl);
+          setKcUrl(kdata.proxyUrl || kdata.embedUrl);
         }
       } catch (e) {
         setError(e.message);
@@ -122,7 +122,6 @@ export default function LabPage() {
 
   const openTerminal = () => {
     if (kcUrl) {
-      window.open(kcUrl, '_blank', 'noopener,noreferrer');
       setTerminalOpened(true);
     }
   };
@@ -195,7 +194,7 @@ export default function LabPage() {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold">{task?.title || 'Lab session'}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {terminalOpened ? 'Terminal open in new tab' : 'Open the terminal to start working'}
+            {terminalOpened ? 'Terminal active below' : 'Open the terminal to start working'}
           </p>
         </div>
 
@@ -255,36 +254,30 @@ export default function LabPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Main content area */}
         <div className="flex flex-1 flex-col overflow-y-auto p-6 lg:p-10">
-          {/* Open Terminal CTA */}
+          {/* Open Terminal CTA or embedded iframe */}
           {!terminalOpened ? (
             <div className="card mb-6 border-2 border-dashed border-indigo-300 bg-indigo-50/50 text-center dark:border-indigo-500/30 dark:bg-indigo-500/5">
               <TerminalIcon size={48} className="mx-auto text-indigo-400" />
               <h2 className="mt-4 text-xl font-extrabold">Ready to start?</h2>
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                Open the Linux terminal in a new tab. Complete the tasks, then the final step will submit your work for grading.
+                Open the Linux terminal below. Complete the tasks, then the final step will submit your work for grading.
               </p>
               <button onClick={openTerminal} className="btn-primary mt-4 !py-3 !px-6 text-base">
                 <TerminalIcon size={18} /> Open Terminal
-                <ExternalLink size={14} className="ml-1" />
               </button>
-              <p className="mt-2 text-xs text-slate-400">Opens in a new tab · 1-hour session · free</p>
+              <p className="mt-2 text-xs text-slate-400">1-hour session · free</p>
             </div>
           ) : (
-            <div className="card mb-6 border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/20 dark:bg-emerald-500/5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
-                  <CheckCircle2 size={20} className="text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-emerald-700 dark:text-emerald-400">Terminal is open</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Complete all steps in the terminal. The final step auto-submits your work.
-                  </p>
-                </div>
-                <button onClick={openTerminal} className="btn-ghost text-sm">
-                  <ExternalLink size={14} /> Re-open
-                </button>
-              </div>
+            <div className="mb-6 overflow-hidden rounded-xl border border-slate-200 dark:border-white/10">
+              <iframe
+                key={kcUrl}
+                src={kcUrl}
+                title="Killercoda Terminal"
+                className="h-[65vh] w-full border-0"
+                allow="clipboard-write; clipboard-read"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"
+                referrerPolicy="no-referrer"
+              />
             </div>
           )}
 
