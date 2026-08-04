@@ -9,7 +9,6 @@ const { evaluateAttempt, buildRuleCommand, runLiveChecks } = require('../service
 const { generateHint, generateExplain, chatWithAi } = require('../services/geminiService');
 const { checkAndUnlock } = require('../services/achievementService');
 const { startSession, terminateRunning } = require('../services/sessionService');
-const orchestrator = require('../services/orchestratorClient');
 
 async function findOwnAttempt(req, { running = false } = {}) {
   const filter = { _id: req.params.id || req.params.attemptId, user: req.userId };
@@ -31,7 +30,7 @@ module.exports = async function attemptRoutes(app) {
 
   app.get('/:id', { preHandler: [requireAuth] }, async (req) => {
     const attempt = await Attempt.findById(req.params.id)
-      .populate('task', 'title scenario objectives difficulty points estimatedMinutes')
+      .populate('task', 'title scenario objectives difficulty points estimatedMinutes validationRules')
       .populate('category', 'name slug icon color');
     if (!attempt) throw new HttpError(404, 'Attempt not found');
     if (attempt.user.toString() !== req.userId && req.userRole !== 'admin') {
@@ -50,11 +49,8 @@ module.exports = async function attemptRoutes(app) {
     if (attempt.hintsUsed < (task.hints || []).length) {
       hint = task.hints[attempt.hintsUsed];
     } else {
-      const live = attempt.containerId
-        ? await runLiveChecks(task, attempt.containerId).catch(() => null)
-        : null;
       try {
-        hint = await generateHint(task, attempt, live);
+        hint = await generateHint(task, attempt, null);
       } catch {
         hint = 'No more hints available. Review your man pages and check each requirement one by one.';
       }
@@ -68,10 +64,7 @@ module.exports = async function attemptRoutes(app) {
     const attempt = await findOwnAttempt(req, { running: true });
     const task = await Task.findById(attempt.task).populate('category');
     if (!task) throw new HttpError(404, 'Task not found');
-    const live = attempt.containerId
-      ? await runLiveChecks(task, attempt.containerId).catch(() => null)
-      : null;
-    const explanation = await generateExplain(task, live);
+    const explanation = await generateExplain(task, null);
     attempt.explainUsed += 1;
     await attempt.save();
     return { explanation };
@@ -84,12 +77,8 @@ module.exports = async function attemptRoutes(app) {
     const message = String(req.body?.message || '').trim().slice(0, 1000);
     if (!message) throw new HttpError(400, 'message is required');
 
-    const live = attempt.containerId
-      ? await runLiveChecks(task, attempt.containerId).catch(() => null)
-      : null;
     const history = attempt.aiChat || [];
-
-    const reply = await chatWithAi(task, attempt, history, message, live);
+    const reply = await chatWithAi(task, attempt, history, message, null);
 
     attempt.aiChat = history.concat([
       { role: 'user', text: message, at: new Date() },
@@ -103,11 +92,22 @@ module.exports = async function attemptRoutes(app) {
 
   app.get('/:id/live-check', { preHandler: [requireAuth] }, async (req) => {
     const attempt = await findOwnAttempt(req, { running: true });
-    const task = await Task.findById(attempt.task).populate('category');
+    const task = await Task.findById(attempt.task);
     if (!task) throw new HttpError(404, 'Task not found');
-    if (!attempt.containerId) throw new HttpError(409, 'No container attached to this session');
 
-    return runLiveChecks(task, attempt.containerId);
+    const checks = (task.validationRules || []).map((rule, index) => ({
+      index,
+      label: rule.label,
+      type: rule.type,
+      passed: false,
+      actual: 'awaiting Killercoda submission',
+    }));
+    return {
+      checks,
+      passedCount: 0,
+      totalRules: checks.length,
+      updatedAt: new Date().toISOString(),
+    };
   });
 
   app.post('/:id/submit', { preHandler: [requireAuth] }, async (req) => {
@@ -133,7 +133,6 @@ module.exports = async function attemptRoutes(app) {
     attempt.evaluation = result.evaluation;
     await attempt.save();
 
-    // Points: only the improvement over the previous best counts
     const prev = await Attempt.findOne({
       user: attempt.user,
       task: attempt.task,
@@ -150,12 +149,6 @@ module.exports = async function attemptRoutes(app) {
       await user.save();
     }
 
-    // Container is done — destroy it (ephemeral environment)
-    if (attempt.containerId) {
-      await orchestrator.destroyContainer(attempt.containerId).catch(() => {});
-    }
-
-    // Achievements + notification
     let newlyUnlocked = [];
     if (user) {
       const passedAttempts = await Attempt.find({ user: user._id, passed: true })
@@ -191,9 +184,6 @@ module.exports = async function attemptRoutes(app) {
   app.post('/:id/exit', { preHandler: [requireAuth] }, async (req) => {
     const attempt = await findOwnAttempt(req);
     if (attempt.status === 'running') {
-      if (attempt.containerId) {
-        await orchestrator.destroyContainer(attempt.containerId).catch(() => {});
-      }
       attempt.status = 'terminated';
       await attempt.save();
     }
@@ -203,6 +193,15 @@ module.exports = async function attemptRoutes(app) {
   app.post('/:taskId/practice-again', { preHandler: [requireAuth] }, async (req) => {
     await terminateRunning(req.userId, req.params.taskId);
     const { attempt, resumed } = await startSession(req.userId, req.params.taskId);
-    return { attempt: serializeAttempt(attempt), resumed };
+
+    const { signKcToken } = require('./killercoda');
+    const kcToken = await signKcToken({
+      typ: 'killercoda',
+      sub: req.userId,
+      attemptId: attempt._id.toString(),
+      taskId: attempt.task.toString(),
+    });
+
+    return { attempt: serializeAttempt(attempt), resumed, kcToken };
   });
 };

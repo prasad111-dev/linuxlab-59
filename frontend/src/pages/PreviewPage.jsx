@@ -2,20 +2,22 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Info, Loader2, MonitorPlay, ExternalLink } from 'lucide-react';
 import { api } from '../lib/api';
+import { useAuth } from '../lib/auth';
 import { FullPageSpinner } from '../components/Spinner';
 
 export default function PreviewPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api(`/tasks/${id}/killercoda`)
+    api(`/tasks/${id}/killercoda`, { auth: Boolean(user) })
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, user]);
 
   if (loading) return <FullPageSpinner label="Preparing preview…" />;
 
@@ -50,8 +52,12 @@ export default function PreviewPage() {
         <Info size={14} className="mt-0.5 shrink-0" />
         <p>
           This preview runs on Killercoda's free infrastructure. It does <strong>not</strong> award points, update the
-          leaderboard, or use the AI tutor. Sessions last up to 1 hour and reset after 30 minutes of inactivity. Use the
-          graded practical for scoring.
+          leaderboard, or use the AI tutor.{' '}
+          {user ? (
+            <Link to={`/practical/${id}`} className="font-semibold underline">Start the graded lab instead</Link>
+          ) : (
+            'Sign in to start the graded lab for scoring.'
+          )}
         </p>
       </div>
       <iframe
@@ -60,7 +66,6 @@ export default function PreviewPage() {
         className="min-h-0 flex-1 border-0 bg-white"
         allow="clipboard-write"
       />
-      {loading && <Loader2 size={16} className="m-4 animate-spin text-slate-400" />}
     </div>
   );
 }

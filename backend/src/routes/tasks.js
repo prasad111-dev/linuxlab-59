@@ -7,6 +7,7 @@ const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth'
 const { HttpError } = require('../utils/httpError');
 const config = require('../config');
 const { callGemini } = require('../services/geminiService');
+const { signKcToken } = require('./killercoda');
 
 const TASK_FIELDS = [
   'title',
@@ -94,9 +95,26 @@ module.exports = async function taskRoutes(app) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+
+    const embedUrl = new URL(`${config.killercoda.baseUrl}/${encodeURIComponent(username)}/${encodeURIComponent(slug)}`);
+
+    const { attemptId } = req.query || {};
+    if (attemptId && req.userId) {
+      const attempt = await Attempt.findOne({ _id: attemptId, user: req.userId, task: task._id });
+      if (attempt) {
+        const kcToken = await signKcToken({
+          typ: 'killercoda',
+          sub: req.userId,
+          attemptId: attempt._id.toString(),
+          taskId: task._id.toString(),
+        });
+        embedUrl.searchParams.set('LINUXLAB_TOKEN', kcToken);
+      }
+    }
+
     return {
       slug,
-      embedUrl: `${config.killercoda.baseUrl}/${encodeURIComponent(username)}/${encodeURIComponent(slug)}`,
+      embedUrl: embedUrl.toString(),
     };
   });
 

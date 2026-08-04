@@ -16,6 +16,7 @@ const achievementRoutes = require('./routes/achievements');
 const notificationRoutes = require('./routes/notifications');
 const suggestionRoutes = require('./routes/suggestions');
 const adminRoutes = require('./routes/admin');
+const { killercodaRoutes } = require('./routes/killercoda');
 
 async function buildApp() {
   const app = Fastify({
@@ -83,6 +84,7 @@ async function buildApp() {
   app.register(notificationRoutes, { prefix: '/api/notifications' });
   app.register(suggestionRoutes, { prefix: '/api/suggestions' });
   app.register(adminRoutes, { prefix: '/api/admin' });
+  app.register(killercodaRoutes, { prefix: '/api/killercoda' });
 
   return app;
 }

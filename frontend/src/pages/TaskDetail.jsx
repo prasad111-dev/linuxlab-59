@@ -47,14 +47,8 @@ export default function TaskDetail() {
     }
   };
 
-  const preview = async () => {
-    setError('');
-    try {
-      await api(`/tasks/${id}/killercoda`, { auth: Boolean(user) });
-      navigate(`/preview/${id}`);
-    } catch (e) {
-      setError(e.status === 503 ? 'Free preview is not configured yet. Please try the graded lab instead.' : e.message);
-    }
+  const preview = () => {
+    navigate(`/preview/${id}`);
   };
 
   if (error && !task) {

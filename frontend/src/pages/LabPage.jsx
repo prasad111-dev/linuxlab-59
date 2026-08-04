@@ -15,10 +15,10 @@ import {
   PanelRight,
   ListChecks,
   MessageCircle,
-  Terminal as TerminalIcon,
+  MonitorPlay,
+  ExternalLink,
 } from 'lucide-react';
 import { api } from '../lib/api';
-import XTerm from '../components/XTerm';
 import { FullPageSpinner } from '../components/Spinner';
 import { formatClock, formatDuration, cn } from '../lib/format';
 
@@ -34,27 +34,8 @@ export default function LabPage() {
   const [resultLoading, setResultLoading] = useState(false);
   const [error, setError] = useState('');
   const [remaining, setRemaining] = useState(null);
-  const [checks, setChecks] = useState(null);
-
-  // Real-time validation checklist — poll the running container every 5s
-  useEffect(() => {
-    if (status !== 'running') return;
-    let cancelled = false;
-    const run = async () => {
-      try {
-        const data = await api(`/attempts/${attemptId}/live-check`);
-        if (!cancelled) setChecks(data);
-      } catch {
-        /* container may be warming up — keep polling */
-      }
-    };
-    run();
-    const iv = setInterval(run, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(iv);
-    };
-  }, [status, attemptId]);
+  const [kcUrl, setKcUrl] = useState('');
+  const [kcLoaded, setKcLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -62,9 +43,12 @@ export default function LabPage() {
         const data = await api(`/sessions/${attemptId}`);
         setAttempt(data.attempt);
         setStatus(data.status);
+
         if (data.attempt?.task?.id) {
           const t = await api(`/tasks/${data.attempt.task.id}`);
           setTask(t);
+          const kdata = await api(`/tasks/${data.attempt.task.id}/killercoda?attemptId=${attemptId}`);
+          setKcUrl(kdata.embedUrl);
         }
       } catch (e) {
         setError(e.message);
@@ -84,13 +68,27 @@ export default function LabPage() {
     return () => clearInterval(iv);
   }, [task, attempt]);
 
-  // Keep the orchestrator idle-timer fresh while a lab is open
   useEffect(() => {
     if (status !== 'running') return;
-    const iv = setInterval(() => {
-      api(`/sessions/${attemptId}/ping`, { method: 'POST' }).catch(() => {});
-    }, 30000);
-    return () => clearInterval(iv);
+    let cancelled = false;
+    const iv = setInterval(async () => {
+      try {
+        const data = await api(`/sessions/${attemptId}`);
+        if (data.status === 'evaluated' && !cancelled) {
+          setStatus('evaluated');
+          const full = await api(`/attempts/${attemptId}`);
+          setResult({ result: full.evaluation || full, attempt: full });
+        } else if (data.status === 'terminated' && !cancelled) {
+          setStatus('terminated');
+        }
+      } catch {
+        /* ignore polling errors */
+      }
+    }, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
   }, [status, attemptId]);
 
   const [chat, setChat] = useState([]);
@@ -123,22 +121,8 @@ export default function LabPage() {
     sendChat('Explain the core concept of this task and what I need to do. Tell me which commands to run to inspect the current server state.');
   };
 
-  const submit = async () => {
-    if (!window.confirm('Submit your work for evaluation? The lab container will be destroyed after evaluation.')) return;
-    setResultLoading(true);
-    setError('');
-    try {
-      const data = await api(`/attempts/${attemptId}/submit`, { method: 'POST' });
-      setResult(data);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setResultLoading(false);
-    }
-  };
-
   const exitLab = async () => {
-    if (!window.confirm('Exit this lab? The container will be destroyed.')) return;
+    if (!window.confirm('Exit this lab? You can resume later.')) return;
     setBusy('exit');
     try {
       await api(`/attempts/${attemptId}/exit`, { method: 'POST' });
@@ -152,8 +136,8 @@ export default function LabPage() {
     if (!task) return;
     setBusy('again');
     try {
-      const { attempt: a } = await api(`/attempts/${task.id}/practice-again`, { method: 'POST' });
-      navigate(`/lab/${a.id}`);
+      const data = await api(`/attempts/${task.id}/practice-again`, { method: 'POST' });
+      navigate(`/lab/${data.attempt.id}`);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -161,9 +145,7 @@ export default function LabPage() {
     }
   };
 
-  const onConnected = useCallback(() => setError(''), []);
-
-  if (status === 'loading') return <FullPageSpinner label="Booting your lab container…" />;
+  if (status === 'loading') return <FullPageSpinner label="Preparing your lab environment…" />;
 
   if (status === 'error' || !attempt) {
     return (
@@ -175,14 +157,14 @@ export default function LabPage() {
     );
   }
 
-  if (status !== 'running') {
+  if (status !== 'running' && status !== 'evaluated') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-center px-4">
         <div className="text-5xl">🕐</div>
         <h1 className="text-2xl font-extrabold">Session {status}</h1>
         <p className="max-w-md text-slate-500 dark:text-slate-400">
           {status === 'terminated'
-            ? 'This lab session has ended — the container was cleaned up. You can start a fresh one anytime.'
+            ? 'This lab session has ended. You can start a fresh one anytime.'
             : 'This attempt has already been submitted.'}
         </p>
         <div className="flex gap-3">
@@ -206,7 +188,7 @@ export default function LabPage() {
         </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold">{task?.title || 'Lab session'}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Isolated Ubuntu container · root@lab</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Killercoda terminal · powered by LinuxLab</p>
         </div>
 
         {remaining !== null && (
@@ -235,9 +217,6 @@ export default function LabPage() {
             {chatBusy ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} className="text-violet-500" />}
             Explain
           </button>
-          <button onClick={submit} disabled={resultLoading} className="btn-secondary">
-            <Send size={16} /> Submit
-          </button>
           <button onClick={exitLab} disabled={busy === 'exit'} className="btn-danger">
             <LogOut size={16} /> Exit
           </button>
@@ -251,9 +230,6 @@ export default function LabPage() {
         </button>
         <button onClick={getExplain} disabled={chatBusy} className="btn-ghost flex-1">
           <BookOpen size={15} className="text-violet-500" /> Explain
-        </button>
-        <button onClick={submit} disabled={resultLoading} className="btn-secondary flex-1">
-          <Send size={15} /> Submit
         </button>
         <button onClick={exitLab} className="btn-danger !px-3">
           <LogOut size={15} />
@@ -270,13 +246,33 @@ export default function LabPage() {
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1 overflow-hidden bg-slate-950">
-          <XTerm attemptId={attemptId} ticket={attempt.wsTicket} onConnected={onConnected} />
+          {kcUrl ? (
+            <>
+              {!kcLoaded && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-950">
+                  <Loader2 size={32} className="animate-spin text-indigo-400" />
+                  <p className="text-sm text-slate-400">Booting Killercoda terminal…</p>
+                </div>
+              )}
+              <iframe
+                title="Killercoda lab terminal"
+                src={kcUrl}
+                className="h-full w-full border-0"
+                allow="clipboard-write"
+                onLoad={() => setKcLoaded(true)}
+              />
+            </>
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 size={32} className="animate-spin text-slate-500" />
+            </div>
+          )}
           <div className="pointer-events-none absolute top-2 right-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-            <TerminalIcon size={12} /> ubuntu:24.04 · tty
+            <MonitorPlay size={12} /> Killercoda · ubuntu:24.04
           </div>
         </div>
 
-        {/* Help panel + live task checklist */}
+        {/* Help panel + AI tutor */}
         <aside
           className={cn(
             'w-full overflow-y-auto border-l border-slate-200 bg-white p-4 lg:block lg:w-96 dark:border-white/10 dark:bg-slate-900',
@@ -284,59 +280,20 @@ export default function LabPage() {
           )}
         >
           <div className="border-b border-slate-100 pb-4 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-extrabold">
-                <ListChecks size={17} className="text-emerald-500" /> Task checklist
-              </h3>
-              {checks && checks.totalRules > 0 && (
-                <span
-                  className={cn(
-                    'rounded-full px-2 py-0.5 text-xs font-bold',
-                    checks.passedCount === checks.totalRules
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
-                      : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
-                  )}
-                >
-                  {checks.passedCount}/{checks.totalRules}
-                </span>
-              )}
-            </div>
+            <h3 className="flex items-center gap-2 font-extrabold">
+              <ListChecks size={17} className="text-emerald-500" /> Task checklist
+            </h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Live from your lab container — refreshes automatically.
+              Complete each step in the terminal. The final step submits your work for grading.
             </p>
-            {!checks && task?.validationRules?.length > 0 && (
+            {task?.validationRules?.length > 0 && (
               <ul className="mt-3 space-y-2">
                 {task.validationRules.map((r, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
-                    <Loader2 size={15} className="mt-0.5 shrink-0 animate-spin text-slate-400" /> {r.label}
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" />
+                    {r.label}
                   </li>
                 ))}
-              </ul>
-            )}
-            {!checks && !task?.validationRules?.length && (
-              <p className="mt-3 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <Loader2 size={15} className="animate-spin text-slate-400" /> Checking your container…
-              </p>
-            )}
-            {checks && (
-              <ul className="mt-3 space-y-2">
-                {checks.checks.map((c) => (
-                  <li
-                    key={c.index}
-                    className={cn('flex items-start gap-2 text-sm',
-                      c.passed ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400')}
-                  >
-                    {c.passed ? (
-                      <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-500" />
-                    ) : (
-                      <XCircle size={15} className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600" />
-                    )}
-                    <span>{c.label}</span>
-                  </li>
-                ))}
-                {checks.totalRules === 0 && (
-                  <li className="text-sm text-slate-400">No automated checks configured for this task.</li>
-                )}
               </ul>
             )}
           </div>
@@ -356,8 +313,13 @@ export default function LabPage() {
             <div className="mt-3 max-h-64 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3 dark:bg-white/5">
               {chat.length === 0 && (
                 <p className="text-xs leading-relaxed text-slate-400">
-                  Ask me anything about this task. I can see your terminal — your commands and which checks are
-                  passing. Try <button onClick={() => sendChat('What should I check first with cat or ls?')} className="font-semibold text-indigo-500 underline">"What should I check first?"</button>
+                  Ask me anything about this task. Try{' '}
+                  <button
+                    onClick={() => sendChat('What should I check first with cat or ls?')}
+                    className="font-semibold text-indigo-500 underline"
+                  >
+                    "What should I check first?"
+                  </button>
                 </p>
               )}
               {chat.map((m, i) => (
@@ -398,30 +360,30 @@ export default function LabPage() {
           </div>
 
           {task && (
-              <>
-                <div className="mt-6 border-t border-slate-100 pt-4 dark:border-white/10">
-                  <h4 className="font-bold">Objectives</h4>
-                  <ul className="mt-2 space-y-1.5">
-                    {task.objectives?.map((o, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                        <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-500" /> {o}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="mt-4 border-t border-slate-100 pt-4 dark:border-white/10">
-                  <h4 className="font-bold">Requirements</h4>
-                  <ul className="mt-2 space-y-1.5">
-                    {task.requirements?.map((r, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" /> {r}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </>
-            )}
-          </aside>
+            <>
+              <div className="mt-6 border-t border-slate-100 pt-4 dark:border-white/10">
+                <h4 className="font-bold">Objectives</h4>
+                <ul className="mt-2 space-y-1.5">
+                  {task.objectives?.map((o, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-500" /> {o}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-4 border-t border-slate-100 pt-4 dark:border-white/10">
+                <h4 className="font-bold">Requirements</h4>
+                <ul className="mt-2 space-y-1.5">
+                  {task.requirements?.map((r, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" /> {r}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+        </aside>
       </div>
 
       {/* Result modal */}
@@ -430,24 +392,24 @@ export default function LabPage() {
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
             <div className="text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full text-3xl"
-                style={{ backgroundColor: result.result.passed ? '#d1fae5' : '#fee2e2' }}>
-                {result.result.passed ? '🎉' : '💪'}
+                style={{ backgroundColor: result.result?.passed ? '#d1fae5' : '#fee2e2' }}>
+                {result.result?.passed ? '🎉' : '💪'}
               </div>
               <h2 className="mt-4 text-2xl font-extrabold">
-                {result.result.passed ? 'Task completed!' : 'Almost there!'}
+                {result.result?.passed ? 'Task completed!' : 'Almost there!'}
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {task?.title}
               </p>
               <div className="mt-4 text-5xl font-black gradient-text">
-                {result.result.score}<span className="text-2xl text-slate-400">/{result.result.maxScore}</span>
+                {result.result?.score ?? result.attempt?.score}<span className="text-2xl text-slate-400">/{result.result?.maxScore ?? result.attempt?.maxScore}</span>
               </div>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Time taken: {formatDuration(result.result.timeTakenSeconds)}
+                Time taken: {formatDuration(result.result?.timeTakenSeconds || result.attempt?.timeTakenSeconds)}
               </p>
             </div>
 
-            {result.result.mistakes.length > 0 ? (
+            {result.result?.mistakes?.length > 0 ? (
               <div className="mt-6">
                 <h3 className="flex items-center gap-2 font-bold">
                   <XCircle size={18} className="text-red-500" /> Missed checks
@@ -456,9 +418,6 @@ export default function LabPage() {
                   {result.result.mistakes.map((m, i) => (
                     <li key={i} className="rounded-xl bg-red-50 p-3 text-sm dark:bg-red-500/10">
                       <p className="font-semibold text-red-700 dark:text-red-400">{m.label}</p>
-                      {m.actual && m.actual !== 'OK' && (
-                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Observed: {m.actual}</p>
-                      )}
                     </li>
                   ))}
                 </ul>
@@ -471,22 +430,22 @@ export default function LabPage() {
 
             <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm dark:bg-white/5">
               <p className="font-bold">Feedback</p>
-              <p className="mt-1 whitespace-pre-line text-slate-600 dark:text-slate-300">{result.result.feedback}</p>
+              <p className="mt-1 whitespace-pre-line text-slate-600 dark:text-slate-300">{result.result?.feedback || result.attempt?.feedback}</p>
             </div>
 
-            {result.result.optimization && (
+            {(result.result?.optimization || result.attempt?.optimization) && (
               <div className="mt-4 rounded-xl bg-indigo-50 p-4 text-sm dark:bg-indigo-500/10">
                 <p className="font-bold text-indigo-700 dark:text-indigo-400">Improvements</p>
-                <p className="mt-1 text-slate-600 dark:text-slate-300">{result.result.optimization}</p>
+                <p className="mt-1 text-slate-600 dark:text-slate-300">{result.result?.optimization || result.attempt?.optimization}</p>
               </div>
             )}
 
-            {result.result.correctSolution && (
+            {(result.result?.correctSolution || result.attempt?.correctSolution) && (
               <div className="mt-4 rounded-xl bg-slate-950 p-4">
                 <p className="flex items-center gap-2 text-sm font-bold text-slate-300">
                   <Eye size={15} /> Reference solution
                 </p>
-                <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-emerald-300">{result.result.correctSolution}</pre>
+                <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-emerald-300">{result.result?.correctSolution || result.attempt?.correctSolution}</pre>
               </div>
             )}
 
@@ -498,13 +457,6 @@ export default function LabPage() {
               <Link to="/practicals" className="btn-secondary flex-1">More practicals</Link>
             </div>
           </div>
-        </div>
-      )}
-
-      {resultLoading && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/70 backdrop-blur-sm">
-          <Loader2 size={36} className="animate-spin text-indigo-400" />
-          <p className="text-sm font-semibold text-white">Evaluating your work…</p>
         </div>
       )}
     </div>
