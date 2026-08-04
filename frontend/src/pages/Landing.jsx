@@ -294,7 +294,7 @@ export default function Landing() {
                 </div>
                 <p className="mt-3 text-sm text-slate-300">"{t.text}"</p>
                 <div className="mt-5 flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white shadow-lg shadow-brand-500/30">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-600 text-sm font-bold text-white shadow-lg shadow-brand-500/30">
                     {t.avatar}
                   </span>
                   <div>
@@ -357,7 +357,7 @@ export default function Landing() {
 
       {/* CTA */}
       <section className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-600 to-brand-700 p-10 text-center shadow-2xl shadow-brand-600/30 sm:p-16">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600 via-fuchsia-600 to-pink-600 p-10 text-center shadow-2xl shadow-brand-600/30 sm:p-16">
           <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
           <h2 className="relative text-3xl font-black text-white sm:text-4xl">Your first lab is one click away</h2>
           <p className="relative mx-auto mt-4 max-w-xl text-brand-100">

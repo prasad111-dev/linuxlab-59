@@ -59,7 +59,7 @@ export default function Leaderboard() {
       </div>
 
       {me && (
-        <div className="mt-6 rounded-2xl bg-gradient-to-r from-brand-600 via-brand-600 to-brand-500 p-4 text-white shadow-lg">
+        <div className="mt-6 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 p-4 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Crown size={20} />

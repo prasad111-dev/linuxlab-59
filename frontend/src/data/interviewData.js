@@ -379,7 +379,7 @@ export const MODES = [
     title: 'Flashcard Duel',
     tagline: '125 multiple-choice flashcards across 25 topic tiers',
     icon: '🧠',
-    gradient: 'from-brand-500 to-brand-600',
+    gradient: 'from-purple-500 to-fuchsia-600',
     route: '/interview/flashcard',
   },
   {

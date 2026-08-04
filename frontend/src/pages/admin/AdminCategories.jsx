@@ -4,10 +4,10 @@ import { Plus, Pencil, Trash2, Palette } from 'lucide-react';
 import { api } from '../../lib/api';
 import { FullPageSpinner } from '../../components/Spinner';
 
-const COLORS = ['#ee0000', '#d60000', '#b30000', '#ff6666', '#ff9e9e', '#8e0000', '#6e0000', '#111827'];
+const COLORS = ['#a855f7', '#9333ea', '#c084fc', '#ec4899', '#f472b6', '#7e22ce', '#581c87', '#111827'];
 const ICONS = ['🐧', '📘', '🔒', '🌐', '📦', '👥', '🧰', '🛠️', '⚙️', '🖧', '🗄️', '🔑', '📊', '☁️'];
 
-const EMPTY = { name: '', description: '', icon: '🐧', color: '#ee0000', order: 0, isActive: true };
+const EMPTY = { name: '', description: '', icon: '🐧', color: '#a855f7', order: 0, isActive: true };
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState([]);

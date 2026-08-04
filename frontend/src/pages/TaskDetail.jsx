@@ -67,9 +67,9 @@ export default function TaskDetail() {
 
       {/* Header */}
       <div className="mt-4 card relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: cat?.color || '#ee0000' }} />
+        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: cat?.color || '#a855f7' }} />
         <div className="flex flex-wrap items-center gap-2">
-          <span className="badge" style={{ backgroundColor: `${cat?.color || '#ee0000'}18`, color: cat?.color || '#ee0000' }}>
+          <span className="badge" style={{ backgroundColor: `${cat?.color || '#a855f7'}18`, color: cat?.color || '#a855f7' }}>
             {cat?.icon} {cat?.name}
           </span>
           <span className={`badge ${diff.cls}`}>{diff.label}</span>

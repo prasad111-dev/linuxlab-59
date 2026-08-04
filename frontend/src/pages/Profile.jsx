@@ -60,7 +60,7 @@ export default function Profile() {
       <h1 className="text-3xl font-extrabold tracking-tight">Profile</h1>
 
       <div className="mt-6 card flex flex-col items-center gap-6 sm:flex-row">
-        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-3xl font-black text-white shadow-lg">
+        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-fuchsia-600 text-3xl font-black text-white shadow-lg">
           {u.name?.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 text-center sm:text-left">

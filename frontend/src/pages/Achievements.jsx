@@ -76,7 +76,7 @@ export default function Achievements() {
         </div>
       )}
 
-      <div className="mt-10 card flex flex-col items-center bg-gradient-to-br from-brand-500 to-brand-600 text-center text-white sm:flex-row sm:text-left">
+      <div className="mt-10 card flex flex-col items-center bg-gradient-to-br from-purple-500 to-fuchsia-600 text-center text-white sm:flex-row sm:text-left">
         <div className="flex-1">
           <h3 className="text-xl font-extrabold">Want to unlock them all?</h3>
           <p className="mt-1 text-sm opacity-90">Solve tasks cleanly, on the first try, without hints — and keep your streak alive.</p>

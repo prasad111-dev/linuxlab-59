@@ -65,7 +65,7 @@ export default function AdminUsers() {
                 <tr key={u.id} className="border-b border-slate-100 last:border-0 dark:border-white/5">
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-sm font-black text-white">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-fuchsia-600 text-sm font-black text-white">
                         {u.name?.charAt(0).toUpperCase()}
                       </span>
                       <span className="min-w-0">

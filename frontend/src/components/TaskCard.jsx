@@ -12,12 +12,12 @@ export default function TaskCard({ task }) {
     >
       <div
         className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full opacity-10 blur-2xl transition group-hover:opacity-20"
-        style={{ backgroundColor: cat?.color || '#ee0000' }}
+        style={{ backgroundColor: cat?.color || '#a855f7' }}
       />
       <div className="flex items-start justify-between gap-3">
         <div
           className="flex h-11 w-11 items-center justify-center rounded-xl text-xl"
-          style={{ backgroundColor: `${cat?.color || '#ee0000'}20` }}
+          style={{ backgroundColor: `${cat?.color || '#a855f7'}20` }}
         >
           {cat?.icon || '📘'}
         </div>

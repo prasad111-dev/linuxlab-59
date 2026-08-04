@@ -57,7 +57,7 @@ export default function AttemptReview() {
       </Link>
 
       <div className="mt-4 card relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: category?.color || '#ee0000' }} />
+        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: category?.color || '#a855f7' }} />
         <div className="flex flex-wrap items-center gap-2">
           {category && <span className="badge" style={{ backgroundColor: `${category.color}18`, color: category.color }}>{category.icon} {category.name}</span>}
           {data.status === 'evaluated' && (
