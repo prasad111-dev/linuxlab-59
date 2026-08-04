@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Info, Loader2, MonitorPlay, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Info, Loader2, MonitorPlay, ExternalLink, Terminal as TerminalIcon } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { FullPageSpinner } from '../components/Spinner';
@@ -30,42 +30,43 @@ export default function PreviewPage() {
     );
   }
 
+  const openPreview = () => {
+    if (data?.embedUrl) {
+      window.open(data.embedUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2.5 dark:border-white/10 dark:bg-slate-900">
-        <Link to={`/practical/${id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-500">
-          <ArrowLeft size={15} /> Back
-        </Link>
-        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
-          <MonitorPlay size={16} className="text-violet-500" /> Free preview — ungraded sandbox
-        </span>
-        <a
-          href={data.embedUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="ml-auto inline-flex items-center gap-1 text-sm text-indigo-500 hover:underline"
-        >
-          Open in new tab <ExternalLink size={14} />
-        </a>
-      </div>
-      <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400">
-        <Info size={14} className="mt-0.5 shrink-0" />
-        <p>
-          This preview runs on Killercoda's free infrastructure. It does <strong>not</strong> award points, update the
-          leaderboard, or use the AI tutor.{' '}
-          {user ? (
-            <Link to={`/practical/${id}`} className="font-semibold underline">Start the graded lab instead</Link>
-          ) : (
-            'Sign in to start the graded lab for scoring.'
-          )}
+    <div className="mx-auto max-w-3xl px-4 py-12 text-center">
+      <Link to={`/practical/${id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-500">
+        <ArrowLeft size={15} /> Back to practical
+      </Link>
+
+      <div className="mt-8 card">
+        <MonitorPlay size={48} className="mx-auto text-violet-400" />
+        <h1 className="mt-4 text-2xl font-extrabold">Free preview</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          Try this lab in a Killercoda terminal — no login required, unlimited time.
         </p>
+
+        <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-left text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+          <Info size={14} className="mt-0.5 shrink-0" />
+          <p>
+            This is an ungraded sandbox. It does <strong>not</strong> award points, update the leaderboard, or use the AI tutor.{' '}
+            {user ? (
+              <Link to={`/practical/${id}`} className="font-semibold underline">Start the graded lab instead</Link>
+            ) : (
+              'Sign in to start the graded lab for scoring.'
+            )}
+          </p>
+        </div>
+
+        <button onClick={openPreview} className="btn-primary mt-6 !py-3 !px-6 text-base">
+          <TerminalIcon size={18} /> Open in Killercoda
+          <ExternalLink size={14} className="ml-1" />
+        </button>
+        <p className="mt-2 text-xs text-slate-400">Opens in a new tab · free · no account needed</p>
       </div>
-      <iframe
-        title="Killercoda free preview"
-        src={data.embedUrl}
-        className="min-h-0 flex-1 border-0 bg-white"
-        allow="clipboard-write"
-      />
     </div>
   );
 }

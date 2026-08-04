@@ -6,7 +6,6 @@ const Suggestion = require('../models/Suggestion');
 const { requireAdmin } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { getLeaderboard } = require('../services/leaderboardService');
-const orchestrator = require('../services/orchestratorClient');
 
 module.exports = async function adminRoutes(app) {
   app.get('/users', { preHandler: [requireAdmin] }, async (req) => {
@@ -74,11 +73,7 @@ module.exports = async function adminRoutes(app) {
   });
 
   app.get('/containers', { preHandler: [requireAdmin] }, async (req) => {
-    try {
-      return { containers: await orchestrator.listContainers() };
-    } catch (e) {
-      throw new HttpError(502, 'Orchestrator is unreachable from the backend');
-    }
+    return { containers: [], message: 'Container management is handled by Killercoda now' };
   });
 
   app.get('/suggestions', { preHandler: [requireAdmin] }, async (req) => {

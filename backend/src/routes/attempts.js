@@ -1,13 +1,9 @@
 const Attempt = require('../models/Attempt');
 const Task = require('../models/Task');
-const User = require('../models/User');
-const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { serializeAttempt } = require('../utils/serialize');
-const { evaluateAttempt, buildRuleCommand, runLiveChecks } = require('../services/evaluationService');
 const { generateHint, generateExplain, chatWithAi } = require('../services/geminiService');
-const { checkAndUnlock } = require('../services/achievementService');
 const { startSession, terminateRunning } = require('../services/sessionService');
 
 async function findOwnAttempt(req, { running = false } = {}) {
@@ -111,74 +107,7 @@ module.exports = async function attemptRoutes(app) {
   });
 
   app.post('/:id/submit', { preHandler: [requireAuth] }, async (req) => {
-    const attempt = await findOwnAttempt(req, { running: true });
-    const task = await Task.findById(attempt.task).populate('category');
-    if (!task) throw new HttpError(404, 'Task not found');
-
-    const result = await evaluateAttempt(attempt, task);
-
-    attempt.status = 'evaluated';
-    attempt.score = result.score;
-    attempt.maxScore = result.maxScore;
-    attempt.passed = result.passed;
-    attempt.pointsAwarded = result.score;
-    attempt.timeTakenSeconds = result.timeTakenSeconds;
-    attempt.feedback = result.feedback;
-    attempt.optimization = result.optimization;
-    attempt.correctSolution = result.correctSolution;
-    attempt.mistakes = result.mistakes;
-    attempt.rulesSummary = result.rulesSummary;
-    attempt.recommendedNext = result.recommendedNext;
-    attempt.submittedAt = new Date();
-    attempt.evaluation = result.evaluation;
-    await attempt.save();
-
-    const prev = await Attempt.findOne({
-      user: attempt.user,
-      task: attempt.task,
-      _id: { $ne: attempt._id },
-    })
-      .sort({ score: -1 })
-      .select('score');
-    const prevBest = prev ? prev.score : 0;
-    const delta = Math.max(0, result.score - prevBest);
-
-    const user = await User.findById(attempt.user);
-    if (user && delta > 0) {
-      user.points += delta;
-      await user.save();
-    }
-
-    let newlyUnlocked = [];
-    if (user) {
-      const passedAttempts = await Attempt.find({ user: user._id, passed: true })
-        .select('category score maxScore timeTakenSeconds')
-        .lean();
-      const ctx = {
-        tasksCompleted: passedAttempts.length,
-        perfectScore: passedAttempts.some((a) => a.maxScore > 0 && a.score === a.maxScore),
-        fastLearner: result.passed && result.timeTakenSeconds <= (task.estimatedMinutes || 0) * 30,
-        categoriesCount: new Set(
-          passedAttempts.map((a) => a.category && a.category.toString()).filter(Boolean)
-        ).size,
-      };
-      newlyUnlocked = await checkAndUnlock(user, ctx);
-    }
-
-    await Notification.create({
-      user: attempt.user,
-      type: 'task_completed',
-      title: `${result.passed ? 'Practical completed' : 'Practical attempted'}: ${task.title}`,
-      body: `You scored ${result.score}/${result.maxScore}.`,
-      data: { attemptId: attempt._id.toString(), passed: result.passed },
-    });
-
-    return {
-      result,
-      attempt: serializeAttempt(attempt),
-      newlyUnlocked: newlyUnlocked.map((a) => a.code),
-      pointsAwarded: delta,
-    };
+    throw new HttpError(400, 'Grading is done via Killercoda. Use the Start practical button to begin a lab.');
   });
 
   app.post('/:id/exit', { preHandler: [requireAuth] }, async (req) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -15,8 +15,8 @@ import {
   PanelRight,
   ListChecks,
   MessageCircle,
-  MonitorPlay,
   ExternalLink,
+  Terminal as TerminalIcon,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { FullPageSpinner } from '../components/Spinner';
@@ -31,11 +31,10 @@ export default function LabPage() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [busy, setBusy] = useState('');
   const [result, setResult] = useState(null);
-  const [resultLoading, setResultLoading] = useState(false);
   const [error, setError] = useState('');
   const [remaining, setRemaining] = useState(null);
   const [kcUrl, setKcUrl] = useState('');
-  const [kcLoaded, setKcLoaded] = useState(false);
+  const [terminalOpened, setTerminalOpened] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -77,7 +76,7 @@ export default function LabPage() {
         if (data.status === 'evaluated' && !cancelled) {
           setStatus('evaluated');
           const full = await api(`/attempts/${attemptId}`);
-          setResult({ result: full.evaluation || full, attempt: full });
+          setResult({ result: full.evaluation || {}, attempt: full });
         } else if (data.status === 'terminated' && !cancelled) {
           setStatus('terminated');
         }
@@ -119,6 +118,13 @@ export default function LabPage() {
   const getExplain = () => {
     setPanelOpen(true);
     sendChat('Explain the core concept of this task and what I need to do. Tell me which commands to run to inspect the current server state.');
+  };
+
+  const openTerminal = () => {
+    if (kcUrl) {
+      window.open(kcUrl, '_blank', 'noopener,noreferrer');
+      setTerminalOpened(true);
+    }
   };
 
   const exitLab = async () => {
@@ -188,7 +194,9 @@ export default function LabPage() {
         </Link>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold">{task?.title || 'Lab session'}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Killercoda terminal · powered by LinuxLab</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {terminalOpened ? 'Terminal open in new tab' : 'Open the terminal to start working'}
+          </p>
         </div>
 
         {remaining !== null && (
@@ -245,49 +253,51 @@ export default function LabPage() {
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        <div className="relative flex-1 overflow-hidden bg-slate-950">
-          {kcUrl ? (
-            <>
-              {!kcLoaded && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-950">
-                  <Loader2 size={32} className="animate-spin text-indigo-400" />
-                  <p className="text-sm text-slate-400">Booting Killercoda terminal…</p>
-                </div>
-              )}
-              <iframe
-                title="Killercoda lab terminal"
-                src={kcUrl}
-                className="h-full w-full border-0"
-                allow="clipboard-write"
-                onLoad={() => setKcLoaded(true)}
-              />
-            </>
+        {/* Main content area */}
+        <div className="flex flex-1 flex-col overflow-y-auto p-6 lg:p-10">
+          {/* Open Terminal CTA */}
+          {!terminalOpened ? (
+            <div className="card mb-6 border-2 border-dashed border-indigo-300 bg-indigo-50/50 text-center dark:border-indigo-500/30 dark:bg-indigo-500/5">
+              <TerminalIcon size={48} className="mx-auto text-indigo-400" />
+              <h2 className="mt-4 text-xl font-extrabold">Ready to start?</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                Open the Linux terminal in a new tab. Complete the tasks, then the final step will submit your work for grading.
+              </p>
+              <button onClick={openTerminal} className="btn-primary mt-4 !py-3 !px-6 text-base">
+                <TerminalIcon size={18} /> Open Terminal
+                <ExternalLink size={14} className="ml-1" />
+              </button>
+              <p className="mt-2 text-xs text-slate-400">Opens in a new tab · 1-hour session · free</p>
+            </div>
           ) : (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 size={32} className="animate-spin text-slate-500" />
+            <div className="card mb-6 border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                  <CheckCircle2 size={20} className="text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-emerald-700 dark:text-emerald-400">Terminal is open</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Complete all steps in the terminal. The final step auto-submits your work.
+                  </p>
+                </div>
+                <button onClick={openTerminal} className="btn-ghost text-sm">
+                  <ExternalLink size={14} /> Re-open
+                </button>
+              </div>
             </div>
           )}
-          <div className="pointer-events-none absolute top-2 right-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-            <MonitorPlay size={12} /> Killercoda · ubuntu:24.04
-          </div>
-        </div>
 
-        {/* Help panel + AI tutor */}
-        <aside
-          className={cn(
-            'w-full overflow-y-auto border-l border-slate-200 bg-white p-4 lg:block lg:w-96 dark:border-white/10 dark:bg-slate-900',
-            panelOpen ? 'block' : 'hidden'
-          )}
-        >
-          <div className="border-b border-slate-100 pb-4 dark:border-white/10">
+          {/* Task checklist */}
+          <div className="card">
             <h3 className="flex items-center gap-2 font-extrabold">
               <ListChecks size={17} className="text-emerald-500" /> Task checklist
             </h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Complete each step in the terminal. The final step submits your work for grading.
+              Complete each step in the Killercoda terminal. The final step submits your results for grading.
             </p>
             {task?.validationRules?.length > 0 && (
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-4 space-y-2">
                 {task.validationRules.map((r, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" />
@@ -298,70 +308,10 @@ export default function LabPage() {
             )}
           </div>
 
-          <div className="mt-4">
-            <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-extrabold">
-                <MessageCircle size={17} className="text-violet-500" /> AI tutor chat
-              </h3>
-              {chat.length > 0 && (
-                <button onClick={() => setChat([])} className="text-sm text-slate-400">
-                  Clear chat
-                </button>
-              )}
-            </div>
-
-            <div className="mt-3 max-h-64 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3 dark:bg-white/5">
-              {chat.length === 0 && (
-                <p className="text-xs leading-relaxed text-slate-400">
-                  Ask me anything about this task. Try{' '}
-                  <button
-                    onClick={() => sendChat('What should I check first with cat or ls?')}
-                    className="font-semibold text-indigo-500 underline"
-                  >
-                    "What should I check first?"
-                  </button>
-                </p>
-              )}
-              {chat.map((m, i) => (
-                <div key={i} className={cn('text-sm', m.role === 'user' ? 'text-right' : 'text-left')}>
-                  <div
-                    className={cn(
-                      'inline-block max-w-full rounded-2xl px-3 py-2 text-left whitespace-pre-line',
-                      m.role === 'user'
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                    )}
-                  >
-                    {m.text}
-                  </div>
-                </div>
-              ))}
-              {chatBusy && (
-                <p className="text-xs text-slate-400">
-                  <Loader2 size={12} className="mr-1 inline animate-spin" /> thinking…
-                </p>
-              )}
-            </div>
-
-            <form
-              onSubmit={(e) => { e.preventDefault(); sendChat(); }}
-              className="mt-2 flex items-center gap-2"
-            >
-              <input
-                value={chatText}
-                onChange={(e) => setChatText(e.target.value)}
-                placeholder="Ask about this task…"
-                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 dark:border-white/10 dark:bg-slate-800"
-              />
-              <button type="submit" disabled={chatBusy} className="btn-primary !px-3" aria-label="Send">
-                {chatBusy ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-              </button>
-            </form>
-          </div>
-
+          {/* Objectives + Requirements */}
           {task && (
-            <>
-              <div className="mt-6 border-t border-slate-100 pt-4 dark:border-white/10">
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <div className="card">
                 <h4 className="font-bold">Objectives</h4>
                 <ul className="mt-2 space-y-1.5">
                   {task.objectives?.map((o, i) => (
@@ -371,7 +321,7 @@ export default function LabPage() {
                   ))}
                 </ul>
               </div>
-              <div className="mt-4 border-t border-slate-100 pt-4 dark:border-white/10">
+              <div className="card">
                 <h4 className="font-bold">Requirements</h4>
                 <ul className="mt-2 space-y-1.5">
                   {task.requirements?.map((r, i) => (
@@ -381,8 +331,75 @@ export default function LabPage() {
                   ))}
                 </ul>
               </div>
-            </>
+            </div>
           )}
+        </div>
+
+        {/* AI tutor sidebar */}
+        <aside
+          className={cn(
+            'w-full overflow-y-auto border-l border-slate-200 bg-white p-4 lg:block lg:w-96 dark:border-white/10 dark:bg-slate-900',
+            panelOpen ? 'block' : 'hidden'
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 font-extrabold">
+              <MessageCircle size={17} className="text-violet-500" /> AI tutor chat
+            </h3>
+            {chat.length > 0 && (
+              <button onClick={() => setChat([])} className="text-sm text-slate-400">
+                Clear chat
+              </button>
+            )}
+          </div>
+
+          <div className="mt-3 max-h-[50vh] space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3 dark:bg-white/5">
+            {chat.length === 0 && (
+              <p className="text-xs leading-relaxed text-slate-400">
+                Ask me anything about this task. Try{' '}
+                <button
+                  onClick={() => sendChat('What should I check first with cat or ls?')}
+                  className="font-semibold text-indigo-500 underline"
+                >
+                  "What should I check first?"
+                </button>
+              </p>
+            )}
+            {chat.map((m, i) => (
+              <div key={i} className={cn('text-sm', m.role === 'user' ? 'text-right' : 'text-left')}>
+                <div
+                  className={cn(
+                    'inline-block max-w-full rounded-2xl px-3 py-2 text-left whitespace-pre-line',
+                    m.role === 'user'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                  )}
+                >
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            {chatBusy && (
+              <p className="text-xs text-slate-400">
+                <Loader2 size={12} className="mr-1 inline animate-spin" /> thinking…
+              </p>
+            )}
+          </div>
+
+          <form
+            onSubmit={(e) => { e.preventDefault(); sendChat(); }}
+            className="mt-2 flex items-center gap-2"
+          >
+            <input
+              value={chatText}
+              onChange={(e) => setChatText(e.target.value)}
+              placeholder="Ask about this task…"
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 dark:border-white/10 dark:bg-slate-800"
+            />
+            <button type="submit" disabled={chatBusy} className="btn-primary !px-3" aria-label="Send">
+              {chatBusy ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+            </button>
+          </form>
         </aside>
       </div>
 
@@ -398,11 +415,10 @@ export default function LabPage() {
               <h2 className="mt-4 text-2xl font-extrabold">
                 {result.result?.passed ? 'Task completed!' : 'Almost there!'}
               </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {task?.title}
-              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{task?.title}</p>
               <div className="mt-4 text-5xl font-black gradient-text">
-                {result.result?.score ?? result.attempt?.score}<span className="text-2xl text-slate-400">/{result.result?.maxScore ?? result.attempt?.maxScore}</span>
+                {result.result?.score ?? result.attempt?.score ?? 0}
+                <span className="text-2xl text-slate-400">/{result.result?.maxScore ?? result.attempt?.maxScore ?? task?.points}</span>
               </div>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Time taken: {formatDuration(result.result?.timeTakenSeconds || result.attempt?.timeTakenSeconds)}
@@ -424,7 +440,7 @@ export default function LabPage() {
               </div>
             ) : (
               <div className="mt-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                Every check passed — this is a production-ready configuration. 🏆
+                Every check passed — production-ready configuration. 🏆
               </div>
             )}
 
@@ -445,7 +461,9 @@ export default function LabPage() {
                 <p className="flex items-center gap-2 text-sm font-bold text-slate-300">
                   <Eye size={15} /> Reference solution
                 </p>
-                <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-emerald-300">{result.result?.correctSolution || result.attempt?.correctSolution}</pre>
+                <pre className="mt-2 overflow-x-auto font-mono text-xs leading-relaxed text-emerald-300">
+                  {result.result?.correctSolution || result.attempt?.correctSolution}
+                </pre>
               </div>
             )}
 
