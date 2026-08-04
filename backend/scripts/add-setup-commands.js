@@ -11,11 +11,11 @@ const Task = require('../src/models/Task');
 const SETUP = {
   'Onboarding and Offboarding Staff Accounts': [
     'useradd -m -s /bin/bash asmith',
-    'touch /var/mail/asmith',
+    'touch /var/mail/asmith && chown asmith:mail /var/mail/asmith',
   ],
   'Offboarding: remove a departed intern': [
     'useradd -m -s /bin/bash tkim',
-    'touch /var/mail/tkim',
+    'touch /var/mail/tkim && chown tkim:mail /var/mail/tkim',
     'groupadd interns',
     'usermod -aG interns tkim',
     'groupadd devops',

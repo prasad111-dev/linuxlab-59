@@ -56,7 +56,7 @@ const TASK = {
     'useradd -m -s /bin/bash -G devops rsingh',
   setupCommands: [
     'useradd -m -s /bin/bash tkim',
-    'touch /var/mail/tkim',
+    'touch /var/mail/tkim && chown tkim:mail /var/mail/tkim',
     'groupadd interns',
     'usermod -aG interns tkim',
     'groupadd devops',
