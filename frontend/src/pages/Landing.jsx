@@ -86,21 +86,18 @@ const TESTIMONIALS = [
     role: 'CS Student',
     text: 'The scenarios feel like real tickets from my internship. I finally understand users, permissions and SSH for real.',
     avatar: 'AS',
-    color: 'from-brand-500 to-brand-500',
   },
   {
     name: 'Rohan K.',
     role: 'DevOps Trainee',
     text: 'Practice Again is a lifesaver. I re-did the Nginx task until I got it perfect, and the AI hints actually taught me.',
     avatar: 'RK',
-    color: 'from-brand-500 to-brand-500',
   },
   {
     name: 'Sneha P.',
     role: 'Linux Admin Student',
     text: 'Real containers, real systemctl, real iptables. This is what every Linux course should look like.',
     avatar: 'SP',
-    color: 'from-emerald-500 to-brand-500',
   },
 ];
 
@@ -282,26 +279,27 @@ export default function Landing() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="border-y border-slate-200/60 bg-white/50 py-20 dark:border-white/10 dark:bg-slate-900/30">
+      <section className="border-y border-slate-200/60 bg-slate-950 py-20 dark:border-white/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Loved by students</h2>
-            <p className="mt-4 text-slate-600 dark:text-slate-300">Real practice, real progress.</p>
+            <h2 className="font-display text-3xl font-black tracking-tight text-white sm:text-4xl">Loved by students</h2>
+            <p className="mt-4 text-slate-400">Real practice, real progress.</p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="card">
-                <div className="flex gap-1 text-amber-400">
+              <div key={t.name} className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-brand-500/50 hover:shadow-xl hover:shadow-brand-500/10">
+                <span className="pointer-events-none absolute -top-3 left-5 font-display text-7xl font-black text-brand-500/20 transition group-hover:text-brand-500/40">"</span>
+                <div className="flex gap-1 text-brand-400">
                   {[...Array(5)].map((_, i) => <Star key={i} size={16} fill="currentColor" />)}
                 </div>
-                <p className="mt-3 text-sm text-slate-700 dark:text-slate-200">"{t.text}"</p>
+                <p className="mt-3 text-sm text-slate-300">"{t.text}"</p>
                 <div className="mt-5 flex items-center gap-3">
-                  <span className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-sm font-bold text-white ${t.color}`}>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white shadow-lg shadow-brand-500/30">
                     {t.avatar}
                   </span>
                   <div>
-                    <p className="text-sm font-bold">{t.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t.role}</p>
+                    <p className="text-sm font-bold text-white">{t.name}</p>
+                    <p className="text-xs text-slate-400">{t.role}</p>
                   </div>
                 </div>
               </div>
