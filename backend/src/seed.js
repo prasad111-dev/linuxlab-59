@@ -309,9 +309,7 @@ const SEED_TASKS = [
       'chmod 600 /home/priya/.ssh/authorized_keys\n' +
       'chown -R priya:priya /home/priya/.ssh\n' +
       'chmod 700 /home/priya',
-    setupCommands: [
-      'apt-get update -qq && apt-get install -y -qq sudo > /dev/null 2>&1',
-    ],
+    setupCommands: [],
     validationRules: [
       { type: 'user_exists', label: 'User priya exists', params: { username: 'priya' } },
       { type: 'group_exists', label: 'Group tcs-employees exists', params: { group: 'tcs-employees' } },
@@ -366,6 +364,11 @@ async function seedDatabase() {
           publishedAt: new Date(),
         });
         tasksCreated += 1;
+      } else {
+        await Task.updateOne(
+          { _id: existing._id },
+          { $set: { setupCommands: taskData.setupCommands || [] } }
+        );
       }
     }
   }
