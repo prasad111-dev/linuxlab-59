@@ -12,7 +12,6 @@ import {
   ChevronRight,
   ArrowRight,
   Brain,
-  Sparkles,
   ListChecks,
   Medal,
   GraduationCap,
@@ -32,16 +31,14 @@ const QUICK_ACTIONS = [
     title: 'Linux Practicals',
     desc: 'Real IT tickets · live containers',
     icon: ListChecks,
-    gradient: 'from-indigo-500 to-violet-600',
-    glow: 'shadow-indigo-500/20',
+    chip: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300',
   },
   {
     to: '/interview',
     title: 'Interview Prep',
     desc: 'Flashcards · Quest · Typing',
     icon: Brain,
-    gradient: 'from-violet-500 to-purple-700',
-    glow: 'shadow-violet-500/20',
+    chip: 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300',
     badge: 'AI',
   },
   {
@@ -49,16 +46,14 @@ const QUICK_ACTIONS = [
     title: 'Leaderboard',
     desc: 'Climb ranks · earn points',
     icon: Medal,
-    gradient: 'from-indigo-500 to-blue-600',
-    glow: 'shadow-blue-500/20',
+    chip: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300',
   },
   {
     to: '/achievements',
     title: 'Achievements',
     desc: 'Unlock every badge',
     icon: Award,
-    gradient: 'from-violet-500 to-indigo-600',
-    glow: 'shadow-violet-500/20',
+    chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
   },
 ];
 
@@ -83,7 +78,7 @@ export default function Dashboard() {
       .then((s) => {
         setStats(s);
         if (!celebrated && (s.completed > 0 || s.points > 0)) {
-          fireConfetti({ count: 50, y: 0.2 });
+          fireConfetti({ count: 40, y: 0.2 });
           setCelebrated(true);
         }
       })
@@ -104,80 +99,83 @@ export default function Dashboard() {
   };
 
   const unlocked = stats.achievements.filter((a) => a.unlocked).length;
-  const unlockedPct = stats.achievements.length ? Math.round((unlocked / stats.achievements.length) * 100) : 0;
   const streakPct = Math.min(100, (stats.streak?.current || 0) * 4);
   const streakActive = (stats.streak?.current || 0) > 0;
 
   const statsRow = [
-    { icon: CheckCircle2, label: 'Done', value: `${stats.completed}/${stats.totalTasks}` },
-    { icon: Target, label: 'Todo', value: stats.pendingTasks },
-    { icon: Trophy, label: 'Points', value: stats.points },
-    { icon: TrendingUp, label: 'Avg', value: `${stats.avgScore}%` },
+    { icon: CheckCircle2, label: 'Completed', value: `${stats.completed}/${stats.totalTasks}`, chip: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' },
+    { icon: Target, label: 'Pending', value: stats.pendingTasks, chip: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400' },
+    { icon: Trophy, label: 'Points', value: stats.points, chip: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' },
+    { icon: TrendingUp, label: 'Avg score', value: `${stats.avgScore}%`, chip: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400' },
   ];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      {/* Compact hero */}
-      <section className="animate-fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 p-6 shadow-xl shadow-indigo-600/20 sm:p-7">
-        <div className="animate-blob pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-        <div className="animate-blob pointer-events-none absolute -bottom-24 -left-10 h-64 w-64 rounded-full bg-indigo-400/20 blur-3xl [animation-delay:4s]" />
-
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      {/* Header */}
+      <section className="animate-fade-up relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-6 sm:p-7 dark:border-indigo-500/20 dark:from-indigo-500/10 dark:to-slate-900">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             {user?.picture ? (
-              <img src={user.picture} alt="" className="h-14 w-14 rounded-2xl border-2 border-white/30 shadow-lg" />
+              <img src={user.picture} alt="" className="h-14 w-14 rounded-full border-2 border-indigo-100 dark:border-indigo-500/30" />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-xl font-black text-white backdrop-blur">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-xl font-black text-white">
                 {user?.name?.[0]}
               </div>
             )}
             <div>
-              <p className="text-xs font-bold tracking-widest text-indigo-100 uppercase">
+              <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-300">
                 {greeting()}, {user?.name?.split(' ')[0]}!
               </p>
-              <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                Ready for today's mission?
+              <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+                Welcome back
               </h1>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                What would you like to practice today?
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
-              <Flame size={13} className="text-amber-300" /> {stats.streak?.current || 0}d
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">
+              <Flame size={13} className="text-amber-500" /> {stats.streak?.current || 0}d
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
-              <Zap size={13} className="text-amber-300" /> {stats.points} pts
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">
+              <Zap size={13} className="text-indigo-500" /> {stats.points} pts
             </span>
             {stats.runningAttempt && (
               <button
                 onClick={resume}
-                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-indigo-600 transition hover:bg-indigo-50"
+                className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700"
               >
                 <Play size={13} /> Resume
               </button>
             )}
           </div>
         </div>
-
-        {/* Slim stat strip inside hero */}
-        <div className="relative mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-          {statsRow.map((s) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.label} className="flex items-center gap-2.5 rounded-2xl bg-white/10 px-3.5 py-2.5 backdrop-blur">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white shadow-md">
-                  <Icon size={18} />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-lg leading-tight font-black text-white">{s.value}</p>
-                  <p className="text-[11px] leading-tight font-semibold text-indigo-100">{s.label}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </section>
 
-      {/* Quick actions — compact 2x2 grid */}
+      {/* Stat cards */}
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {statsRow.map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <div
+              key={s.label}
+              style={{ animationDelay: `${i * 70}ms` }}
+              className="card animate-fade-up flex items-center gap-3 !p-4"
+            >
+              <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', s.chip)}>
+                <Icon size={20} />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-xl font-bold text-slate-900 dark:text-white">{s.value}</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{s.label}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Quick actions */}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {QUICK_ACTIONS.map((a, i) => {
           const Icon = a.icon;
@@ -186,50 +184,44 @@ export default function Dashboard() {
               key={a.to}
               to={a.to}
               style={{ animationDelay: `${i * 70}ms` }}
-              className={cn(
-                'group animate-fade-up relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br p-4 shadow-lg transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-2xl sm:p-5',
-                a.gradient,
-                a.glow
-              )}
+              className="card group animate-fade-up flex items-center gap-3 !p-4 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:hover:border-indigo-500/40"
             >
-              <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/10 blur-xl" />
-              <span className="animate-shine pointer-events-none absolute top-0 left-0 h-full w-1/3 bg-white/10 blur-md" />
-              <div className="flex items-start justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur transition group-hover:scale-110 sm:h-10 sm:w-10">
-                  <Icon size={20} />
-                </div>
-                {a.badge && (
-                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-black tracking-wider text-white uppercase backdrop-blur">
-                    {a.badge}
-                  </span>
-                )}
+              <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-110', a.chip)}>
+                <Icon size={22} />
               </div>
-              <div className="mt-3">
-                <h3 className="text-sm font-extrabold text-white sm:text-base">{a.title}</h3>
-                <p className="mt-0.5 hidden text-xs text-white/75 sm:block">{a.desc}</p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="truncate text-sm font-bold text-slate-900 dark:text-white">{a.title}</h3>
+                  {a.badge && (
+                    <span className="rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">
+                      {a.badge}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 hidden truncate text-xs text-slate-500 sm:block dark:text-slate-400">{a.desc}</p>
               </div>
             </Link>
           );
         })}
       </div>
 
-      {/* Streak + badges mini row */}
+      {/* Streak + badges */}
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="card flex items-center justify-between !p-4">
           <div className="flex items-center gap-3">
-            <div className={cn('flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-lg shadow-amber-500/25', streakActive ? 'animate-wiggle bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-slate-300 to-slate-400')}>
+            <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', streakActive ? 'bg-amber-50 text-amber-500 dark:bg-amber-500/10' : 'bg-slate-100 text-slate-400 dark:bg-slate-800')}>
               <Flame size={22} />
             </div>
             <div>
-              <p className="text-lg font-black">{stats.streak?.current || 0} day streak</p>
+              <p className="text-base font-bold text-slate-900 dark:text-white">{stats.streak?.current || 0} day streak</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {streakActive ? 'Keep the momentum! 🔥' : 'Complete a practical to start 🔥'}
+                {streakActive ? 'Keep the momentum!' : 'Complete a practical to start a streak'}
               </p>
             </div>
           </div>
-          <div className="hidden h-2 w-24 overflow-hidden rounded-full bg-slate-100 sm:block dark:bg-white/10">
+          <div className="hidden h-2 w-24 overflow-hidden rounded-full bg-slate-100 sm:block dark:bg-slate-800">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-1000"
+              className="h-full rounded-full bg-amber-400 transition-all duration-1000"
               style={{ width: `${streakPct}%` }}
             />
           </div>
@@ -237,15 +229,15 @@ export default function Dashboard() {
 
         <div className="card flex items-center justify-between !p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/20">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
               <Star size={22} />
             </div>
             <div>
-              <p className="text-lg font-black">{unlocked}/{stats.achievements.length} badges</p>
+              <p className="text-base font-bold text-slate-900 dark:text-white">{unlocked}/{stats.achievements.length} badges</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Achievements unlocked</p>
             </div>
           </div>
-          <Link to="/achievements" className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+          <Link to="/achievements" className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
             View
           </Link>
         </div>
@@ -254,7 +246,7 @@ export default function Dashboard() {
       {/* Recommended */}
       <div className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-base font-extrabold">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
             <GraduationCap size={18} className="text-indigo-500" /> Recommended for you
           </h2>
           <Link to="/practicals" className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
@@ -279,21 +271,21 @@ export default function Dashboard() {
 
       {/* Category progress */}
       <div className="mt-8">
-        <h2 className="mb-3 text-base font-extrabold">Progress by category</h2>
+        <h2 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Progress by category</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {stats.categoryProgress
             .filter((c) => c.total > 0)
             .map((c) => (
               <div key={c.category.id} className="card !p-4 transition hover:border-indigo-200 dark:hover:border-indigo-500/30">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold">
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">
                     {c.category.icon} {c.category.name}
                   </span>
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                     {c.completed}/{c.total}
                   </span>
                 </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                   <div
                     className="h-full rounded-full transition-all duration-1000"
                     style={{ width: `${c.percent}%`, backgroundColor: c.category.color || '#6366f1' }}
@@ -307,11 +299,11 @@ export default function Dashboard() {
       {/* Recent activity + achievements */}
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div>
-          <h2 className="mb-3 text-base font-extrabold">Recent activity</h2>
+          <h2 className="mb-3 text-sm font-bold text-slate-900 dark:text-white">Recent activity</h2>
           <div className="space-y-2.5">
             {stats.recentActivity.length === 0 && (
               <div className="card py-10 text-center">
-                <div className="animate-float text-4xl">🚀</div>
+                <div className="text-4xl">🚀</div>
                 <p className="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   No activity yet. Start your first practical!
                 </p>
@@ -322,11 +314,11 @@ export default function Dashboard() {
             )}
             {stats.recentActivity.map((a) => (
               <Link key={a.id} to={`/history/${a.id}`} className="card flex items-center gap-3 !p-3.5 transition hover:border-indigo-300 dark:hover:border-indigo-500/40">
-                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md', a.passed ? 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/25' : 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/25')}>
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', a.passed ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400')}>
                   {a.passed ? <CheckCircle2 size={18} /> : <Clock size={18} />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold">{a.taskTitle}</p>
+                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{a.taskTitle}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {a.score}/{a.maxScore} pts · {timeAgo(a.createdAt)}
                   </p>
@@ -340,16 +332,16 @@ export default function Dashboard() {
         {/* Achievements preview */}
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-extrabold">Recent achievements</h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Recent achievements</h2>
             <Link to="/achievements" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">View all</Link>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             {stats.achievements.map((a) => (
               <div key={a.code} className={cn('card flex items-center gap-3 !p-3.5 transition hover:border-indigo-200 dark:hover:border-indigo-500/30', !a.unlocked && 'opacity-40 grayscale')}>
-                <span className="animate-float text-2xl" style={{ animationDelay: `${(a.code.length % 5) * 0.3}s` }}>{a.icon}</span>
+                <span className="text-2xl">{a.icon}</span>
                 <div>
-                  <p className="text-sm font-bold">{a.name}</p>
-                  <p className={cn('text-[11px]', a.unlocked ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400')}>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{a.name}</p>
+                  <p className={cn('text-[11px]', a.unlocked ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400')}>
                     {a.unlocked ? '✓ Unlocked' : 'Locked'}
                   </p>
                 </div>
