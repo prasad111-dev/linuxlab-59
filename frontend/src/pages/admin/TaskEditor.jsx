@@ -71,7 +71,7 @@ function ListEditor({ value, onChange, placeholder }) {
       <button
         type="button"
         onClick={() => onChange([...value, ''])}
-        className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+        className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400"
       >
         <Plus size={14} /> Add item
       </button>
@@ -226,7 +226,7 @@ export default function TaskEditor() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <Link to="/admin/tasks" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-500">
+      <Link to="/admin/tasks" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-500">
         <ArrowLeft size={15} /> Tasks
       </Link>
       <h1 className="mt-3 text-3xl font-extrabold tracking-tight">{isEdit ? 'Edit task' : 'New task'}</h1>

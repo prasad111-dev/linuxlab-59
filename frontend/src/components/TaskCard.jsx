@@ -8,16 +8,16 @@ export default function TaskCard({ task }) {
   return (
     <Link
       to={`/practical/${task.id}`}
-      className="card group relative flex flex-col gap-3 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10"
+      className="card group relative flex flex-col gap-3 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-500/10"
     >
       <div
         className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full opacity-10 blur-2xl transition group-hover:opacity-20"
-        style={{ backgroundColor: cat?.color || '#6366f1' }}
+        style={{ backgroundColor: cat?.color || '#ee0000' }}
       />
       <div className="flex items-start justify-between gap-3">
         <div
           className="flex h-11 w-11 items-center justify-center rounded-xl text-xl"
-          style={{ backgroundColor: `${cat?.color || '#6366f1'}20` }}
+          style={{ backgroundColor: `${cat?.color || '#ee0000'}20` }}
         >
           {cat?.icon || '📘'}
         </div>
@@ -25,7 +25,7 @@ export default function TaskCard({ task }) {
       </div>
 
       <div>
-        <h3 className="line-clamp-2 text-base font-bold leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+        <h3 className="line-clamp-2 text-base font-bold leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400">
           {task.title}
         </h3>
         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -41,7 +41,7 @@ export default function TaskCard({ task }) {
           <Trophy size={13} /> {task.points} pts
         </span>
         {task.myBest?.score > 0 && (
-          <span className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+          <span className="inline-flex items-center gap-1 text-brand-600 dark:text-brand-400">
             <BookOpen size={13} /> Best {task.myBest.score}
           </span>
         )}

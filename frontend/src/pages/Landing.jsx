@@ -29,13 +29,13 @@ const FEATURES = [
     icon: Sparkles,
     title: 'AI-powered hints',
     desc: 'Stuck? Get a small clue or a concept explanation from Gemini — progressive hints that teach without giving away the answer.',
-    color: 'text-violet-500',
+    color: 'text-brand-500',
   },
   {
     icon: CheckCircle2,
     title: 'Automatic evaluation',
     desc: 'Submit your work and get scored instantly on real checks: users, files, permissions, services, ports and configurations.',
-    color: 'text-indigo-500',
+    color: 'text-brand-500',
   },
   {
     icon: Award,
@@ -47,13 +47,13 @@ const FEATURES = [
     icon: ShieldCheck,
     title: 'Isolated & safe',
     desc: 'Each lab is an isolated container with resource limits. No student can ever affect another environment.',
-    color: 'text-rose-500',
+    color: 'text-brand-500',
   },
   {
     icon: BarChart3,
     title: 'Full learning history',
     desc: 'Scores, mistakes, hints used and command history — everything saved so you can review and repeat anytime.',
-    color: 'text-sky-500',
+    color: 'text-brand-500',
   },
 ];
 
@@ -86,21 +86,21 @@ const TESTIMONIALS = [
     role: 'CS Student',
     text: 'The scenarios feel like real tickets from my internship. I finally understand users, permissions and SSH for real.',
     avatar: 'AS',
-    color: 'from-pink-500 to-rose-500',
+    color: 'from-brand-500 to-brand-500',
   },
   {
     name: 'Rohan K.',
     role: 'DevOps Trainee',
     text: 'Practice Again is a lifesaver. I re-did the Nginx task until I got it perfect, and the AI hints actually taught me.',
     avatar: 'RK',
-    color: 'from-indigo-500 to-violet-500',
+    color: 'from-brand-500 to-brand-500',
   },
   {
     name: 'Sneha P.',
     role: 'Linux Admin Student',
     text: 'Real containers, real systemctl, real iptables. This is what every Linux course should look like.',
     avatar: 'SP',
-    color: 'from-emerald-500 to-teal-500',
+    color: 'from-emerald-500 to-brand-500',
   },
 ];
 
@@ -146,11 +146,11 @@ export default function Landing() {
       {/* HERO */}
       <section className="relative">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_-10%,rgba(99,102,241,0.18),transparent)]" />
-        <div className="pointer-events-none absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-violet-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl" />
         <div className="pointer-events-none absolute top-24 right-1/4 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
 
         <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-16 text-center sm:px-6 lg:pt-28">
-          <div className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-1.5 text-xs font-semibold text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300">
+          <div className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-xs font-semibold text-brand-700 dark:border-brand-500/30 dark:bg-brand-500/10 dark:text-brand-300">
             <Sparkles size={14} /> Real Linux environments in your browser
           </div>
 
@@ -194,10 +194,10 @@ export default function Landing() {
                 <span className="ml-2 text-xs font-semibold text-slate-400">Prasad@linuxlab: ~/lab</span>
               </div>
               <div className="bg-slate-950 p-5 font-mono text-sm text-slate-300">
-                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-sky-400">~</span>$ <span className="text-white">groupadd devteam</span></p>
-                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-sky-400">~</span>$ <span className="text-white">useradd -m -s /bin/bash rahul</span></p>
-                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-sky-400">~</span>$ <span className="text-white">usermod -aG devteam rahul</span></p>
-                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-sky-400">~</span>$ <span className="text-white">chown rahul:devteam /home/rahul</span></p>
+                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">groupadd devteam</span></p>
+                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">useradd -m -s /bin/bash rahul</span></p>
+                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">usermod -aG devteam rahul</span></p>
+                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">chown rahul:devteam /home/rahul</span></p>
                 <p className="mt-2 text-slate-400">✓ All validation checks passed — <span className="text-emerald-400">100 / 100 points</span></p>
               </div>
             </div>
@@ -226,7 +226,7 @@ export default function Landing() {
         </div>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <div key={f.title} className="card group transition hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10">
+            <div key={f.title} className="card group transition hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-500/10">
               <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-md dark:bg-white/5 ${f.color}`}>
                 <f.icon size={22} />
               </div>
@@ -247,7 +247,7 @@ export default function Landing() {
           <div className="mt-12 grid gap-6 md:grid-cols-5">
             {ROADMAP.map((r, i) => (
               <div key={r.step} className="relative card !bg-white/60 dark:!bg-slate-900/50">
-                <div className="text-3xl font-black text-indigo-200 dark:text-indigo-500/30">{r.step}</div>
+                <div className="text-3xl font-black text-brand-200 dark:text-brand-500/30">{r.step}</div>
                 <h3 className="mt-3 font-bold">{r.title}</h3>
                 <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300">{r.desc}</p>
                 {i < ROADMAP.length - 1 && (
@@ -272,7 +272,7 @@ export default function Landing() {
             <Link
               key={c.name}
               to="/practicals"
-              className="card flex items-center gap-3 transition hover:-translate-y-0.5 hover:border-indigo-300 dark:hover:border-indigo-500/40"
+              className="card flex items-center gap-3 transition hover:-translate-y-0.5 hover:border-brand-300 dark:hover:border-brand-500/40"
             >
               <span className="text-2xl">{c.icon}</span>
               <span className="font-semibold">{c.name}</span>
@@ -333,21 +333,21 @@ export default function Landing() {
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <div className="card grid gap-6 md:grid-cols-3">
             <div className="flex items-center gap-3">
-              <Mail className="text-indigo-500" />
+              <Mail className="text-brand-500" />
               <div>
                 <p className="text-sm font-bold">Email</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">prasadghavghave0@gmail.com</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Phone className="text-indigo-500" />
+              <Phone className="text-brand-500" />
               <div>
                 <p className="text-sm font-bold">Contact</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">9322860752</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <MapPin className="text-indigo-500" />
+              <MapPin className="text-brand-500" />
               <div>
                 <p className="text-sm font-bold">Location</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Anywhere the cloud runs</p>
@@ -359,20 +359,20 @@ export default function Landing() {
 
       {/* CTA */}
       <section className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 p-10 text-center shadow-2xl shadow-indigo-600/30 sm:p-16">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-600 to-brand-700 p-10 text-center shadow-2xl shadow-brand-600/30 sm:p-16">
           <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
           <h2 className="relative text-3xl font-black text-white sm:text-4xl">Your first lab is one click away</h2>
-          <p className="relative mx-auto mt-4 max-w-xl text-indigo-100">
+          <p className="relative mx-auto mt-4 max-w-xl text-brand-100">
             Start with a real IT support ticket — onboard a developer, harden SSH, deploy with Nginx.
           </p>
           <div className="relative mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             {user ? (
-              <Link to="/dashboard" className="btn-ghost !border-white/30 !bg-white !text-indigo-700 hover:!bg-indigo-50">
+              <Link to="/dashboard" className="btn-ghost !border-white/30 !bg-white !text-brand-700 hover:!bg-brand-50">
                 Go to dashboard <ArrowRight size={18} />
               </Link>
             ) : (
               <>
-                <a href={googleAuthUrl()} className="btn-ghost !border-white/30 !bg-white !text-indigo-700 hover:!bg-indigo-50">
+                <a href={googleAuthUrl()} className="btn-ghost !border-white/30 !bg-white !text-brand-700 hover:!bg-brand-50">
                   Login with Google
                 </a>
                 <Link to="/practicals" className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">

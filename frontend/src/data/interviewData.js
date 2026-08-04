@@ -379,7 +379,7 @@ export const MODES = [
     title: 'Flashcard Duel',
     tagline: '125 multiple-choice flashcards across 25 topic tiers',
     icon: '🧠',
-    gradient: 'from-indigo-500 to-violet-600',
+    gradient: 'from-brand-500 to-brand-600',
     route: '/interview/flashcard',
   },
   {
@@ -387,7 +387,7 @@ export const MODES = [
     title: 'Quest Mode',
     tagline: '30 real-world scenarios — type the exact command',
     icon: '🗺️',
-    gradient: 'from-emerald-500 to-teal-600',
+    gradient: 'from-emerald-500 to-brand-600',
     route: '/interview/quest',
   },
   {
@@ -395,7 +395,7 @@ export const MODES = [
     title: 'Typing Shooter',
     tagline: '30 commands — type them fast and accurately',
     icon: '⌨️',
-    gradient: 'from-rose-500 to-orange-600',
+    gradient: 'from-brand-500 to-amber-600',
     route: '/interview/typing',
   },
 ];

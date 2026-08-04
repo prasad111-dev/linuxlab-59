@@ -66,7 +66,7 @@ export default function AdminTasks() {
 
       <div className="mt-6 card">
         <h2 className="flex items-center gap-2 text-lg font-extrabold">
-          <Sparkles size={18} className="text-violet-500" /> Generate with AI
+          <Sparkles size={18} className="text-brand-500" /> Generate with AI
         </h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Describe a scenario and Gemini drafts the full task — then fine-tune it in the editor.
@@ -91,7 +91,7 @@ export default function AdminTasks() {
             <Link
               to="/admin/tasks/new"
               state={{ draft: generated }}
-              className="mt-2 inline-block text-sm font-bold text-indigo-600 hover:underline dark:text-indigo-400"
+              className="mt-2 inline-block text-sm font-bold text-brand-600 hover:underline dark:text-brand-400"
             >
               Open in editor →
             </Link>
@@ -107,7 +107,7 @@ export default function AdminTasks() {
             className={cn(
               'badge !px-3 !py-1.5 transition',
               status === s
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-brand-600 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'
             )}
           >
@@ -150,7 +150,7 @@ export default function AdminTasks() {
                 >
                   {t.status === 'published' ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
-                <Link to={`/admin/tasks/${t.id}/edit`} className="icon-btn text-indigo-500">
+                <Link to={`/admin/tasks/${t.id}/edit`} className="icon-btn text-brand-500">
                   <Pencil size={18} />
                 </Link>
                 <button onClick={() => remove(t)} className="icon-btn text-red-500">

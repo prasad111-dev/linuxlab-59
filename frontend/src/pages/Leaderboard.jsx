@@ -11,7 +11,7 @@ const PERIODS = [
   { key: 'all', label: 'All time', icon: Trophy },
 ];
 
-const MEDAL = ['text-yellow-400', 'text-slate-300', 'text-amber-600'];
+const MEDAL = ["text-brand-500", "text-slate-300", "text-brand-800"];
 
 export default function Leaderboard() {
   const { user } = useAuth();
@@ -59,7 +59,7 @@ export default function Leaderboard() {
       </div>
 
       {me && (
-        <div className="mt-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 p-4 text-white shadow-lg">
+        <div className="mt-6 rounded-2xl bg-gradient-to-r from-brand-600 via-brand-600 to-brand-500 p-4 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Crown size={20} />
@@ -90,14 +90,14 @@ export default function Leaderboard() {
               {rows.map((e, i) => {
                 const isMe = e.user && e.user._id === myId;
                 return (
-                  <tr key={e.user?._id || i} className={cn('border-b border-slate-100 last:border-0 dark:border-white/5', isMe && 'bg-indigo-50 dark:bg-indigo-500/10')}>
+                  <tr key={e.user?._id || i} className={cn('border-b border-slate-100 last:border-0 dark:border-white/5', isMe && 'bg-brand-50 dark:bg-brand-500/10')}>
                     <td className="px-4 py-3">
                       {i < 3 ? <Medal size={18} className={MEDAL[i]} /> : <span className="font-bold text-slate-500">{e.rank}</span>}
                     </td>
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-2 font-semibold">
                         {e.user?.name || 'Unknown user'}
-                        {isMe && <span className="badge bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300">you</span>}
+                        {isMe && <span className="badge bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-300">you</span>}
                       </span>
                     </td>
                     <td className="hidden px-4 py-3 text-slate-600 dark:text-slate-300 sm:table-cell">{e.tasks}</td>

@@ -31,7 +31,7 @@ export default function Achievements() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <h1 className="text-3xl font-extrabold tracking-tight">Achievements</h1>
       <p className="mt-1 text-slate-500 dark:text-slate-400">
-        <Trophy size={14} className="mr-1 inline text-yellow-500" />
+        <Trophy size={14} className="mr-1 inline text-brand-500" />
         {achieved.length} of {achievements.length} unlocked
       </p>
 
@@ -50,7 +50,7 @@ export default function Achievements() {
                       key={a.code}
                       className={cn(
                         'card flex flex-col items-center py-6 text-center transition',
-                        has ? 'border-yellow-300 bg-gradient-to-br from-yellow-50 to-amber-50 dark:border-yellow-500/30 dark:from-yellow-500/10 dark:to-amber-500/5' : 'opacity-60 grayscale'
+                        has ? 'border-brand-300 bg-gradient-to-br from-brand-50 to-brand-50 dark:border-brand-500/30 dark:from-brand-500/10 dark:to-brand-500/5' : 'opacity-60 grayscale'
                       )}
                     >
                       <div className={cn('flex h-14 w-14 items-center justify-center rounded-2xl text-3xl', has ? 'bg-white shadow dark:bg-white/10' : 'bg-slate-100 dark:bg-white/5')}>
@@ -76,7 +76,7 @@ export default function Achievements() {
         </div>
       )}
 
-      <div className="mt-10 card flex flex-col items-center bg-gradient-to-br from-indigo-500 to-purple-600 text-center text-white sm:flex-row sm:text-left">
+      <div className="mt-10 card flex flex-col items-center bg-gradient-to-br from-brand-500 to-brand-600 text-center text-white sm:flex-row sm:text-left">
         <div className="flex-1">
           <h3 className="text-xl font-extrabold">Want to unlock them all?</h3>
           <p className="mt-1 text-sm opacity-90">Solve tasks cleanly, on the first try, without hints — and keep your streak alive.</p>

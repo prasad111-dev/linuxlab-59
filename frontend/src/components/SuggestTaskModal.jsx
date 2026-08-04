@@ -172,7 +172,7 @@ export default function SuggestTaskModal({ onClose }) {
                         </div>
                         <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{s.scenario}</p>
                         {s.adminNote && (
-                          <p className="mt-1 text-xs text-indigo-600 dark:text-indigo-400">Admin: {s.adminNote}</p>
+                          <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">Admin: {s.adminNote}</p>
                         )}
                         <p className="mt-1 text-[11px] text-slate-400">{timeAgo(s.createdAt)}</p>
                       </li>

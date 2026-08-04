@@ -114,7 +114,7 @@ export default function FlashcardDuel() {
                 completed
                   ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'
                   : i === tierIndex
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-brand-600 text-white'
                     : 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-600'
               )}
             >
@@ -142,7 +142,7 @@ export default function FlashcardDuel() {
         <>
           <div className="card mt-6 animate-fade-up !p-7" key={flatIndex}>
             <div className="flex flex-wrap gap-2">
-              <span className="badge bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400">{current.tier}</span>
+              <span className="badge bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">{current.tier}</span>
               <span className="badge bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400">Q{current.id}/125</span>
             </div>
             <h2 className="mt-4 font-mono text-2xl font-bold tracking-tight">{current.cmd}</h2>
@@ -159,7 +159,7 @@ export default function FlashcardDuel() {
                     disabled={picked !== null}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition',
-                      picked === null && 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 dark:border-white/10 dark:hover:bg-white/5',
+                      picked === null && 'border-slate-200 hover:border-brand-300 hover:bg-brand-50/50 dark:border-white/10 dark:hover:bg-white/5',
                       picked !== null && isAnswer && 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
                       picked !== null && isPicked && !isAnswer && 'border-red-400 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300',
                       picked !== null && !isPicked && !isAnswer && 'opacity-50'

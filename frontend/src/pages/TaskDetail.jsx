@@ -61,15 +61,15 @@ export default function TaskDetail() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <Link to="/practicals" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-500">
+      <Link to="/practicals" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-500">
         <ArrowLeft size={15} /> All practicals
       </Link>
 
       {/* Header */}
       <div className="mt-4 card relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: cat?.color || '#6366f1' }} />
+        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: cat?.color || '#ee0000' }} />
         <div className="flex flex-wrap items-center gap-2">
-          <span className="badge" style={{ backgroundColor: `${cat?.color || '#6366f1'}18`, color: cat?.color || '#6366f1' }}>
+          <span className="badge" style={{ backgroundColor: `${cat?.color || '#ee0000'}18`, color: cat?.color || '#ee0000' }}>
             {cat?.icon} {cat?.name}
           </span>
           <span className={`badge ${diff.cls}`}>{diff.label}</span>
@@ -88,7 +88,7 @@ export default function TaskDetail() {
             <Trophy size={16} className="text-emerald-500" /> {task.points} points
           </span>
           <span className="inline-flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
-            <Target size={16} className="text-indigo-500" /> {task.validationRules?.length || 0} checks
+            <Target size={16} className="text-brand-500" /> {task.validationRules?.length || 0} checks
           </span>
         </div>
         <div className="mt-6">
@@ -115,7 +115,7 @@ export default function TaskDetail() {
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <div className="card">
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
-            <Target size={20} className="text-indigo-500" /> Objectives
+            <Target size={20} className="text-brand-500" /> Objectives
           </h2>
           <ul className="mt-3 space-y-2">
             {task.objectives?.map((o, i) => (
@@ -127,12 +127,12 @@ export default function TaskDetail() {
         </div>
         <div className="card">
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
-            <ListChecks size={20} className="text-violet-500" /> Requirements
+            <ListChecks size={20} className="text-brand-500" /> Requirements
           </h2>
           <ul className="mt-3 space-y-2">
             {task.requirements?.map((r, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" /> {r}
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" /> {r}
               </li>
             ))}
           </ul>
@@ -186,7 +186,7 @@ export default function TaskDetail() {
       {task.hints?.length > 0 && (
         <div className="mt-6 card border-dashed">
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
-            <Lightbulb size={20} className="text-violet-500" /> Hints
+            <Lightbulb size={20} className="text-brand-500" /> Hints
           </h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             {task.hints.length} progressive hints are available in the lab. They get more detailed the more you ask. {user ? '' : <Lock size={12} className="inline" />}

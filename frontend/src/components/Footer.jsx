@@ -19,7 +19,7 @@ export default function Footer() {
         <div className="grid gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white">
                 <Terminal size={16} />
               </div>
               <span className="font-extrabold">
@@ -33,19 +33,19 @@ export default function Footer() {
           <div>
             <h4 className="mb-3 text-sm font-bold">Platform</h4>
             <ul className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
-              <li><Link to="/practicals" className="hover:text-indigo-500">Practicals</Link></li>
-              <li><Link to="/leaderboard" className="hover:text-indigo-500">Leaderboard</Link></li>
-              <li><Link to="/achievements" className="hover:text-indigo-500">Achievements</Link></li>
-              <li><Link to="/history" className="hover:text-indigo-500">History</Link></li>
+              <li><Link to="/practicals" className="hover:text-brand-500">Practicals</Link></li>
+              <li><Link to="/leaderboard" className="hover:text-brand-500">Leaderboard</Link></li>
+              <li><Link to="/achievements" className="hover:text-brand-500">Achievements</Link></li>
+              <li><Link to="/history" className="hover:text-brand-500">History</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="mb-3 text-sm font-bold">Company</h4>
             <ul className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
-              <li><button onClick={() => goToSection('features')} className="hover:text-indigo-500">Features</button></li>
-              <li><button onClick={() => goToSection('roadmap')} className="hover:text-indigo-500">Roadmap</button></li>
-              <li><button onClick={() => goToSection('faq')} className="hover:text-indigo-500">FAQ</button></li>
-              <li><button onClick={() => goToSection('contact')} className="hover:text-indigo-500">Contact</button></li>
+              <li><button onClick={() => goToSection('features')} className="hover:text-brand-500">Features</button></li>
+              <li><button onClick={() => goToSection('roadmap')} className="hover:text-brand-500">Roadmap</button></li>
+              <li><button onClick={() => goToSection('faq')} className="hover:text-brand-500">FAQ</button></li>
+              <li><button onClick={() => goToSection('contact')} className="hover:text-brand-500">Contact</button></li>
             </ul>
           </div>
         </div>

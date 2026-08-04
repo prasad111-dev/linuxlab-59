@@ -38,7 +38,7 @@ export default function History() {
             className={cn(
               'badge !px-3 !py-1.5 transition',
               filter === f.key
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-brand-600 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'
             )}
           >
@@ -57,7 +57,7 @@ export default function History() {
           </div>
         )}
         {filtered.map((a) => (
-          <Link key={a.id} to={`/history/${a.id}`} className="card flex items-center gap-4 transition hover:border-indigo-300 dark:hover:border-indigo-500/40">
+          <Link key={a.id} to={`/history/${a.id}`} className="card flex items-center gap-4 transition hover:border-brand-300 dark:hover:border-brand-500/40">
             <div
               className={cn(
                 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
@@ -66,7 +66,7 @@ export default function History() {
                     ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15'
                     : 'bg-red-100 text-red-600 dark:bg-red-500/15'
                   : a.status === 'running'
-                    ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15'
+                    ? 'bg-brand-100 text-brand-600 dark:bg-brand-500/15'
                     : 'bg-slate-100 text-slate-500 dark:bg-white/5'
               )}
             >
@@ -87,7 +87,7 @@ export default function History() {
                   <p className="text-xs text-slate-500 dark:text-slate-400">{formatDuration(a.timeTakenSeconds)}</p>
                 </>
               ) : (
-                <span className={cn('badge', a.status === 'running' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' : 'bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400')}>
+                <span className={cn('badge', a.status === 'running' ? 'bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' : 'bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400')}>
                   {a.status}
                 </span>
               )}

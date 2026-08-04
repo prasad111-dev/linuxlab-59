@@ -103,7 +103,7 @@ export default function TypingShooter() {
     setValue('');
   };
 
-  if (!loaded) return <div className="flex min-h-[60vh] items-center justify-center"><Spinner size={26} className="text-indigo-500" /></div>;
+  if (!loaded) return <div className="flex min-h-[60vh] items-center justify-center"><Spinner size={26} className="text-brand-500" /></div>;
   if (report) return <InterviewReport session={report} onRetry={() => window.location.reload()} />;
 
   const states = charState(value, target);
@@ -125,7 +125,7 @@ export default function TypingShooter() {
             key={i}
             className={cn(
               'h-1.5 flex-1 rounded-full transition',
-              i < log.length ? 'bg-emerald-400' : i === log.length ? 'bg-rose-500' : 'bg-slate-200 dark:bg-white/10'
+              i < log.length ? 'bg-emerald-400' : i === log.length ? 'bg-brand-500' : 'bg-slate-200 dark:bg-white/10'
             )}
           />
         ))}
@@ -145,8 +145,8 @@ export default function TypingShooter() {
       ) : (
         <div className="card mt-6 animate-fade-up !p-7" key={index}>
           <div className="flex items-center gap-2">
-            <Keyboard size={16} className="text-rose-500" />
-            <span className="badge bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400">
+            <Keyboard size={16} className="text-brand-500" />
+            <span className="badge bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
               Type the command
             </span>
           </div>
@@ -172,7 +172,7 @@ export default function TypingShooter() {
 
           <div className="mt-5 flex gap-2">
             <div className="relative flex-1">
-              <span className="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-sm text-rose-500">$</span>
+              <span className="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-sm text-brand-500">$</span>
               <input
                 autoFocus
                 value={value}

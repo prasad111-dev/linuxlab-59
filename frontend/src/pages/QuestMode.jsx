@@ -89,7 +89,7 @@ export default function QuestMode() {
     }
   };
 
-  if (!loaded) return <div className="flex min-h-[60vh] items-center justify-center"><Spinner size={26} className="text-indigo-500" /></div>;
+  if (!loaded) return <div className="flex min-h-[60vh] items-center justify-center"><Spinner size={26} className="text-brand-500" /></div>;
   if (report) return <InterviewReport session={report} onRetry={() => window.location.reload()} />;
 
   return (
@@ -109,7 +109,7 @@ export default function QuestMode() {
             key={i}
             className={cn(
               'h-1.5 flex-1 rounded-full transition',
-              i < answers.length ? 'bg-emerald-400' : i === answers.length ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-white/10'
+              i < answers.length ? 'bg-emerald-400' : i === answers.length ? 'bg-brand-500' : 'bg-slate-200 dark:bg-white/10'
             )}
           />
         ))}

@@ -38,12 +38,12 @@ export default function AdminDashboard() {
 
   const c = stats.counts;
   const cards = [
-    { label: 'Users', value: c.users, icon: Users, color: 'text-indigo-500', to: '/admin/users' },
-    { label: 'Tasks', value: c.tasks, icon: FileText, color: 'text-violet-500', to: '/admin/tasks' },
+    { label: 'Users', value: c.users, icon: Users, color: 'text-brand-500', to: '/admin/users' },
+    { label: 'Tasks', value: c.tasks, icon: FileText, color: 'text-brand-500', to: '/admin/tasks' },
     { label: 'Published', value: c.publishedTasks, icon: CheckCircle2, color: 'text-emerald-500', to: '/admin/tasks' },
     { label: 'Attempts', value: c.attempts, icon: Activity, color: 'text-amber-500', to: '/admin' },
-    { label: 'Running labs', value: c.runningAttempts, icon: PlayCircle, color: 'text-sky-500', to: '/admin' },
-    { label: 'Categories', value: c.categories, icon: FolderTree, color: 'text-pink-500', to: '/admin/categories' },
+    { label: 'Running labs', value: c.runningAttempts, icon: PlayCircle, color: 'text-brand-500', to: '/admin' },
+    { label: 'Categories', value: c.categories, icon: FolderTree, color: 'text-brand-500', to: '/admin/categories' },
   ];
 
   const maxCat = Math.max(1, ...stats.attemptsByCategory.map((a) => a.count));
@@ -70,7 +70,7 @@ export default function AdminDashboard() {
             <Lightbulb size={16} />
             {stats.counts.pendingSuggestions} student suggestion{stats.counts.pendingSuggestions > 1 ? 's' : ''} waiting for review
           </span>
-          <span className="text-indigo-600 dark:text-indigo-400">Review →</span>
+          <span className="text-brand-600 dark:text-brand-400">Review →</span>
         </Link>
       )}
 
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
         {cards.map((card) => {
           const Icon = card.icon;
           return card.to ? (
-            <Link key={card.label} to={card.to} className="card hover:border-indigo-300 dark:hover:border-indigo-500/40">
+            <Link key={card.label} to={card.to} className="card hover:border-brand-300 dark:hover:border-brand-500/40">
               <Icon size={20} className={card.color} />
               <p className="mt-2 text-2xl font-black">{card.value}</p>
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
@@ -96,7 +96,7 @@ export default function AdminDashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="card">
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
-            <Activity size={18} className="text-indigo-500" /> Attempts — last 7 days
+            <Activity size={18} className="text-brand-500" /> Attempts — last 7 days
           </h2>
           <div className="mt-4 flex h-32 items-end gap-2">
             {stats.activityLast7.length === 0 && (
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
             {stats.activityLast7.map((a) => (
               <div key={a._id} className="flex flex-1 flex-col items-center gap-1">
                 <div
-                  className="w-full rounded-t-lg bg-gradient-to-t from-indigo-600 to-violet-500"
+                  className="w-full rounded-t-lg bg-gradient-to-t from-brand-600 to-brand-500"
                   style={{ height: `${Math.max(4, (a.count / maxDay) * 100)}%` }}
                   title={`${a.count} attempts`}
                 />
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
 
         <div className="card">
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
-            <FolderTree size={18} className="text-violet-500" /> Attempts by category
+            <FolderTree size={18} className="text-brand-500" /> Attempts by category
           </h2>
           <div className="mt-4 space-y-2">
             {stats.attemptsByCategory.length === 0 && (
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
                 </span>
                 <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-500"
                     style={{ width: `${Math.max(4, (a.count / maxCat) * 100)}%` }}
                   />
                 </div>
@@ -158,7 +158,7 @@ export default function AdminDashboard() {
               <div key={e._id || i} className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2 dark:bg-white/5">
                 <span className="w-6 font-black text-slate-400">#{e.rank}</span>
                 <span className="flex-1 truncate font-semibold">{e.name}</span>
-                <span className="text-sm font-bold text-indigo-500">{e.points} pts</span>
+                <span className="text-sm font-bold text-brand-500">{e.points} pts</span>
               </div>
             ))}
           </div>

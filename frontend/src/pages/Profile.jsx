@@ -60,20 +60,20 @@ export default function Profile() {
       <h1 className="text-3xl font-extrabold tracking-tight">Profile</h1>
 
       <div className="mt-6 card flex flex-col items-center gap-6 sm:flex-row">
-        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-3xl font-black text-white shadow-lg">
+        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-3xl font-black text-white shadow-lg">
           {u.name?.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 text-center sm:text-left">
           <p className="text-xl font-extrabold">{u.name}</p>
           <p className="text-sm text-slate-500 dark:text-slate-400">{u.email}</p>
           <div className="mt-2 flex justify-center gap-3 sm:justify-start">
-            <span className="badge bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400">
+            <span className="badge bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
               <Flame size={12} className="mr-1 inline" /> {streak} day streak
             </span>
             <span className="badge bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
               <Zap size={12} className="mr-1 inline" /> {points} pts
             </span>
-            <span className="badge bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400">
+            <span className="badge bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
               <TrendingUp size={12} className="mr-1 inline" /> rank #{rank}
             </span>
           </div>
@@ -100,7 +100,7 @@ export default function Profile() {
         {[
           { label: 'Completed', value: profile.completed ?? 0, icon: CheckCircle2, color: 'text-emerald-500' },
           { label: 'Pending', value: profile.pendingTasks ?? 0, icon: Target, color: 'text-amber-500' },
-          { label: 'Avg score', value: profile.avgScore != null ? `${profile.avgScore}%` : '—', icon: TrendingUp, color: 'text-sky-500' },
+          { label: 'Avg score', value: profile.avgScore != null ? `${profile.avgScore}%` : '—', icon: TrendingUp, color: 'text-brand-500' },
           { label: 'Rank', value: rank, icon: Trophy, color: 'text-amber-500' },
         ].map((s) => {
           const Icon = s.icon;
@@ -115,7 +115,7 @@ export default function Profile() {
       </div>
 
       <div className="mt-6 card flex flex-wrap items-center gap-4">
-        <Sparkles size={20} className="text-violet-500" />
+        <Sparkles size={20} className="text-brand-500" />
         <div className="flex-1">
           <p className="font-bold">Speed bonus active</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">Finish a task under its suggested time to earn +20% points.</p>
@@ -126,9 +126,9 @@ export default function Profile() {
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
-            <Brain size={18} className="text-indigo-500" /> Interview drills
+            <Brain size={18} className="text-brand-500" /> Interview drills
           </h2>
-          <Link to="/interview" className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+          <Link to="/interview" className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 dark:text-brand-400">
             Open hub <ChevronRight size={15} />
           </Link>
         </div>
@@ -150,7 +150,7 @@ export default function Profile() {
               <Link
                 key={s.id}
                 to={`/interview/session/${s.id}`}
-                className="card flex items-center gap-3 !p-3.5 transition hover:border-indigo-300 dark:hover:border-indigo-500/40"
+                className="card flex items-center gap-3 !p-3.5 transition hover:border-brand-300 dark:hover:border-brand-500/40"
               >
                 <span className="text-xl">{s.mode === 'flashcard' ? '🧠' : s.mode === 'quest' ? '🗺️' : '⌨️'}</span>
                 <div className="min-w-0 flex-1">

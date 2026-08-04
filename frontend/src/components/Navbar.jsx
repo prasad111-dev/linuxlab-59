@@ -74,7 +74,7 @@ export default function Navbar() {
     cn(
       'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
       isActive
-        ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400'
+        ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400'
         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white'
     );
 
@@ -82,7 +82,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/70 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/70">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-lg shadow-brand-500/30">
             <Terminal size={20} />
           </div>
           <span className="text-lg font-extrabold tracking-tight">
@@ -137,7 +137,7 @@ export default function Navbar() {
                     <div className="flex items-center justify-between px-2 py-1">
                       <span className="text-sm font-bold">Notifications</span>
                       {notifs.unread > 0 && (
-                        <button onClick={markAllRead} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                        <button onClick={markAllRead} className="text-xs font-semibold text-brand-600 dark:text-brand-400">
                           Mark all read
                         </button>
                       )}
@@ -151,7 +151,7 @@ export default function Navbar() {
                           key={n.id}
                           className={cn(
                             'rounded-xl px-3 py-2.5',
-                            !n.read && 'bg-indigo-50/70 dark:bg-indigo-500/10'
+                            !n.read && 'bg-brand-50/70 dark:bg-brand-500/10'
                           )}
                         >
                           <p className="text-sm font-semibold">{n.title}</p>
@@ -172,7 +172,7 @@ export default function Navbar() {
                   {user.picture ? (
                     <img src={user.picture} alt="" className="h-7 w-7 rounded-full" />
                   ) : (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
                       {initials(user.name)}
                     </span>
                   )}

@@ -1,4 +1,4 @@
-const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444', '#f97316'];
+const COLORS = ['#ee0000', '#ff6666', '#ff9e9e', '#d60000', '#b30000', '#ffffff', '#e5e7eb', '#111827'];
 
 export function fireConfetti({ count = 90, x = 0.5, y = 0.3 } = {}) {
   const canvas = document.createElement('canvas');

@@ -52,12 +52,12 @@ export default function AttemptReview() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <Link to="/history" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-500">
+      <Link to="/history" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-brand-500">
         <ArrowLeft size={15} /> History
       </Link>
 
       <div className="mt-4 card relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: category?.color || '#6366f1' }} />
+        <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-10 blur-2xl" style={{ backgroundColor: category?.color || '#ee0000' }} />
         <div className="flex flex-wrap items-center gap-2">
           {category && <span className="badge" style={{ backgroundColor: `${category.color}18`, color: category.color }}>{category.icon} {category.name}</span>}
           {data.status === 'evaluated' && (
@@ -91,7 +91,7 @@ export default function AttemptReview() {
       {task?.scenario && (
         <div className="mt-6 card">
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
-            <Target size={18} className="text-indigo-500" /> Scenario
+            <Target size={18} className="text-brand-500" /> Scenario
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-200">{task.scenario}</p>
         </div>
@@ -122,7 +122,7 @@ export default function AttemptReview() {
       {data.feedback && (
         <div className="mt-6 card">
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
-            <Sparkles size={20} className="text-violet-500" /> AI feedback
+            <Sparkles size={20} className="text-brand-500" /> AI feedback
           </h2>
           <p className="mt-2 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{data.feedback}</p>
         </div>

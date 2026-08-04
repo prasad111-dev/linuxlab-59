@@ -17,7 +17,7 @@ export function renderMarkdownish(text) {
     } else if (t.startsWith('- ') || t.startsWith('* ')) {
       out.push(
         <p key={out.length} className="flex gap-2 py-0.5 text-sm text-slate-600 dark:text-slate-300">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
           <span>{t.slice(2)}</span>
         </p>
       );
@@ -30,9 +30,9 @@ export function renderMarkdownish(text) {
 
 export function ModeMeta({ mode }) {
   const meta = {
-    flashcard: { label: 'Flashcard Duel', cls: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' },
+    flashcard: { label: 'Flashcard Duel', cls: 'bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' },
     quest: { label: 'Quest Mode', cls: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400' },
-    typing: { label: 'Typing Shooter', cls: 'bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400' },
+    typing: { label: 'Typing Shooter', cls: 'bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' },
   }[mode];
   return <span className={cn('badge', meta.cls)}>{meta.label}</span>;
 }
@@ -75,11 +75,11 @@ export default function InterviewReport({ session, onRetry }) {
 
         <div className="card mt-5 !p-6">
           <div className="flex items-center gap-2">
-            <Sparkles size={18} className="text-indigo-500" />
+            <Sparkles size={18} className="text-brand-500" />
             <h2 className="text-base font-extrabold">AI coach analysis</h2>
           </div>
           <div className="mt-3 space-y-1">
-            {session.aiReport ? renderMarkdownish(session.aiReport) : <Spinner size={20} className="text-indigo-500" />}
+            {session.aiReport ? renderMarkdownish(session.aiReport) : <Spinner size={20} className="text-brand-500" />}
           </div>
         </div>
 

@@ -71,7 +71,7 @@ export default function Practicals() {
           className={cn(
             'badge !px-3 !py-1.5 transition',
             !cat
-              ? 'bg-indigo-600 text-white'
+              ? 'bg-brand-600 text-white'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'
           )}
         >
@@ -84,7 +84,7 @@ export default function Practicals() {
             className={cn(
               'badge !px-3 !py-1.5 transition',
               cat === c.id
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-brand-600 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'
             )}
           >
@@ -103,7 +103,7 @@ export default function Practicals() {
             className={cn(
               'badge !px-3 !py-1.5 capitalize transition',
               diff === d
-                ? 'bg-violet-600 text-white'
+                ? 'bg-brand-600 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'
             )}
           >

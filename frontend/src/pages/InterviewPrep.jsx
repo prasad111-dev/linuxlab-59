@@ -28,7 +28,7 @@ export default function InterviewPrep() {
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-          <Sparkles size={14} className="text-indigo-500" /> AI analysis saved to your history
+          <Sparkles size={14} className="text-brand-500" /> AI analysis saved to your history
         </div>
       </div>
 
@@ -37,14 +37,14 @@ export default function InterviewPrep() {
           <Link
             key={m.mode}
             to={m.route}
-            className="card group relative flex flex-col !p-6 transition hover:-translate-y-1 hover:border-indigo-300 hover:shadow-xl dark:hover:border-indigo-500/40"
+            className="card group relative flex flex-col !p-6 transition hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl dark:hover:border-brand-500/40"
           >
             <div className={cn('flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-3xl text-white shadow-lg', m.gradient)}>
               {m.icon}
             </div>
             <h2 className="mt-4 text-lg font-extrabold">{m.title}</h2>
             <p className="mt-1 flex-1 text-sm text-slate-500 dark:text-slate-400">{m.tagline}</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 dark:text-brand-400">
               Start practice <ArrowRight size={15} className="transition group-hover:translate-x-1" />
             </span>
           </Link>
@@ -74,10 +74,10 @@ export default function InterviewPrep() {
                   className={cn(
                     'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl',
                     s.mode === 'flashcard'
-                      ? 'bg-indigo-100 dark:bg-indigo-500/15'
+                      ? 'bg-brand-100 dark:bg-brand-500/15'
                       : s.mode === 'quest'
                         ? 'bg-emerald-100 dark:bg-emerald-500/15'
-                        : 'bg-rose-100 dark:bg-rose-500/15'
+                        : 'bg-brand-100 dark:bg-brand-500/15'
                   )}
                 >
                   {s.mode === 'flashcard' ? '🧠' : s.mode === 'quest' ? '🗺️' : '⌨️'}
@@ -90,7 +90,7 @@ export default function InterviewPrep() {
                     {s.score}/{s.maxScore} · {s.accuracy}% accuracy{s.wpm ? ` · ${s.wpm} WPM` : ''} · {timeAgo(s.createdAt)}
                   </p>
                 </div>
-                <Link to={`/interview/session/${s.id}`} className="icon-btn text-slate-400 hover:text-indigo-500">
+                <Link to={`/interview/session/${s.id}`} className="icon-btn text-slate-400 hover:text-brand-500">
                   <ChevronRight size={18} />
                 </Link>
               </div>

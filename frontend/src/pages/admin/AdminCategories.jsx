@@ -4,10 +4,10 @@ import { Plus, Pencil, Trash2, Palette } from 'lucide-react';
 import { api } from '../../lib/api';
 import { FullPageSpinner } from '../../components/Spinner';
 
-const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6'];
+const COLORS = ['#ee0000', '#d60000', '#b30000', '#ff6666', '#ff9e9e', '#8e0000', '#6e0000', '#111827'];
 const ICONS = ['🐧', '📘', '🔒', '🌐', '📦', '👥', '🧰', '🛠️', '⚙️', '🖧', '🗄️', '🔑', '📊', '☁️'];
 
-const EMPTY = { name: '', description: '', icon: '🐧', color: '#6366f1', order: 0, isActive: true };
+const EMPTY = { name: '', description: '', icon: '🐧', color: '#ee0000', order: 0, isActive: true };
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState([]);
@@ -73,7 +73,7 @@ export default function AdminCategories() {
               <p className="font-bold">{c.name} {!c.isActive && <span className="badge bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400">inactive</span>}</p>
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">{c.description || 'No description'}</p>
             </div>
-            <button onClick={() => setEditing({ ...c })} className="icon-btn text-indigo-500">
+            <button onClick={() => setEditing({ ...c })} className="icon-btn text-brand-500">
               <Pencil size={18} />
             </button>
             <button onClick={() => remove(c)} className="icon-btn text-red-500">
@@ -87,7 +87,7 @@ export default function AdminCategories() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm sm:items-center">
           <div className="card w-full max-w-lg space-y-4 !rounded-2xl">
             <div className="flex items-center gap-2">
-              <Palette size={18} className="text-indigo-500" />
+              <Palette size={18} className="text-brand-500" />
               <h2 className="text-lg font-extrabold">{editing.id ? 'Edit category' : 'New category'}</h2>
             </div>
             <label className="block">
@@ -107,7 +107,7 @@ export default function AdminCategories() {
                       key={ic}
                       type="button"
                       onClick={() => setEditing({ ...editing, icon: ic })}
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-lg ${editing.icon === ic ? 'bg-indigo-100 ring-2 ring-indigo-500 dark:bg-indigo-500/20' : 'hover:bg-slate-100 dark:hover:bg-white/10'}`}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-lg ${editing.icon === ic ? 'bg-brand-100 ring-2 ring-brand-500 dark:bg-brand-500/20' : 'hover:bg-slate-100 dark:hover:bg-white/10'}`}
                     >
                       {ic}
                     </button>

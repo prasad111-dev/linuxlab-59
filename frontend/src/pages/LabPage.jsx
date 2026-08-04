@@ -232,7 +232,7 @@ export default function LabPage() {
             Hint
           </button>
           <button onClick={getExplain} disabled={chatBusy} className="btn-ghost">
-            {chatBusy ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} className="text-violet-500" />}
+            {chatBusy ? <Loader2 size={16} className="animate-spin" /> : <BookOpen size={16} className="text-brand-500" />}
             Explain
           </button>
           <button onClick={submit} disabled={resultLoading} className="btn-secondary">
@@ -250,7 +250,7 @@ export default function LabPage() {
           <Lightbulb size={15} className="text-amber-500" /> Hint
         </button>
         <button onClick={getExplain} disabled={chatBusy} className="btn-ghost flex-1">
-          <BookOpen size={15} className="text-violet-500" /> Explain
+          <BookOpen size={15} className="text-brand-500" /> Explain
         </button>
         <button onClick={submit} disabled={resultLoading} className="btn-secondary flex-1">
           <Send size={15} /> Submit
@@ -294,7 +294,7 @@ export default function LabPage() {
                     'rounded-full px-2 py-0.5 text-xs font-bold',
                     checks.passedCount === checks.totalRules
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
-                      : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
+                      : 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
                   )}
                 >
                   {checks.passedCount}/{checks.totalRules}
@@ -344,7 +344,7 @@ export default function LabPage() {
           <div className="mt-4">
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-2 font-extrabold">
-                <MessageCircle size={17} className="text-violet-500" /> AI tutor chat
+                <MessageCircle size={17} className="text-brand-500" /> AI tutor chat
               </h3>
               {chat.length > 0 && (
                 <button onClick={() => setChat([])} className="text-sm text-slate-400">
@@ -357,7 +357,7 @@ export default function LabPage() {
               {chat.length === 0 && (
                 <p className="text-xs leading-relaxed text-slate-400">
                   Ask me anything about this task. I can see your terminal — your commands and which checks are
-                  passing. Try <button onClick={() => sendChat('What should I check first with cat or ls?')} className="font-semibold text-indigo-500 underline">"What should I check first?"</button>
+                  passing. Try <button onClick={() => sendChat('What should I check first with cat or ls?')} className="font-semibold text-brand-500 underline">"What should I check first?"</button>
                 </p>
               )}
               {chat.map((m, i) => (
@@ -366,7 +366,7 @@ export default function LabPage() {
                     className={cn(
                       'inline-block max-w-full rounded-2xl px-3 py-2 text-left whitespace-pre-line',
                       m.role === 'user'
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-brand-600 text-white'
                         : 'bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200'
                     )}
                   >
@@ -389,7 +389,7 @@ export default function LabPage() {
                 value={chatText}
                 onChange={(e) => setChatText(e.target.value)}
                 placeholder="Ask about this task…"
-                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 dark:border-white/10 dark:bg-slate-800"
+                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-400 dark:border-white/10 dark:bg-slate-800"
               />
               <button type="submit" disabled={chatBusy} className="btn-primary !px-3" aria-label="Send">
                 {chatBusy ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
@@ -414,7 +414,7 @@ export default function LabPage() {
                   <ul className="mt-2 space-y-1.5">
                     {task.requirements?.map((r, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" /> {r}
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" /> {r}
                       </li>
                     ))}
                   </ul>
@@ -475,8 +475,8 @@ export default function LabPage() {
             </div>
 
             {result.result.optimization && (
-              <div className="mt-4 rounded-xl bg-indigo-50 p-4 text-sm dark:bg-indigo-500/10">
-                <p className="font-bold text-indigo-700 dark:text-indigo-400">Improvements</p>
+              <div className="mt-4 rounded-xl bg-brand-50 p-4 text-sm dark:bg-brand-500/10">
+                <p className="font-bold text-brand-700 dark:text-brand-400">Improvements</p>
                 <p className="mt-1 text-slate-600 dark:text-slate-300">{result.result.optimization}</p>
               </div>
             )}
@@ -503,7 +503,7 @@ export default function LabPage() {
 
       {resultLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/70 backdrop-blur-sm">
-          <Loader2 size={36} className="animate-spin text-indigo-400" />
+          <Loader2 size={36} className="animate-spin text-brand-400" />
           <p className="text-sm font-semibold text-white">Evaluating your work…</p>
         </div>
       )}
