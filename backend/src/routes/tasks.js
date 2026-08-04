@@ -5,9 +5,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
-const config = require('../config');
 const { callGemini } = require('../services/geminiService');
-const { signKcToken } = require('./killercoda');
 
 const TASK_FIELDS = [
   'title',
@@ -79,48 +77,6 @@ module.exports = async function taskRoutes(app) {
     const json = req.userRole === 'admin' ? task.toAdminJSON() : task.toStudentJSON();
     json.myBest = myBest ? { score: myBest.score, passed: myBest.passed, status: myBest.status } : null;
     return json;
-  });
-
-  app.get('/:id/killercoda', { preHandler: [optionalAuth] }, async (req) => {
-    const task = await Task.findById(req.params.id);
-    if (!task) throw new HttpError(404, 'Task not found');
-    if (task.status !== 'published' && req.userRole !== 'admin') {
-      throw new HttpError(404, 'Task not found');
-    }
-    const username = config.killercoda.username;
-    if (!username) {
-      throw new HttpError(503, 'Killercoda preview is not configured on this server');
-    }
-    const slug = String(task.title)
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
-    const kcPath = `/embed/scenario/${encodeURIComponent(username)}/${encodeURIComponent(slug)}`;
-    const directUrl = `https://killercoda.com${kcPath}`;
-    const embedUrl = new URL(directUrl);
-
-    const { attemptId } = req.query || {};
-    if (attemptId && req.userId) {
-      const attempt = await Attempt.findOne({ _id: attemptId, user: req.userId, task: task._id });
-      if (attempt) {
-        const kcToken = await signKcToken({
-          typ: 'killercoda',
-          sub: req.userId,
-          attemptId: attempt._id.toString(),
-          taskId: task._id.toString(),
-        });
-        embedUrl.searchParams.set('LINUXLAB_TOKEN', kcToken);
-      }
-    }
-
-    const proxyUrl = `/api/killercoda/proxy?path=${encodeURIComponent(kcPath)}${attemptId && embedUrl.searchParams.get('LINUXLAB_TOKEN') ? '&token=' + encodeURIComponent(embedUrl.searchParams.get('LINUXLAB_TOKEN')) : ''}`;
-
-    return {
-      slug,
-      embedUrl: embedUrl.toString(),
-      proxyUrl,
-    };
   });
 
   app.post('/', { preHandler: [requireAdmin] }, async (req) => {

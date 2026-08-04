@@ -46,12 +46,6 @@ module.exports = {
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean),
   sessionTtlMinutes: int('SESSION_TTL_MINUTES', 60),
-  // Killercoda free preview (ungraded sandbox) — set KILLERCODA_USERNAME to enable
-  killercoda: {
-    username: (process.env.KILLERCODA_USERNAME || '').trim(),
-    baseUrl: (process.env.KILLERCODA_BASE_URL || 'https://killercoda.com/embed/scenario').replace(/\/+$/, ''),
-  },
-  // 'task' = only commands the task's validation rules allow; anything else = full access
   terminalPolicy: process.env.TERMINAL_POLICY === 'task' ? 'task' : 'none',
   container: {
     memMb: int('CONTAINER_MEM_MB', 512),

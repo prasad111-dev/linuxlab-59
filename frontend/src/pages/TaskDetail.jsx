@@ -17,7 +17,6 @@ import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { FullPageSpinner } from '../components/Spinner';
 import { difficultyMeta, cn } from '../lib/format';
-import { MonitorPlay } from 'lucide-react';
 
 export default function TaskDetail() {
   const { id } = useParams();
@@ -45,10 +44,6 @@ export default function TaskDetail() {
     } finally {
       setStarting(false);
     }
-  };
-
-  const preview = () => {
-    navigate(`/preview/${id}`);
   };
 
   if (error && !task) {
@@ -96,18 +91,16 @@ export default function TaskDetail() {
             <Target size={16} className="text-indigo-500" /> {task.validationRules?.length || 0} checks
           </span>
         </div>
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6">
           <button onClick={start} disabled={starting} className="btn-primary w-full !py-3 sm:w-auto">
             {starting ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} />}
             {user ? (task.myBest?.status === 'running' ? 'Resume lab' : 'Start practical') : 'Login to start'}
           </button>
-          <button onClick={preview} className="btn-ghost w-full !py-3 sm:w-auto">
-            <MonitorPlay size={18} className="text-violet-500" /> Free preview
-          </button>
+          {!user && (
+            <p className="mt-2 text-xs text-slate-400">You'll need to sign in with Google to start a lab.</p>
+          )}
+          {error && <p className="mt-2 text-sm font-medium text-red-500">{error}</p>}
         </div>
-        {!user && (
-          <p className="mt-2 text-xs text-slate-400">You'll need to sign in with Google to start a graded lab. Free preview works without login.</p>
-        )}
       </div>
 
       {/* Scenario */}

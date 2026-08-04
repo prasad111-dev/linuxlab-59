@@ -1,6 +1,7 @@
 const config = require('./config');
 const { buildApp } = require('./app');
 const { connectDB, disconnectDB } = require('./db');
+const { setupTerminalProxy } = require('./ws/terminalProxy');
 const { seedDatabase } = require('./seed');
 
 async function main() {
@@ -10,6 +11,7 @@ async function main() {
   await seedDatabase();
 
   await app.listen({ port: config.port, host: '0.0.0.0' });
+  setupTerminalProxy(app.server);
 
   app.log.info(`LinuxLab backend running on :${config.port} (${config.env})`);
 }

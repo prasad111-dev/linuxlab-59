@@ -1,9 +1,9 @@
 const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { serializeAttempt } = require('../utils/serialize');
-const { startSession, terminateRunning } = require('../services/sessionService');
+const { startSession } = require('../services/sessionService');
+const orchestrator = require('../services/orchestratorClient');
 const Attempt = require('../models/Attempt');
-const { signKcToken } = require('./killercoda');
 
 module.exports = async function sessionRoutes(app) {
   app.post(
@@ -13,25 +13,31 @@ module.exports = async function sessionRoutes(app) {
       const { taskId } = req.body || {};
       if (!taskId) throw new HttpError(400, 'taskId is required');
       const { attempt, resumed } = await startSession(req.userId, taskId);
-
-      const kcToken = await signKcToken({
-        typ: 'killercoda',
-        sub: req.userId,
-        attemptId: attempt._id.toString(),
-        taskId: attempt.task.toString(),
-      });
-
-      return { attempt: serializeAttempt(attempt), resumed, kcToken };
+      return { attempt: serializeAttempt(attempt), resumed };
     }
   );
 
   app.get('/:attemptId', { preHandler: [requireAuth] }, async (req) => {
     const attempt = await Attempt.findOne({ _id: req.params.attemptId, user: req.userId });
     if (!attempt) throw new HttpError(404, 'Session not found');
-    return { status: attempt.status, attempt: serializeAttempt(attempt) };
+
+    let alive = false;
+    if (attempt.containerId && attempt.status === 'running') {
+      alive = await orchestrator.isContainerAlive(attempt.containerId);
+      if (!alive) {
+        attempt.status = 'terminated';
+        await attempt.save();
+      }
+    }
+    return { status: attempt.status, alive, attempt: serializeAttempt(attempt) };
   });
 
   app.post('/:attemptId/ping', { preHandler: [requireAuth] }, async (req) => {
+    const attempt = await Attempt.findOne({ _id: req.params.attemptId, user: req.userId });
+    if (!attempt) throw new HttpError(404, 'Session not found');
+    if (attempt.containerId && attempt.status === 'running') {
+      await orchestrator.touchContainer(attempt.containerId).catch(() => {});
+    }
     return { ok: true };
   });
 };
