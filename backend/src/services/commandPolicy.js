@@ -123,9 +123,11 @@ function buildPolicy(task) {
     const p = r.params || {};
     switch (r.type) {
       case 'user_exists':
+      case 'user_absent':
         if (p.username) users.add(String(p.username));
         break;
       case 'group_exists':
+      case 'group_absent':
         if (p.group) groups.add(String(p.group));
         break;
       case 'package_installed':

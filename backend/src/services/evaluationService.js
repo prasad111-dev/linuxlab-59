@@ -14,7 +14,9 @@ function buildRuleCommand(rule) {
     file_exists: () => `test -f ${shellQuote(p.path)} && echo OK || echo FAIL`,
     dir_exists: () => `test -d ${shellQuote(p.path)} && echo OK || echo FAIL`,
     user_exists: () => `id -u ${shellQuote(p.username)} >/dev/null 2>&1 && echo OK || echo FAIL`,
+    user_absent: () => `! id -u ${shellQuote(p.username)} >/dev/null 2>&1 && echo OK || echo FAIL`,
     group_exists: () => `getent group ${shellQuote(p.group)} >/dev/null 2>&1 && echo OK || echo FAIL`,
+    group_absent: () => `! getent group ${shellQuote(p.group)} >/dev/null 2>&1 && echo OK || echo FAIL`,
     package_installed: () =>
       `dpkg -s ${shellQuote(p.package)} >/dev/null 2>&1 && echo OK || echo FAIL`,
     service_active: () => `systemctl is-active --quiet ${shellQuote(p.service)} && echo OK || echo FAIL`,
