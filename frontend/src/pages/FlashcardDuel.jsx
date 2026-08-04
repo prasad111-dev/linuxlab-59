@@ -1,24 +1,53 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Lock, CheckCircle2, XCircle, Sparkles, Layers } from 'lucide-react';
 import { api } from '../lib/api';
-import { Spinner } from '../components/Spinner';
+import { Spinner, FullPageSpinner } from '../components/Spinner';
 import InterviewReport from '../components/InterviewReport';
+import { useInterviewProgress } from '../lib/useInterviewProgress';
 import { FLASHCARDS, FLASHCARD_TIERS } from '../data/interviewData';
 import { cn, formatDuration } from '../lib/format';
 
 export default function FlashcardDuel() {
   const cards = useMemo(() => FLASHCARDS, []);
+  const { data: saved, loaded, save, clear } = useInterviewProgress('flashcard');
   const [answers, setAnswers] = useState([]);
-  const [tierIndex, setTierIndex] = useState(0);
-  const [cardIndex, setCardIndex] = useState(0);
   const [picked, setPicked] = useState(null);
   const [report, setReport] = useState(null);
   const [saving, setSaving] = useState(false);
   const startedAt = useRef(Date.now());
+  const didInit = useRef(false);
+  const saveTimer = useRef(null);
 
-  const current = cards[tierIndex * 5 + cardIndex];
+  // Progress is a flat run through 125 cards; the index is derived from how
+  // many cards have been answered, so resuming after login just needs answers.
+  const flatIndex = Math.min(answers.length, cards.length - 1);
+  const tierIndex = Math.min(FLASHCARD_TIERS.length - 1, Math.floor(flatIndex / 5));
+  const cardIndex = flatIndex % 5;
+  const current = cards[flatIndex];
   const correctSoFar = answers.filter((a) => a.correct).length;
+
+  // Resume from saved progress after login
+  useEffect(() => {
+    if (!loaded || didInit.current) return;
+    didInit.current = true;
+    if (saved?.answers?.length) {
+      setAnswers(saved.answers);
+      startedAt.current = Date.now() - (saved.elapsedMs || 0);
+    }
+  }, [loaded, saved]);
+
+  // Debounced save of progress whenever answers change
+  useEffect(() => {
+    if (!didInit.current) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      save({ answers, elapsedMs: Date.now() - startedAt.current });
+    }, 600);
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [answers, save]);
 
   const pick = (opt) => {
     if (picked !== null) return;
@@ -32,14 +61,7 @@ export default function FlashcardDuel() {
 
   const next = () => {
     setPicked(null);
-    if (cardIndex < 4) {
-      setCardIndex(cardIndex + 1);
-    } else if (tierIndex < FLASHCARD_TIERS.length - 1) {
-      setTierIndex(tierIndex + 1);
-      setCardIndex(0);
-    } else {
-      finish();
-    }
+    if (answers.length >= cards.length) finish();
   };
 
   const finish = async () => {
@@ -55,13 +77,17 @@ export default function FlashcardDuel() {
           timeTakenSeconds: Math.floor((Date.now() - startedAt.current) / 1000),
         },
       });
+      clear();
       setReport(session);
     } finally {
       setSaving(false);
     }
   };
 
+  if (!loaded) return <FullPageSpinner label="Loading your progress…" />;
   if (report) return <InterviewReport session={report} onRetry={() => window.location.reload()} />;
+
+  const finishedAll = answers.length >= cards.length;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -76,94 +102,111 @@ export default function FlashcardDuel() {
 
       {/* Tier progress */}
       <div className="mt-5 grid grid-cols-10 gap-1.5">
-        {FLASHCARD_TIERS.map((t, i) => (
-          <button
-            key={t.id}
-            onClick={() => i < tierIndex && (setTierIndex(i), setCardIndex(0), setPicked(null))}
-            disabled={i > tierIndex}
-            title={t.name}
-            className={cn(
-              'flex h-9 items-center justify-center rounded-lg text-[11px] font-bold transition',
-              i < tierIndex
-                ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'
-                : i === tierIndex
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-600'
-            )}
-          >
-            {i < tierIndex ? <CheckCircle2 size={13} /> : i > tierIndex ? <Lock size={12} /> : i + 1}
-          </button>
-        ))}
+        {FLASHCARD_TIERS.map((t, i) => {
+          const tierAnswered = Math.max(0, Math.min(5, answers.length - i * 5));
+          const completed = tierAnswered === 5;
+          return (
+            <div
+              key={t.id}
+              title={t.name}
+              className={cn(
+                'flex h-9 items-center justify-center rounded-lg text-[11px] font-bold transition',
+                completed
+                  ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'
+                  : i === tierIndex
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-600'
+              )}
+            >
+              {completed ? <CheckCircle2 size={13} /> : i > tierIndex ? <Lock size={12} /> : i + 1}
+            </div>
+          );
+        })}
       </div>
       <p className="mt-2 text-xs font-medium text-slate-400">
         {FLASHCARD_TIERS[tierIndex].name} · {correctSoFar}/{answers.length} correct so far
       </p>
 
-      <div className="card mt-6 animate-fade-up !p-7" key={`${tierIndex}-${cardIndex}`}>
-        <div className="flex flex-wrap gap-2">
-          <span className="badge bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400">{current.tier}</span>
-          <span className="badge bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400">Q{current.id}/125</span>
+      {finishedAll ? (
+        <div className="card mt-6 text-center !p-10">
+          <div className="text-5xl">🏁</div>
+          <h2 className="mt-4 text-2xl font-extrabold">All 125 cards answered!</h2>
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
+            You got {correctSoFar}/{answers.length} correct. Get your AI analysis now.
+          </p>
+          <button onClick={finish} disabled={saving} className="btn-primary mt-6">
+            {saving ? <Spinner size={16} /> : <Sparkles size={16} />} Finish & get AI analysis
+          </button>
         </div>
-        <h2 className="mt-4 font-mono text-2xl font-bold tracking-tight">{current.cmd}</h2>
-        <p className="mt-1 text-lg font-semibold text-slate-700 dark:text-slate-200">{current.question}</p>
+      ) : (
+        <>
+          <div className="card mt-6 animate-fade-up !p-7" key={flatIndex}>
+            <div className="flex flex-wrap gap-2">
+              <span className="badge bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400">{current.tier}</span>
+              <span className="badge bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400">Q{current.id}/125</span>
+            </div>
+            <h2 className="mt-4 font-mono text-2xl font-bold tracking-tight">{current.cmd}</h2>
+            <p className="mt-1 text-lg font-semibold text-slate-700 dark:text-slate-200">{current.question}</p>
 
-        <div className="mt-6 space-y-2.5">
-          {current.options.map((opt) => {
-            const isAnswer = opt === current.answer;
-            const isPicked = opt === picked;
-            return (
-              <button
-                key={opt}
-                onClick={() => pick(opt)}
-                disabled={picked !== null}
+            <div className="mt-6 space-y-2.5">
+              {current.options.map((opt) => {
+                const isAnswer = opt === current.answer;
+                const isPicked = opt === picked;
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => pick(opt)}
+                    disabled={picked !== null}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition',
+                      picked === null && 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 dark:border-white/10 dark:hover:bg-white/5',
+                      picked !== null && isAnswer && 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+                      picked !== null && isPicked && !isAnswer && 'border-red-400 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300',
+                      picked !== null && !isPicked && !isAnswer && 'opacity-50'
+                    )}
+                  >
+                    {picked !== null && isAnswer ? (
+                      <CheckCircle2 size={17} className="shrink-0 text-emerald-500" />
+                    ) : picked !== null && isPicked ? (
+                      <XCircle size={17} className="shrink-0 text-red-500" />
+                    ) : (
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-slate-300" />
+                    )}
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+
+            {picked !== null && (
+              <div
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition',
-                  picked === null && 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 dark:border-white/10 dark:hover:bg-white/5',
-                  picked !== null && isAnswer && 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
-                  picked !== null && isPicked && !isAnswer && 'border-red-400 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300',
-                  picked !== null && !isPicked && !isAnswer && 'opacity-50'
+                  'mt-5 rounded-xl border p-4 text-sm',
+                  picked === current.answer
+                    ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/20 dark:bg-emerald-500/5'
+                    : 'border-amber-200 bg-amber-50/70 dark:border-amber-500/20 dark:bg-amber-500/5'
                 )}
               >
-                {picked !== null && isAnswer ? (
-                  <CheckCircle2 size={17} className="shrink-0 text-emerald-500" />
-                ) : picked !== null && isPicked ? (
-                  <XCircle size={17} className="shrink-0 text-red-500" />
-                ) : (
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-slate-300" />
-                )}
-                {opt}
-              </button>
-            );
-          })}
-        </div>
-
-        {picked !== null && (
-          <div
-            className={cn(
-              'mt-5 rounded-xl border p-4 text-sm',
-              picked === current.answer
-                ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/20 dark:bg-emerald-500/5'
-                : 'border-amber-200 bg-amber-50/70 dark:border-amber-500/20 dark:bg-amber-500/5'
+                <p className="font-bold">{picked === current.answer ? 'Correct!' : 'Not quite.'}</p>
+                <p className="mt-1 font-mono text-slate-600 dark:text-slate-300">{current.explanation}</p>
+              </div>
             )}
-          >
-            <p className="font-bold">{picked === current.answer ? 'Correct!' : 'Not quite.'}</p>
-            <p className="mt-1 font-mono text-slate-600 dark:text-slate-300">{current.explanation}</p>
           </div>
-        )}
-      </div>
 
-      <div className="mt-6 flex items-center justify-between">
-        {picked !== null ? (
-          <button onClick={next} className="btn-primary">
-            {cardIndex === 4 && tierIndex === FLASHCARD_TIERS.length - 1 ? 'Finish duel' : 'Next card'} <ArrowRight size={16} />
-          </button>
-        ) : (
-          <span />
-        )}
-        <button onClick={finish} disabled={saving || answers.length === 0} className="btn-ghost">
-          {saving ? <Spinner size={16} /> : <Sparkles size={16} />} Finish & get AI analysis
-        </button>
-      </div>
+          <div className="mt-6 flex items-center justify-between">
+            {picked !== null ? (
+              <button onClick={next} className="btn-primary">
+                Next card <ArrowRight size={16} />
+              </button>
+            ) : (
+              <span />
+            )}
+            <button onClick={finish} disabled={saving || answers.length === 0} className="btn-ghost">
+              {saving ? <Spinner size={16} /> : <Sparkles size={16} />} Finish & get AI analysis
+            </button>
+          </div>
+        </>
+      )}
       <p className="mt-2 text-right text-xs text-slate-400">
         Time elapsed: {formatDuration(Math.floor((Date.now() - startedAt.current) / 1000))}
       </p>

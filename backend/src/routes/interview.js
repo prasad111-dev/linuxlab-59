@@ -1,4 +1,5 @@
 const InterviewSession = require('../models/InterviewSession');
+const InterviewProgress = require('../models/InterviewProgress');
 const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { generateInterviewReport } = require('../services/geminiService');
@@ -27,7 +28,51 @@ function clampAnswers(answers) {
   }));
 }
 
+function clampProgressData(data, mode) {
+  if (!data || typeof data !== 'object') return {};
+  const out = { ...data };
+  if (Array.isArray(out.answers)) out.answers = clampAnswers(out.answers);
+  if (Array.isArray(out.log)) {
+    out.log = out.log.slice(0, 400).map((l) => ({
+      cmd: String(l.cmd || '').slice(0, 200),
+      typed: String(l.typed || '').slice(0, 200),
+      correct: Boolean(l.correct),
+      errors: Math.max(0, Math.floor(Number(l.errors) || 0)),
+    }));
+  }
+  if (typeof out.tierIndex !== 'undefined') out.tierIndex = Math.max(0, Math.floor(Number(out.tierIndex) || 0));
+  if (typeof out.cardIndex !== 'undefined') out.cardIndex = Math.max(0, Math.floor(Number(out.cardIndex) || 0));
+  if (typeof out.elapsedMs !== 'undefined') out.elapsedMs = Math.max(0, Math.floor(Number(out.elapsedMs) || 0));
+  return out;
+}
+
 module.exports = async function interviewRoutes(app) {
+  app.get('/progress/:mode', { preHandler: [requireAuth] }, async (req) => {
+    const mode = req.params.mode;
+    if (!['flashcard', 'quest', 'typing'].includes(mode)) throw new HttpError(400, 'invalid mode');
+    const progress = await InterviewProgress.findOne({ user: req.userId, mode });
+    return progress ? progress.toSafeJSON() : { id: null, mode, data: {}, updatedAt: null };
+  });
+
+  app.put('/progress/:mode', { preHandler: [requireAuth] }, async (req) => {
+    const mode = req.params.mode;
+    if (!['flashcard', 'quest', 'typing'].includes(mode)) throw new HttpError(400, 'invalid mode');
+    const data = clampProgressData(req.body?.data || req.body || {}, mode);
+    const progress = await InterviewProgress.findOneAndUpdate(
+      { user: req.userId, mode },
+      { $set: { data, updatedAt: new Date() } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    return progress.toSafeJSON();
+  });
+
+  app.delete('/progress/:mode', { preHandler: [requireAuth] }, async (req) => {
+    const mode = req.params.mode;
+    if (!['flashcard', 'quest', 'typing'].includes(mode)) throw new HttpError(400, 'invalid mode');
+    await InterviewProgress.deleteOne({ user: req.userId, mode });
+    return { ok: true };
+  });
+
   app.get('/sessions', { preHandler: [requireAuth] }, async (req) => {
     const sessions = await InterviewSession.find({ user: req.userId })
       .sort({ createdAt: -1 })
@@ -73,6 +118,10 @@ module.exports = async function interviewRoutes(app) {
       finished: body.finished !== false,
       finishedAt: body.finished === false ? null : new Date(),
     });
+
+    if (body.finished !== false) {
+      await InterviewProgress.deleteOne({ user: req.userId, mode });
+    }
 
     let aiReport = '';
     try {
