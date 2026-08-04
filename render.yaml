@@ -58,7 +58,9 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.1-flash-lite
+      - key: KILLERCODA_USERNAME
+        value: linuxlab59
       - key: ADMIN_EMAILS
         value: prasadghavghave0@gmail.com
       - key: SESSION_TTL_MINUTES
