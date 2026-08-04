@@ -31,7 +31,7 @@ const QUICK_ACTIONS = [
     title: 'Linux Practicals',
     desc: 'Real IT tickets · live containers',
     icon: ListChecks,
-    tint: 'from-indigo-500/10 to-blue-500/10 hover:shadow-indigo-500/30',
+    tint: 'from-indigo-500/20 to-blue-500/20 hover:shadow-indigo-500/40',
     chip: 'from-indigo-500 to-blue-600',
     text: 'text-indigo-600 dark:text-indigo-300',
   },
@@ -40,7 +40,7 @@ const QUICK_ACTIONS = [
     title: 'Interview Prep',
     desc: 'Flashcards · Quest · Typing',
     icon: Brain,
-    tint: 'from-fuchsia-500/10 to-violet-500/10 hover:shadow-fuchsia-500/30',
+    tint: 'from-fuchsia-500/20 to-violet-500/20 hover:shadow-fuchsia-500/40',
     chip: 'from-fuchsia-500 to-violet-600',
     text: 'text-fuchsia-600 dark:text-fuchsia-300',
     badge: 'AI',
@@ -50,7 +50,7 @@ const QUICK_ACTIONS = [
     title: 'Leaderboard',
     desc: 'Climb ranks · earn points',
     icon: Medal,
-    tint: 'from-amber-500/10 to-orange-500/10 hover:shadow-amber-500/30',
+    tint: 'from-amber-500/20 to-orange-500/20 hover:shadow-amber-500/40',
     chip: 'from-amber-400 to-orange-500',
     text: 'text-amber-600 dark:text-amber-300',
   },
@@ -59,7 +59,7 @@ const QUICK_ACTIONS = [
     title: 'Achievements',
     desc: 'Unlock every badge',
     icon: Award,
-    tint: 'from-emerald-500/10 to-teal-500/10 hover:shadow-emerald-500/30',
+    tint: 'from-emerald-500/20 to-teal-500/20 hover:shadow-emerald-500/40',
     chip: 'from-emerald-400 to-teal-500',
     text: 'text-emerald-600 dark:text-emerald-300',
   },
@@ -111,26 +111,26 @@ export default function Dashboard() {
   const streakActive = (stats.streak?.current || 0) > 0;
 
   const statsRow = [
-    { icon: CheckCircle2, label: 'Completed', value: `${stats.completed}/${stats.totalTasks}`, tint: 'from-emerald-500/15 to-teal-500/10', chip: 'from-emerald-400 to-teal-500', valueText: 'text-emerald-600 dark:text-emerald-300' },
-    { icon: Target, label: 'Pending', value: stats.pendingTasks, tint: 'from-amber-500/15 to-orange-500/10', chip: 'from-amber-400 to-orange-500', valueText: 'text-amber-600 dark:text-amber-300' },
-    { icon: Trophy, label: 'Points', value: stats.points, tint: 'from-violet-500/15 to-indigo-500/10', chip: 'from-violet-500 to-indigo-600', valueText: 'text-violet-600 dark:text-violet-300' },
-    { icon: TrendingUp, label: 'Avg score', value: `${stats.avgScore}%`, tint: 'from-sky-500/15 to-cyan-500/10', chip: 'from-sky-400 to-cyan-500', valueText: 'text-sky-600 dark:text-sky-300' },
+    { icon: CheckCircle2, label: 'Completed', value: `${stats.completed}/${stats.totalTasks}`, tint: 'from-emerald-500/25 to-teal-500/20', chip: 'from-emerald-400 to-teal-500', valueText: 'text-emerald-600 dark:text-emerald-300' },
+    { icon: Target, label: 'Pending', value: stats.pendingTasks, tint: 'from-amber-500/25 to-orange-500/20', chip: 'from-amber-400 to-orange-500', valueText: 'text-amber-600 dark:text-amber-300' },
+    { icon: Trophy, label: 'Points', value: stats.points, tint: 'from-violet-500/25 to-indigo-500/20', chip: 'from-violet-500 to-indigo-600', valueText: 'text-violet-600 dark:text-violet-300' },
+    { icon: TrendingUp, label: 'Avg score', value: `${stats.avgScore}%`, tint: 'from-sky-500/25 to-cyan-500/20', chip: 'from-sky-400 to-cyan-500', valueText: 'text-sky-600 dark:text-sky-300' },
   ];
 
   return (
     <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
       {/* Aurora background */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="animate-blob absolute -top-24 left-1/4 h-96 w-96 rounded-full bg-indigo-400/40 blur-3xl dark:bg-indigo-600/25" />
-        <div className="animate-blob absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-fuchsia-400/35 blur-3xl [animation-delay:5s] dark:bg-fuchsia-600/20" />
-        <div className="animate-blob absolute bottom-16 left-0 h-80 w-80 rounded-full bg-cyan-300/40 blur-3xl [animation-delay:9s] dark:bg-cyan-500/15" />
-        <div className="animate-blob absolute right-1/4 -bottom-24 h-80 w-80 rounded-full bg-amber-300/40 blur-3xl [animation-delay:12s] dark:bg-amber-500/15" />
-        <div className="absolute top-0 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-violet-300/40 blur-3xl dark:bg-violet-600/20" />
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-gradient-to-br from-indigo-100/80 via-fuchsia-50/70 to-cyan-100/80 dark:bg-transparent">
+        <div className="animate-blob absolute -top-24 left-1/4 h-96 w-96 rounded-full bg-indigo-400/50 blur-3xl dark:bg-indigo-600/25" />
+        <div className="animate-blob absolute top-1/3 -right-24 h-80 w-80 rounded-full bg-fuchsia-400/45 blur-3xl [animation-delay:5s] dark:bg-fuchsia-600/20" />
+        <div className="animate-blob absolute bottom-16 left-0 h-80 w-80 rounded-full bg-cyan-300/50 blur-3xl [animation-delay:9s] dark:bg-cyan-500/15" />
+        <div className="animate-blob absolute right-1/4 -bottom-24 h-80 w-80 rounded-full bg-amber-300/50 blur-3xl [animation-delay:12s] dark:bg-amber-500/15" />
+        <div className="absolute top-0 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-violet-300/50 blur-3xl dark:bg-violet-600/20" />
       </div>
 
       {/* Header */}
-      <section className="animate-fade-up relative overflow-hidden rounded-3xl border border-white/50 bg-white/70 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:p-7 dark:border-white/10 dark:bg-white/5">
-        <div className="pointer-events-none absolute -top-20 -right-20 h-52 w-52 rounded-full bg-gradient-to-br from-indigo-400/30 to-fuchsia-400/30 blur-2xl" />
+      <section className="animate-fade-up relative overflow-hidden rounded-3xl border border-white/70 bg-white/40 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:p-7 dark:border-white/10 dark:bg-white/5">
+        <div className="pointer-events-none absolute -top-20 -right-20 h-52 w-52 rounded-full bg-gradient-to-br from-indigo-400/40 to-fuchsia-400/40 blur-2xl" />
 
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
