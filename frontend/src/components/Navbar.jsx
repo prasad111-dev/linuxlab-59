@@ -18,6 +18,7 @@ import {
   Lightbulb,
   ChevronDown,
   Brain,
+  Activity,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
