@@ -5,17 +5,15 @@ const orchestrator = require('./orchestratorClient');
 const { HttpError } = require('../utils/httpError');
 
 /**
- * Creates (or resumes) a running lab session for a student + task.
- * Each start creates a fresh Docker container via the orchestrator.
+ * Creates a fresh lab session for a student + task.
+ * No resume: any previous running attempt for the same task is terminated
+ * and its container destroyed before a new one starts.
  */
 async function startSession(userId, taskId) {
   const task = await Task.findById(taskId).populate('category');
   if (!task) throw new HttpError(404, 'Task not found');
 
-  const running = await Attempt.findOne({ user: userId, task: task._id, status: 'running' });
-  if (running) {
-    return { attempt: running, resumed: true };
-  }
+  await terminateRunning(userId, task._id);
 
   const attempt = await Attempt.create({
     user: userId,

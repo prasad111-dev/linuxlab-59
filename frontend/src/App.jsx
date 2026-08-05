@@ -56,8 +56,9 @@ export default function App() {
   }, []);
 
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
+    <Suspense fallback={<FullPageSpinner />}>
+      <Routes>
+        <Route element={<AppLayout />}>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/practicals" element={<Practicals />} />
@@ -228,7 +229,8 @@ export default function App() {
       />
 
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

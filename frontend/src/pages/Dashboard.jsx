@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Flame,
   Trophy,
@@ -85,7 +85,6 @@ function SectionHeading({ icon: Icon, title, sub, action }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
   const [celebrated, setCelebrated] = useState(false);
@@ -110,10 +109,6 @@ export default function Dashboard() {
     );
   }
   if (!stats) return <FullPageSpinner label="Loading your dashboard…" />;
-
-  const resume = () => {
-    if (stats.runningAttempt) navigate(`/lab/${stats.runningAttempt.id}`);
-  };
 
   const unlocked = stats.achievements.filter((a) => a.unlocked).length;
   const streakPct = Math.min(100, (stats.streak?.current || 0) * 4);
@@ -174,21 +169,12 @@ export default function Dashboard() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-brand-500/25">
               <Zap size={13} /> {stats.points} pts
             </span>
-            {stats.runningAttempt ? (
-              <button
-                onClick={resume}
-                className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-              >
-                <Play size={13} /> Resume task
-              </button>
-            ) : (
-              <Link
-                to="/practicals"
-                className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-brand-600"
-              >
-                <Play size={13} /> Start task
-              </Link>
-            )}
+            <Link
+              to="/practicals"
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-brand-600"
+            >
+              <Play size={13} /> Start task
+            </Link>
           </div>
         </div>
 

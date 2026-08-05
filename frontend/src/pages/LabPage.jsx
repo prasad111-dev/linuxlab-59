@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,7 +17,7 @@ import {
   MessageCircle,
   Terminal as TerminalIcon,
 } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, getToken, API_URL } from '../lib/api';
 import XTerm from '../components/XTerm';
 import { FullPageSpinner } from '../components/Spinner';
 import { formatClock, formatDuration, cn } from '../lib/format';
@@ -91,6 +91,37 @@ export default function LabPage() {
       api(`/sessions/${attemptId}/ping`, { method: 'POST' }).catch(() => {});
     }, 30000);
     return () => clearInterval(iv);
+  }, [status, attemptId]);
+
+  // If the user leaves the lab (back button, closes tab, navigates away),
+  // destroy the container — no lingering environments.
+  const leftRef = useRef(false);
+  useEffect(() => {
+    if (status !== 'running') return;
+    const closeContainer = () => {
+      if (leftRef.current) return;
+      leftRef.current = true;
+      const token = getToken();
+      try {
+        fetch(`${API_URL}/attempts/${attemptId}/exit`, {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: '{}',
+        }).catch(() => {});
+      } catch {
+        /* best-effort on unload */
+      }
+    };
+    window.addEventListener('pagehide', closeContainer);
+    window.addEventListener('beforeunload', closeContainer);
+    return () => {
+      window.removeEventListener('pagehide', closeContainer);
+      window.removeEventListener('beforeunload', closeContainer);
+    };
   }, [status, attemptId]);
 
   const [chat, setChat] = useState([]);

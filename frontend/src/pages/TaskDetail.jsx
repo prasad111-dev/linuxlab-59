@@ -94,7 +94,7 @@ export default function TaskDetail() {
         <div className="mt-6">
           <button onClick={start} disabled={starting} className="btn-primary w-full !py-3 sm:w-auto">
             {starting ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} />}
-            {user ? (task.myBest?.status === 'running' ? 'Resume lab' : 'Start practical') : 'Login to start'}
+            {user ? 'Start practical' : 'Login to start'}
           </button>
           {!user && (
             <p className="mt-2 text-xs text-slate-400">You'll need to sign in with Google to start a lab.</p>
