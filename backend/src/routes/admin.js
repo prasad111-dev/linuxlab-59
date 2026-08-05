@@ -135,6 +135,31 @@ module.exports = async function adminRoutes(app) {
     return { sessions, orchestratorReachable };
   });
 
+  app.get('/attempts', { preHandler: [requireAdmin] }, async (req) => {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+    const attempts = await Attempt.find()
+      .populate('user', 'name email picture role')
+      .populate('task', 'title difficulty')
+      .populate('category', 'name icon')
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    return attempts.map((a) => ({
+      id: a._id.toString(),
+      user: a.user
+        ? { id: a.user._id.toString(), name: a.user.name, email: a.user.email, picture: a.user.picture }
+        : null,
+      task: a.task ? { id: a.task._id.toString(), title: a.task.title, difficulty: a.task.difficulty } : null,
+      category: a.category ? { name: a.category.name, icon: a.category.icon } : null,
+      status: a.status,
+      score: a.score,
+      maxScore: a.maxScore,
+      passed: a.passed,
+      timeTakenSeconds: a.timeTakenSeconds,
+      createdAt: a.createdAt,
+    }));
+  });
+
   app.get('/suggestions', { preHandler: [requireAdmin] }, async (req) => {
     const items = await Suggestion.find()
       .populate('user', 'name email')

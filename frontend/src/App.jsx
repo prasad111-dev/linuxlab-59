@@ -28,6 +28,7 @@ const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminSuggestions = lazy(() => import('./pages/admin/AdminSuggestions'));
 const AdminActivity = lazy(() => import('./pages/admin/AdminActivity'));
+const AdminAttempts = lazy(() => import('./pages/admin/AdminAttempts'));
 
 function AppLayout() {
   return (
@@ -194,6 +195,14 @@ export default function App() {
           element={
             <Protected admin>
               <AdminActivity />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin/attempts"
+          element={
+            <Protected admin>
+              <AdminAttempts />
             </Protected>
           }
         />
