@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema(
     lastLoginAt: { type: Date, default: null },
     lastSeenAt: { type: Date, default: null },
     lastLogoutAt: { type: Date, default: null },
+    totalActiveMs: { type: Number, default: 0 },
+    lastHeartbeatAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

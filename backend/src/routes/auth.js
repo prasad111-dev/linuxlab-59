@@ -32,7 +32,31 @@ module.exports = async function authRoutes(app) {
     '/presence',
     { preHandler: [requireAuth], config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
     async (req) => {
-      await User.updateOne({ _id: req.userId }, { $set: { lastSeenAt: new Date() } });
+      const now = new Date();
+      const GAP_MS = 5 * 60 * 1000;
+      await User.updateOne(
+        { _id: req.userId },
+        [
+          {
+            $set: {
+              lastSeenAt: now,
+              lastHeartbeatAt: now,
+              totalActiveMs: {
+                $cond: {
+                  if: {
+                    $and: [
+                      { $ne: ['$lastHeartbeatAt', null] },
+                      { $lt: [{ $subtract: [now, '$lastHeartbeatAt'] }, GAP_MS] },
+                    ],
+                  },
+                  then: { $add: ['$totalActiveMs', { $subtract: [now, '$lastHeartbeatAt'] }] },
+                  else: '$totalActiveMs',
+                },
+              },
+            },
+          },
+        ]
+      );
       return { ok: true };
     }
   );

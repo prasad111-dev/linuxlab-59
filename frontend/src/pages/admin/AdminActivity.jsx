@@ -18,6 +18,18 @@ import { difficultyMeta } from '../../lib/format';
 const fmtDateTime = (dateStr) =>
   dateStr ? new Date(dateStr).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
+function fmtDuration(ms) {
+  if (!ms) return '—';
+  const totalMin = Math.floor(ms / 60000);
+  const d = Math.floor(totalMin / 1440);
+  const h = Math.floor((totalMin % 1440) / 60);
+  const m = totalMin % 60;
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return '<1m';
+}
+
 function StatusBadge({ alive, idleSeconds }) {
   if (alive === null) {
     return (
@@ -145,6 +157,7 @@ export default function AdminActivity() {
                     <tr className="border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:text-slate-400">
                       <th className="px-4 py-3">User</th>
                       <th className="hidden px-4 py-3 sm:table-cell">Email</th>
+                      <th className="hidden px-4 py-3 md:table-cell">Total time</th>
                       <th className="hidden px-4 py-3 md:table-cell">Last login</th>
                       <th className="hidden px-4 py-3 md:table-cell">Logout</th>
                       <th className="px-4 py-3 text-right">Status</th>
@@ -166,6 +179,9 @@ export default function AdminActivity() {
                           </span>
                         </td>
                         <td className="hidden px-4 py-2.5 text-slate-500 dark:text-slate-400 sm:table-cell">{l.email}</td>
+                        <td className="hidden px-4 py-2.5 md:table-cell">
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">{fmtDuration(l.totalActiveMs)}</span>
+                        </td>
                         <td className="hidden px-4 py-2.5 md:table-cell">
                           <span className="block text-slate-700 dark:text-slate-300">{timeAgo(l.lastLoginAt)}</span>
                           <span className="block text-xs text-slate-400">{fmtDateTime(l.lastLoginAt)}</span>
