@@ -56,12 +56,25 @@ export default function AdminActivity() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [terminatingId, setTerminatingId] = useState(null);
+  const [terminateTarget, setTerminateTarget] = useState(null);
+  const [terminateMessage, setTerminateMessage] = useState('');
 
-  const terminateSession = async (s) => {
-    if (!window.confirm(`Terminate the lab for ${s.user?.name || 'this user'}? The container will be destroyed.`)) return;
-    setTerminatingId(s.id);
+  const openTerminateDialog = (s) => {
+    setTerminateMessage('');
+    setTerminateTarget(s);
+  };
+
+  const cancelTerminate = () => setTerminateTarget(null);
+
+  const confirmTerminate = async () => {
+    if (!terminateTarget) return;
+    setTerminatingId(terminateTarget.id);
     try {
-      await api(`/admin/sessions/${s.id}/terminate`, { method: 'POST' });
+      await api(`/admin/sessions/${terminateTarget.id}/terminate`, {
+        method: 'POST',
+        body: { message: terminateMessage.trim() },
+      });
+      setTerminateTarget(null);
       load();
     } catch (e) {
       window.alert(e.message);
@@ -270,7 +283,7 @@ export default function AdminActivity() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button
-                            onClick={() => terminateSession(s)}
+                            onClick={() => openTerminateDialog(s)}
                             disabled={terminatingId === s.id}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10"
                           >
@@ -292,6 +305,48 @@ export default function AdminActivity() {
             </p>
           )}
         </>
+      )}
+
+      {terminateTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+          onClick={cancelTerminate}
+        >
+          <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="flex items-center gap-2 text-lg font-extrabold text-red-600 dark:text-red-400">
+              <Power size={18} /> Terminate lab
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Close the environment for{' '}
+              <span className="font-semibold text-slate-700 dark:text-slate-200">{terminateTarget.user?.name || 'this user'}</span>{' '}
+              ({terminateTarget.task?.title || 'Unknown task'})? The container will be destroyed.
+            </p>
+            <label className="mt-4 block text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Message to the student <span className="font-normal normal-case">(optional)</span>
+            </label>
+            <textarea
+              value={terminateMessage}
+              onChange={(e) => setTerminateMessage(e.target.value)}
+              maxLength={300}
+              rows={3}
+              placeholder="e.g. Time is up — submit your answers and reach out to me for doubts."
+              className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 dark:border-white/10 dark:bg-white/5"
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={cancelTerminate} className="btn-secondary" disabled={terminatingId === terminateTarget.id}>
+                Cancel
+              </button>
+              <button
+                onClick={confirmTerminate}
+                disabled={terminatingId === terminateTarget.id}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                <Power size={15} />
+                {terminatingId === terminateTarget.id ? 'Terminating…' : 'Terminate'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

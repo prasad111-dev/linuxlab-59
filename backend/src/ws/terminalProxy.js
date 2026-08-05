@@ -15,6 +15,15 @@ const { buildPolicy } = require('../services/commandPolicy');
  * Every typed command line is checked against a policy derived from the
  * task's validation rules — students can only run task-related commands.
  */
+const connections = new Map();
+
+function sendToAttempt(attemptId, text) {
+  const conn = connections.get(String(attemptId));
+  if (!conn || conn.browserWs.readyState !== conn.browserWs.OPEN) return false;
+  conn.browserWs.send(Buffer.from(`\x1b[1;93m[Admin notice] ${text}\x1b[0m\r\n`));
+  return true;
+}
+
 function setupTerminalProxy(server) {
   const { WebSocketServer } = require('ws');
   const wss = new WebSocketServer({ server, path: '/api/ws/terminal' });
@@ -34,6 +43,11 @@ function setupTerminalProxy(server) {
       if (!attempt) return ws.close(4004, 'attempt not found');
       if (attempt.wsTicket !== ticket) return ws.close(4003, 'invalid ticket');
       if (attempt.status !== 'running') return ws.close(4003, 'attempt is not running');
+
+      const unregister = () => connections.delete(String(attemptId));
+      connections.set(String(attemptId), { browserWs: ws });
+      ws.on('close', unregister);
+      ws.on('error', unregister);
 
       const enforcePolicy = config.terminalPolicy === 'task';
       const task = enforcePolicy ? await Task.findById(attempt.task).lean().catch(() => null) : null;
@@ -129,4 +143,4 @@ function setupTerminalProxy(server) {
   wss.on('error', () => {});
 }
 
-module.exports = { setupTerminalProxy };
+module.exports = { setupTerminalProxy, sendToAttempt };

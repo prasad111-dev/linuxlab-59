@@ -7,6 +7,7 @@ const { requireAdmin } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { getLeaderboard } = require('../services/leaderboardService');
 const orchestrator = require('../services/orchestratorClient');
+const { sendToAttempt } = require('../ws/terminalProxy');
 
 module.exports = async function adminRoutes(app) {
   app.get('/users', { preHandler: [requireAdmin] }, async (req) => {
@@ -172,8 +173,14 @@ module.exports = async function adminRoutes(app) {
     const attempt = await Attempt.findById(req.params.id);
     if (!attempt) throw new HttpError(404, 'Attempt not found');
     if (attempt.status === 'running') {
+      const notice = String((req.body || {}).message || '').trim().slice(0, 300);
+      if (notice) {
+        sendToAttempt(attempt._id.toString(), notice);
+        await new Promise((r) => setTimeout(r, 350));
+      }
       if (attempt.containerId) await orchestrator.destroyContainer(attempt.containerId).catch(() => {});
       attempt.status = 'terminated';
+      attempt.terminatedAt = new Date();
       await attempt.save();
     }
     return { ok: true };
