@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 import { Routes, Route, Outlet, Navigate, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -29,6 +29,7 @@ const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminSuggestions = lazy(() => import('./pages/admin/AdminSuggestions'));
 const AdminActivity = lazy(() => import('./pages/admin/AdminActivity'));
+const AdminEngagement = lazy(() => import('./pages/admin/AdminEngagement'));
 const AdminAttempts = lazy(() => import('./pages/admin/AdminAttempts'));
 
 function AppLayout() {
@@ -46,6 +47,8 @@ function AppLayout() {
 }
 
 export default function App() {
+  const lastActivityAt = useRef(Date.now());
+
   useEffect(() => {
     const idle = typeof requestIdleCallback === 'function' ? requestIdleCallback : (fn) => setTimeout(fn, 1500);
     const t = idle(() => {
@@ -57,10 +60,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const beat = () => api('/auth/presence', { method: 'POST' }).catch(() => {});
+    const beat = () => {
+      const active = Date.now() - lastActivityAt.current < 60_000;
+      api('/auth/presence', { method: 'POST', body: { active } }).catch(() => {});
+    };
     beat();
     const t = setInterval(beat, 10_000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const bump = () => {
+      lastActivityAt.current = Date.now();
+    };
+    const events = ['mousemove', 'mousedown', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach((e) => window.addEventListener(e, bump, { passive: true }));
+    return () => events.forEach((e) => window.removeEventListener(e, bump));
   }, []);
 
   useEffect(() => {
@@ -221,6 +236,14 @@ export default function App() {
           element={
             <Protected admin>
               <AdminActivity />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin/engagement"
+          element={
+            <Protected admin>
+              <AdminEngagement />
             </Protected>
           }
         />

@@ -8,6 +8,7 @@ const { HttpError } = require('../utils/httpError');
 const { getLeaderboard } = require('../services/leaderboardService');
 const orchestrator = require('../services/orchestratorClient');
 const { sendToAttempt } = require('../ws/terminalProxy');
+const { localDateKey, daysAgoKey } = require('../utils/dateKey');
 
 module.exports = async function adminRoutes(app) {
   app.get('/users', { preHandler: [requireAdmin] }, async (req) => {
@@ -55,6 +56,21 @@ module.exports = async function adminRoutes(app) {
       ]),
     ]);
 
+    const todayKey = localDateKey(new Date());
+    const weekKeys = new Set(Array.from({ length: 7 }, (_, i) => daysAgoKey(i)));
+    const [timeTodayAgg, timeWeekAgg] = await Promise.all([
+      User.aggregate([
+        { $unwind: '$activeTimeByDay' },
+        { $match: { 'activeTimeByDay.date': todayKey } },
+        { $group: { _id: null, ms: { $sum: '$activeTimeByDay.ms' } } },
+      ]),
+      User.aggregate([
+        { $unwind: '$activeTimeByDay' },
+        { $match: { 'activeTimeByDay.date': { $in: [...weekKeys] } } },
+        { $group: { _id: null, ms: { $sum: '$activeTimeByDay.ms' } } },
+      ]),
+    ]);
+
     const categoriesAgg = await Category.find({ _id: { $in: byCategory.map((b) => b._id) } })
       .select('name icon color')
       .lean();
@@ -71,6 +87,8 @@ module.exports = async function adminRoutes(app) {
       })),
       activityLast7: last7,
       topPerformers,
+      timeTodayMs: (timeTodayAgg[0] && timeTodayAgg[0].ms) || 0,
+      timeWeekMs: (timeWeekAgg[0] && timeWeekAgg[0].ms) || 0,
     };
   });
 
@@ -210,6 +228,71 @@ module.exports = async function adminRoutes(app) {
       timeTakenSeconds: a.timeTakenSeconds,
       createdAt: a.createdAt,
     }));
+  });
+
+  app.get('/engagement', { preHandler: [requireAdmin] }, async () => {
+    const users = await User.find({ lastLoginAt: { $ne: null } })
+      .sort({ totalActiveMs: -1 })
+      .limit(200)
+      .select('name email picture lastLoginAt lastSeenAt totalActiveMs activeTimeByDay sessions')
+      .lean();
+    const now = Date.now();
+    const today = localDateKey(new Date());
+    const weekKeys = new Set(Array.from({ length: 7 }, (_, i) => daysAgoKey(i)));
+    return users.map((u) => {
+      const byDay = u.activeTimeByDay || [];
+      const todayMs = byDay.filter((d) => d.date === today).reduce((s, d) => s + d.ms, 0);
+      const weekMs = byDay.filter((d) => weekKeys.has(d.date)).reduce((s, d) => s + d.ms, 0);
+      const lastSeen = u.lastSeenAt ? new Date(u.lastSeenAt).getTime() : 0;
+      return {
+        id: u._id.toString(),
+        name: u.name,
+        email: u.email,
+        picture: u.picture,
+        totalMs: u.totalActiveMs || 0,
+        todayMs,
+        weekMs,
+        sessionCount: (u.sessions || []).length,
+        online: lastSeen ? now - lastSeen < 25_000 : false,
+        lastSeenAt: u.lastSeenAt || null,
+      };
+    });
+  });
+
+  app.get('/engagement/users/:id', { preHandler: [requireAdmin] }, async (req) => {
+    const user = await User.findById(req.params.id)
+      .select('name email picture totalActiveMs activeTimeByDay sessions lastHeartbeatAt')
+      .lean();
+    if (!user) throw new HttpError(404, 'User not found');
+
+    const byDayMap = new Map((user.activeTimeByDay || []).map((d) => [d.date, d.ms]));
+    const daily = Array.from({ length: 14 }, (_, i) => {
+      const key = daysAgoKey(13 - i);
+      return { date: key, ms: byDayMap.get(key) || 0 };
+    });
+
+    const lastBeat = user.lastHeartbeatAt ? new Date(user.lastHeartbeatAt).getTime() : 0;
+    const sessions = (user.sessions || [])
+      .map((s) => ({
+        loginAt: s.loginAt,
+        logoutAt: s.logoutAt,
+        ms: s.ms,
+        active: !s.logoutAt,
+        stale: !s.logoutAt && lastBeat && Date.now() - lastBeat > 5 * 60 * 1000,
+      }))
+      .reverse();
+
+    return {
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+        totalMs: user.totalActiveMs || 0,
+      },
+      daily,
+      sessions,
+    };
   });
 
   app.get('/suggestions', { preHandler: [requireAdmin] }, async (req) => {

@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Brain,
   Activity,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
@@ -194,6 +195,7 @@ export default function Navbar() {
                         <>
                           <MenuItem icon={Shield} label="Admin panel" to="/admin" onClick={() => setMenuOpen(false)} />
                           <MenuItem icon={Activity} label="Live activity" to="/admin/activity" onClick={() => setMenuOpen(false)} />
+                          <MenuItem icon={Clock} label="Time analytics" to="/admin/engagement" onClick={() => setMenuOpen(false)} />
                           <MenuItem icon={ListChecks} label="Attempts" to="/admin/attempts" onClick={() => setMenuOpen(false)} />
                           <MenuItem icon={Lightbulb} label="Suggestions" to="/admin/suggestions" onClick={() => setMenuOpen(false)} />
                         </>

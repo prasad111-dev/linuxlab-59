@@ -24,6 +24,21 @@ const userSchema = new mongoose.Schema(
     lastLogoutAt: { type: Date, default: null },
     totalActiveMs: { type: Number, default: 0 },
     lastHeartbeatAt: { type: Date, default: null },
+    activeTimeByDay: [
+      {
+        date: { type: String },
+        ms: { type: Number, default: 0 },
+        _id: false,
+      },
+    ],
+    sessions: [
+      {
+        loginAt: { type: Date, default: null },
+        logoutAt: { type: Date, default: null },
+        ms: { type: Number, default: 0 },
+        _id: false,
+      },
+    ],
   },
   { timestamps: true }
 );

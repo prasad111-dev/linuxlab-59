@@ -2,6 +2,11 @@ const User = require('../models/User');
 const authService = require('../services/authService');
 const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
+const { localDateKey } = require('../utils/dateKey');
+
+const GAP_MS = 5 * 60 * 1000;
+const MAX_SESSIONS = 50;
+const MAX_DAYS = 90;
 
 module.exports = async function authRoutes(app) {
   app.get(
@@ -33,17 +38,44 @@ module.exports = async function authRoutes(app) {
     { preHandler: [requireAuth], config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
     async (req) => {
       const now = Date.now();
+      const active = !!(req.body && req.body.active);
       const user = await User.findById(req.userId);
-      if (user) {
-        const prev = user.lastHeartbeatAt ? user.lastHeartbeatAt.getTime() : 0;
-        const gap = prev ? now - prev : 0;
-        if (prev && gap > 0 && gap < 5 * 60 * 1000) {
-          user.totalActiveMs = (user.totalActiveMs || 0) + gap;
-        }
-        user.lastSeenAt = new Date(now);
-        user.lastHeartbeatAt = new Date(now);
-        await user.save();
+      if (!user) return { ok: true };
+
+      const prev = user.lastHeartbeatAt ? user.lastHeartbeatAt.getTime() : 0;
+      const gap = prev ? now - prev : 0;
+
+      // Bank time only when the user is actively interacting and the gap
+      // between heartbeats is sane (both ends active, 0–5 min).
+      if (prev && gap > 0 && gap < GAP_MS && active) {
+        user.totalActiveMs = (user.totalActiveMs || 0) + gap;
+
+        const day = localDateKey(new Date(now));
+        const dayIdx = user.activeTimeByDay.findIndex((d) => d.date === day);
+        if (dayIdx >= 0) user.activeTimeByDay[dayIdx].ms += gap;
+        else user.activeTimeByDay.push({ date: day, ms: gap });
+
+        const open = user.sessions.find((s) => !s.logoutAt);
+        if (open) open.ms += gap;
       }
+
+      // Session lifecycle: a session is a continuous active period. If the gap
+      // since the last heartbeat is too long, the previous session is over and
+      // a new one starts. This also covers browser closes without logout.
+      const openSession = user.sessions.find((s) => !s.logoutAt);
+      if (openSession && prev && gap > GAP_MS) {
+        openSession.logoutAt = user.lastHeartbeatAt || new Date(prev);
+      }
+      if (!user.sessions.some((s) => !s.logoutAt)) {
+        user.sessions.push({ loginAt: new Date(now), logoutAt: null, ms: 0 });
+      }
+
+      if (user.sessions.length > MAX_SESSIONS) user.sessions = user.sessions.slice(-MAX_SESSIONS);
+      if (user.activeTimeByDay.length > MAX_DAYS) user.activeTimeByDay = user.activeTimeByDay.slice(-MAX_DAYS);
+
+      user.lastSeenAt = new Date(now);
+      user.lastHeartbeatAt = new Date(now);
+      await user.save();
       return { ok: true };
     }
   );
@@ -52,7 +84,13 @@ module.exports = async function authRoutes(app) {
     '/logout',
     { preHandler: [requireAuth], config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
     async (req) => {
-      await User.updateOne({ _id: req.userId }, { $set: { lastLogoutAt: new Date() } });
+      const user = await User.findById(req.userId);
+      if (user) {
+        const open = user.sessions.find((s) => !s.logoutAt);
+        if (open) open.logoutAt = new Date();
+        user.lastLogoutAt = new Date();
+        await user.save();
+      }
       return { ok: true };
     }
   );

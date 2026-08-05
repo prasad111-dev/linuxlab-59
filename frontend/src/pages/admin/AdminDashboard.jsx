@@ -11,10 +11,11 @@ import {
   Server,
   Plus,
   Lightbulb,
+  Clock,
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { FullPageSpinner } from '../../components/Spinner';
-import { cn } from '../../lib/format';
+import { cn, formatDuration } from '../../lib/format';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -43,6 +44,7 @@ export default function AdminDashboard() {
     { label: 'Published', value: c.publishedTasks, icon: CheckCircle2, color: 'text-emerald-500', to: '/admin/tasks' },
     { label: 'Attempts', value: c.attempts, icon: Activity, color: 'text-amber-500', to: '/admin/attempts' },
     { label: 'Running labs', value: c.runningAttempts, icon: PlayCircle, color: 'text-brand-500', to: '/admin/activity' },
+    { label: 'Time analytics', value: formatDuration(Math.round(stats.timeTodayMs / 1000)), icon: Clock, color: 'text-brand-500', to: '/admin/engagement' },
     { label: 'Categories', value: c.categories, icon: FolderTree, color: 'text-brand-500', to: '/admin/categories' },
   ];
 
