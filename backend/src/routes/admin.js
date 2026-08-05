@@ -146,14 +146,17 @@ module.exports = async function adminRoutes(app) {
         continue;
       }
       // Heartbeat stopped (page closed / user gone) while the container still runs.
-      const lastActive = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
-      if (lastActive && Date.now() - lastActive > IDLE_MS) {
+      // Fall back to startedAt while the first heartbeat arrives (after a deploy).
+      const lastActive = a.lastActiveAt
+        ? new Date(a.lastActiveAt).getTime()
+        : new Date(a.startedAt).getTime();
+      if (Date.now() - lastActive > IDLE_MS) {
         await orchestrator.destroyContainer(a.containerId).catch(() => {});
         a.status = 'terminated';
         await a.save();
         continue;
       }
-      const idleSeconds = lastActive ? Math.floor((Date.now() - lastActive) / 1000) : 0;
+      const idleSeconds = Math.floor((Date.now() - lastActive) / 1000);
       sessions.push(toSession(a, true, idleSeconds));
     }
 
