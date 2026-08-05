@@ -350,28 +350,28 @@ const SEED_TASKS = [
       '/shared/sham.txt exists and is owned by sham',
     ],
     instructions: [
-      'Create the three users: useradd ankit, useradd ram, useradd sham. Optionally set passwords with passwd.',
-      'Create the shared directory: mkdir /shared',
-      'Give everyone full access: chmod 777 /shared',
-      'Switch to each user and create their own file: su - ankit, then touch /shared/ankit.txt, then exit.',
-      'Before enabling the sticky bit, try (as ram) rm /shared/ankit.txt — it succeeds because 777 lets anyone delete.',
-      'Enable the sticky bit: chmod 1777 /shared  (or chmod +t /shared)',
-      'Verify with ls -ld /shared — it must show drwxrwxrwt.',
-      'Test again as ram: rm /shared/ankit.txt must now be blocked with "Operation not permitted", while rm /shared/ram.txt still works.',
+      'Create three separate user accounts — one for each teammate: ankit, ram, and sham.',
+      'Create a directory at the filesystem root that the whole team will share.',
+      'Open the shared directory so every user can read, write and enter it.',
+      'Switch to each user in turn and create a personal file inside the shared directory, named after that user.',
+      'Before securing it, try deleting another user\'s file — with world-writable permissions it succeeds.',
+      'Enable the special bit on the shared directory that stops users from deleting files they do not own.',
+      'List the directory with full details and confirm the mode shows the special bit (drwxrwxrwt).',
+      'Try deleting another user\'s file again — it must now be rejected, while deleting your own file still works.',
     ],
     expectedOutcome:
       'ls -ld /shared shows drwxrwxrwt, each user owns their own file, and a user can no longer delete another user\'s file.',
     learningOutcomes: [
       'Understand why a plain 777 directory is unsafe for sharing',
-      'Set and verify the sticky bit with chmod 1777 / chmod +t',
-      'Read the special permission t/T in ls -ld output',
+      'Set and verify the sticky bit and read it in the mode string',
+      'Explain why each file must be created by the user who owns it',
     ],
     hints: [
-      'The sticky bit is set with: chmod 1777 /shared  or  chmod +t /shared',
-      'After enabling it, ls -ld /shared shows drwxrwxrwt (lowercase t).',
-      'Uppercase T (drwxrwxrwT) means the sticky bit is set but the execute bit is missing — not what you want.',
-      'Use su - <user> to switch to a user (then exit to return to root).',
-      'Files must be created by the user themselves so ownership is correct.',
+      'The special permission you need is the sticky bit — it is enabled with the mode prefix 1.',
+      'After enabling it, the mode string shows a lowercase t in the others position (drwxrwxrwt).',
+      'An uppercase T (drwxrwxrwT) means the sticky bit is set but the execute bit is missing — not what you want.',
+      'Switch between users with the login command so each file is created by its own owner.',
+      'Each file must be created by the user who should own it — ownership is what the sticky bit enforces.',
     ],
     solution:
       'useradd ankit\nuseradd ram\nuseradd sham\npasswd ankit\npasswd ram\npasswd sham\n' +
@@ -398,10 +398,10 @@ const SEED_TASKS = [
       {
         title: 'Create the users and the shared directory',
         instructions: [
-          'Create the three users: useradd ankit, useradd ram, useradd sham.',
-          'Create the shared directory with: mkdir /shared',
-          'Give everyone full access: chmod 777 /shared',
-          'Check your progress: getent passwd ankit, ls -ld /shared',
+          'Create three user accounts — one for each teammate (ankit, ram, sham).',
+          'Create a directory at the filesystem root for the team to share.',
+          'Open it up so every user can read, write and enter it.',
+          'Confirm all three accounts exist and the directory is ready before moving on.',
         ],
         checks: [
           { type: 'user_exists', label: 'User ankit exists', params: { username: 'ankit' } },
@@ -413,10 +413,10 @@ const SEED_TASKS = [
       {
         title: 'Enable the sticky bit and verify it protects files',
         instructions: [
-          'Switch to each user and create their own file: su - ankit, then touch /shared/ankit.txt, then exit.',
-          'Enable the sticky bit: chmod 1777 /shared  (or chmod +t /shared)',
-          'Verify with ls -ld /shared — it must show drwxrwxrwt.',
-          'Test as ram: rm /shared/ankit.txt must be blocked with "Operation not permitted".',
+          'Switch to each user in turn and create a personal file inside the shared directory, named after that user.',
+          'Enable the special bit that prevents users from deleting files they do not own.',
+          'List the directory with full details and confirm the mode now shows the special bit (drwxrwxrwt).',
+          'Try deleting another user\'s file — it must be rejected, while deleting your own file still works.',
         ],
         checks: [
           { type: 'file_permissions', label: 'Sticky bit is enabled on /shared (1777)', params: { path: '/shared', expected: '1777' } },
@@ -468,32 +468,32 @@ const SEED_TASKS = [
       '/opt/banking/uploads is mode 1777 (sticky, drwxrwxrwt)',
     ],
     instructions: [
-      'Start by auditing the tree: ls -la /opt/banking, find /opt/banking -maxdepth 1 -printf "%m %u:%g %p\\n", namei -l /opt/banking.',
-      'Lock down the parent directory: chmod 755 /opt/banking.',
-      'Config holds credentials — restrict it: chmod 640 /opt/banking/config.conf.',
-      'Make the scripts executable but strip group/other write: chmod 755 /opt/banking/app.sh, chmod 755 /opt/banking/backup.sh. deploy.sh should already be 755.',
-      'users.csv is read-only data: chmod 644 /opt/banking/users.csv.',
-      'Team collaboration dirs: chmod 775 /opt/banking/reports, chmod 775 /opt/banking/logs, chmod 775 /opt/banking/shared.',
-      'Scripts must inherit the owning group for new files: chmod 2775 /opt/banking/scripts.',
-      'Uploads need the sticky bit so users cannot delete each other\'s files: chmod 1777 /opt/banking/uploads.',
-      'Verify everything with: stat -c "%A %a %U:%G %n" /opt/banking/* and ls -ld /opt/banking/uploads.',
+      'Start by auditing the tree — list the directory with full details and inspect the numeric mode of every file and subdirectory.',
+      'Lock down the parent directory so only the owner can modify it while everyone can still read and traverse it (755).',
+      'The configuration file holds credentials — restrict it so only the owner can write and the group can read (640).',
+      'Make the application and backup scripts executable with no write access for group or others; the deployment script should already be correct (755).',
+      'The user-data file must be writable only by the owner and readable by owner and group (644).',
+      'Make the collaboration directories writable by the owning group — owner and group full access, others read and execute only (775).',
+      'Apply the special group bit to the scripts directory so any new file created inside it inherits the owning group (2775).',
+      'Apply the sticky bit to the uploads directory so users cannot delete files they do not own (1777).',
+      'Verify the final state of every file and directory using the same inspection tools you used in the audit.',
     ],
     expectedOutcome:
       'stat shows /opt/banking/config.conf as -rw-r-----, app.sh/deploy.sh/backup.sh as executable, ' +
       'scripts/ as drwxrwsr-x (SGID), uploads/ as drwxrwxrwt (sticky), and every directory without ' +
       'unnecessary world access.',
     learningOutcomes: [
-      'Audit filesystem permissions with find, namei, and stat',
-      'Set standard modes with numeric chmod',
+      'Audit filesystem permissions with listing and inspection tools',
+      'Set standard modes and minimum privilege for production files',
       'Apply and verify the SGID and sticky special bits',
-      'Reason about minimum privilege for production files',
+      'Reason about which files need group access versus strict owner-only access',
     ],
     hints: [
-      'Find every 777 first — those are the offenders: find /opt/banking -maxdepth 1 -printf "%m %p\\n".',
-      'Use numeric modes (755, 640, 2775, 1777) with chmod; stat -c "%a" prints the numeric mode.',
-      'drwxrwsr-x means 2775: the s in the group position is the SGID bit.',
-      'drwxrwxrwt means 1777: the t in the others position is the sticky bit.',
-      'The output of stat -c "%A" shows symbolic permissions; the numeric check uses stat -c "%a".',
+      'Start by listing every mode in the tree and flagging anything world-writable (777) — those are the offenders.',
+      'Work from the outside in: fix the parent directory first, then each file and directory below it.',
+      'The SGID bit is the letter s in the group position of the mode string (e.g. drwxrwsr-x).',
+      'The sticky bit is the letter t in the others position (e.g. drwxrwxrwt).',
+      'Use an inspection tool that prints both the numeric and the symbolic mode so you can confirm each special bit.',
     ],
     solution:
       'find /opt/banking -maxdepth 1 -printf "%m %u:%g %p\\n"\n' +
@@ -544,11 +544,11 @@ const SEED_TASKS = [
       {
         title: 'Lock down the application files',
         instructions: [
-          'Audit first: ls -la /opt/banking, then find /opt/banking -maxdepth 1 -printf "%m %p\\n"',
-          'Lock down the parent directory: chmod 755 /opt/banking',
-          'Config holds credentials — restrict it: chmod 640 /opt/banking/config.conf',
-          'Make the scripts executable: chmod 755 /opt/banking/app.sh, chmod 755 /opt/banking/backup.sh (deploy.sh should already be 755)',
-          'users.csv is read-only data: chmod 644 /opt/banking/users.csv',
+          'Audit the tree — list the directory with full details and inspect the numeric mode of every file and subdirectory.',
+          'Lock down the parent directory so only the owner can modify it while everyone can still read and traverse it.',
+          'The configuration file holds credentials — restrict it so only the owner can write and the group can read.',
+          'Make the application and backup scripts executable, with no write access for group or others; the deployment script should already be correct.',
+          'The user-data file must be writable only by the owner and readable by owner and group.',
         ],
         checks: [
           { type: 'file_permissions', label: '/opt/banking is locked down to 755', params: { path: '/opt/banking', expected: '755' } },
@@ -562,10 +562,10 @@ const SEED_TASKS = [
       {
         title: 'Fix the shared directories with special bits',
         instructions: [
-          'Team collaboration dirs: chmod 775 /opt/banking/reports, chmod 775 /opt/banking/logs, chmod 775 /opt/banking/shared',
-          'Scripts must inherit the owning group for new files: chmod 2775 /opt/banking/scripts',
-          'Uploads need the sticky bit so users cannot delete each other\'s files: chmod 1777 /opt/banking/uploads',
-          'Verify everything: stat -c "%A %a %U:%G %n" /opt/banking/* and ls -ld /opt/banking/uploads',
+          'Make the collaboration directories writable by the owning group — owner and group full access, others read and execute only.',
+          'Apply the special group bit to the scripts directory so any new file created inside it inherits the owning group.',
+          'Apply the sticky bit to the uploads directory so users cannot delete files they do not own.',
+          'Verify the final state of every file and directory using the same inspection tools you used in the audit.',
         ],
         checks: [
           { type: 'file_permissions', label: 'reports/ is group-writable (775)', params: { path: '/opt/banking/reports', expected: '775' } },
