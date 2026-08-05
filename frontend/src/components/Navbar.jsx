@@ -192,6 +192,7 @@ export default function Navbar() {
                       {user.role === 'admin' && (
                         <>
                           <MenuItem icon={Shield} label="Admin panel" to="/admin" onClick={() => setMenuOpen(false)} />
+                          <MenuItem icon={Activity} label="Live activity" to="/admin/activity" onClick={() => setMenuOpen(false)} />
                           <MenuItem icon={Lightbulb} label="Suggestions" to="/admin/suggestions" onClick={() => setMenuOpen(false)} />
                         </>
                       )}

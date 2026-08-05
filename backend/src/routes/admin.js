@@ -3,6 +3,7 @@ const Task = require('../models/Task');
 const Attempt = require('../models/Attempt');
 const Category = require('../models/Category');
 const Suggestion = require('../models/Suggestion');
+const LoginLog = require('../models/LoginLog');
 const { requireAdmin } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { getLeaderboard } = require('../services/leaderboardService');
@@ -79,6 +80,59 @@ module.exports = async function adminRoutes(app) {
     } catch (e) {
       throw new HttpError(502, 'Orchestrator is unreachable from the backend');
     }
+  });
+
+  app.get('/login-logs', { preHandler: [requireAdmin] }, async (req) => {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+    const logs = await LoginLog.find()
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+    return logs.map((l) => ({
+      id: l._id.toString(),
+      user: l.user ? l.user.toString() : null,
+      name: l.name,
+      email: l.email,
+      at: l.createdAt,
+    }));
+  });
+
+  app.get('/active-sessions', { preHandler: [requireAdmin] }, async () => {
+    const running = await Attempt.find({ status: 'running' })
+      .populate('user', 'name email picture role')
+      .populate('task', 'title difficulty')
+      .populate('category', 'name icon')
+      .sort({ startedAt: -1 })
+      .limit(200);
+
+    let orchestratorReachable = true;
+    try {
+      await orchestrator.listContainers();
+    } catch {
+      orchestratorReachable = false;
+    }
+
+    const sessions = await Promise.all(
+      running.map(async (a) => {
+        let containerAlive = null;
+        if (orchestratorReachable && a.containerId) {
+          containerAlive = await orchestrator.isContainerAlive(a.containerId).catch(() => false);
+        }
+        return {
+          id: a._id.toString(),
+          user: a.user
+            ? { id: a.user._id.toString(), name: a.user.name, email: a.user.email, picture: a.user.picture }
+            : null,
+          task: a.task ? { id: a.task._id.toString(), title: a.task.title, difficulty: a.task.difficulty } : null,
+          category: a.category ? { name: a.category.name, icon: a.category.icon } : null,
+          startedAt: a.startedAt,
+          containerId: a.containerId || '',
+          containerAlive,
+        };
+      })
+    );
+
+    return { sessions, orchestratorReachable };
   });
 
   app.get('/suggestions', { preHandler: [requireAdmin] }, async (req) => {

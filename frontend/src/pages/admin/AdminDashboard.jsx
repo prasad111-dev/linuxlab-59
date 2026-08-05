@@ -42,7 +42,7 @@ export default function AdminDashboard() {
     { label: 'Tasks', value: c.tasks, icon: FileText, color: 'text-brand-500', to: '/admin/tasks' },
     { label: 'Published', value: c.publishedTasks, icon: CheckCircle2, color: 'text-emerald-500', to: '/admin/tasks' },
     { label: 'Attempts', value: c.attempts, icon: Activity, color: 'text-amber-500', to: '/admin' },
-    { label: 'Running labs', value: c.runningAttempts, icon: PlayCircle, color: 'text-brand-500', to: '/admin' },
+    { label: 'Running labs', value: c.runningAttempts, icon: PlayCircle, color: 'text-brand-500', to: '/admin/activity' },
     { label: 'Categories', value: c.categories, icon: FolderTree, color: 'text-brand-500', to: '/admin/categories' },
   ];
 

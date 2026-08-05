@@ -2,6 +2,7 @@ const { Issuer, generators } = require('openid-client');
 const { SignJWT, jwtVerify } = require('jose');
 const config = require('../config');
 const User = require('../models/User');
+const LoginLog = require('../models/LoginLog');
 const { HttpError } = require('../utils/httpError');
 const { updateStreak } = require('./streakService');
 
@@ -105,6 +106,7 @@ async function upsertUser({ googleId, email, name, picture }) {
   }
   updateStreak(user, now);
   await user.save();
+  await LoginLog.create({ user: user._id, name: user.name, email: user.email }).catch(() => {});
   return user;
 }
 
