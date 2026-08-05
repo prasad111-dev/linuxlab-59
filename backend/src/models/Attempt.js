@@ -52,6 +52,7 @@ const attemptSchema = new mongoose.Schema(
     },
     startedAt: { type: Date, default: Date.now },
     submittedAt: { type: Date, default: null },
+    lastActiveAt: { type: Date, default: null },
     evaluation: {
       type: mongoose.Schema.Types.Mixed,
       default: {},

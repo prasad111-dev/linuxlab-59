@@ -18,7 +18,7 @@ import { difficultyMeta } from '../../lib/format';
 const fmtDateTime = (dateStr) =>
   dateStr ? new Date(dateStr).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
-function StatusBadge({ alive }) {
+function StatusBadge({ alive, idleSeconds }) {
   if (alive === null) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500 dark:bg-white/5 dark:text-slate-400">
@@ -26,13 +26,25 @@ function StatusBadge({ alive }) {
       </span>
     );
   }
-  return alive ? (
-    <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
-      <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" /> Container active
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700 dark:bg-red-500/15 dark:text-red-400">
-      <span className="h-2 w-2 rounded-full bg-red-500" /> Container down
+  if (!alive) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700 dark:bg-red-500/15 dark:text-red-400">
+        <span className="h-2 w-2 rounded-full bg-red-500" /> Container down
+      </span>
+    );
+  }
+  const idle = idleSeconds === null || idleSeconds === undefined ? 0 : idleSeconds;
+  if (idle < 60) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" /> Active now
+      </span>
+    );
+  }
+  const mins = Math.max(1, Math.round(idle / 60));
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+      <span className="h-2 w-2 rounded-full bg-amber-500" /> Idle · {mins}m
     </span>
   );
 }
@@ -215,7 +227,9 @@ export default function AdminActivity() {
                           {timeAgo(s.startedAt)}
                         </td>
                         <td className="px-4 py-3">
-                          <StatusBadge alive={s.containerAlive} />
+                          <span title={s.lastActiveAt ? `Last seen ${fmtDateTime(s.lastActiveAt)}` : ''}>
+                            <StatusBadge alive={s.containerAlive} idleSeconds={s.idleSeconds} />
+                          </span>
                         </td>
                         <td className="hidden px-4 py-3 lg:table-cell">
                           <span className="flex items-center gap-1.5 text-xs text-slate-400" title={`Container ID: ${s.containerId}`}>

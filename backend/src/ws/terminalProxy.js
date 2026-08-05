@@ -65,9 +65,16 @@ function setupTerminalProxy(server) {
       upstream.on('open', () => {
         for (const m of gateOutput) upstream.send(m);
         gateOutput.length = 0;
+        Attempt.updateOne({ _id: attempt._id }, { $set: { lastActiveAt: new Date() } }).catch(() => {});
       });
 
+      let lastSeenAt = 0;
       ws.on('message', (data) => {
+        const now = Date.now();
+        if (now - lastSeenAt > 15000) {
+          lastSeenAt = now;
+          Attempt.updateOne({ _id: attempt._id }, { $set: { lastActiveAt: new Date(now) } }).catch(() => {});
+        }
         logger.ingest(data);
         if (gate) gate.push(data);
         else send(data);

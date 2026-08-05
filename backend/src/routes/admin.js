@@ -112,7 +112,9 @@ module.exports = async function adminRoutes(app) {
       orchestratorReachable = false;
     }
 
-    const toSession = (a, containerAlive) => ({
+    const IDLE_MS = 5 * 60 * 1000;
+
+    const toSession = (a, containerAlive, idleSeconds) => ({
       id: a._id.toString(),
       user: a.user
         ? { id: a.user._id.toString(), name: a.user.name, email: a.user.email, picture: a.user.picture }
@@ -120,14 +122,16 @@ module.exports = async function adminRoutes(app) {
       task: a.task ? { id: a.task._id.toString(), title: a.task.title, difficulty: a.task.difficulty } : null,
       category: a.category ? { name: a.category.name, icon: a.category.icon } : null,
       startedAt: a.startedAt,
+      lastActiveAt: a.lastActiveAt || null,
       containerId: a.containerId || '',
       containerAlive,
+      idleSeconds,
     });
 
     const sessions = [];
     for (const a of running) {
       if (!orchestratorReachable) {
-        sessions.push(toSession(a, null));
+        sessions.push(toSession(a, null, null));
         continue;
       }
       let alive = false;
@@ -141,7 +145,16 @@ module.exports = async function adminRoutes(app) {
         await a.save();
         continue;
       }
-      sessions.push(toSession(a, true));
+      // Heartbeat stopped (page closed / user gone) while the container still runs.
+      const lastActive = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
+      if (lastActive && Date.now() - lastActive > IDLE_MS) {
+        await orchestrator.destroyContainer(a.containerId).catch(() => {});
+        a.status = 'terminated';
+        await a.save();
+        continue;
+      }
+      const idleSeconds = lastActive ? Math.floor((Date.now() - lastActive) / 1000) : 0;
+      sessions.push(toSession(a, true, idleSeconds));
     }
 
     return { sessions, orchestratorReachable };

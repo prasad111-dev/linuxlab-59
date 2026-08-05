@@ -37,6 +37,8 @@ module.exports = async function sessionRoutes(app) {
     if (!attempt) throw new HttpError(404, 'Session not found');
     if (attempt.containerId && attempt.status === 'running') {
       await orchestrator.touchContainer(attempt.containerId).catch(() => {});
+      attempt.lastActiveAt = new Date();
+      await attempt.save();
     }
     return { ok: true };
   });
