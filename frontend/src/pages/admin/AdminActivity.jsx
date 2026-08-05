@@ -64,7 +64,7 @@ export default function AdminActivity() {
     const t = setInterval(() => {
       setRefreshing(true);
       load();
-    }, 30000);
+    }, 5000);
     return () => clearInterval(t);
   }, []);
 
@@ -217,7 +217,7 @@ export default function AdminActivity() {
 
           {sessions && (
             <p className="mt-4 flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
-              <Server size={13} /> Sessions refresh every 30s. A container marked down means the student's lab environment has stopped.
+              <Server size={13} /> Sessions refresh every 5s. A container marked down means the student's lab environment has stopped.
             </p>
           )}
         </>

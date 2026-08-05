@@ -112,25 +112,37 @@ module.exports = async function adminRoutes(app) {
       orchestratorReachable = false;
     }
 
-    const sessions = await Promise.all(
-      running.map(async (a) => {
-        let containerAlive = null;
-        if (orchestratorReachable && a.containerId) {
-          containerAlive = await orchestrator.isContainerAlive(a.containerId).catch(() => false);
-        }
-        return {
-          id: a._id.toString(),
-          user: a.user
-            ? { id: a.user._id.toString(), name: a.user.name, email: a.user.email, picture: a.user.picture }
-            : null,
-          task: a.task ? { id: a.task._id.toString(), title: a.task.title, difficulty: a.task.difficulty } : null,
-          category: a.category ? { name: a.category.name, icon: a.category.icon } : null,
-          startedAt: a.startedAt,
-          containerId: a.containerId || '',
-          containerAlive,
-        };
-      })
-    );
+    const toSession = (a, containerAlive) => ({
+      id: a._id.toString(),
+      user: a.user
+        ? { id: a.user._id.toString(), name: a.user.name, email: a.user.email, picture: a.user.picture }
+        : null,
+      task: a.task ? { id: a.task._id.toString(), title: a.task.title, difficulty: a.task.difficulty } : null,
+      category: a.category ? { name: a.category.name, icon: a.category.icon } : null,
+      startedAt: a.startedAt,
+      containerId: a.containerId || '',
+      containerAlive,
+    });
+
+    const sessions = [];
+    for (const a of running) {
+      if (!orchestratorReachable) {
+        sessions.push(toSession(a, null));
+        continue;
+      }
+      let alive = false;
+      if (a.containerId) {
+        alive = await orchestrator.isContainerAlive(a.containerId).catch(() => false);
+      }
+      if (!alive) {
+        // Container is gone — the student left and the cleanup was missed.
+        if (a.containerId) await orchestrator.destroyContainer(a.containerId).catch(() => {});
+        a.status = 'terminated';
+        await a.save();
+        continue;
+      }
+      sessions.push(toSession(a, true));
+    }
 
     return { sessions, orchestratorReachable };
   });

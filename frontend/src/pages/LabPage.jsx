@@ -119,19 +119,8 @@ export default function LabPage() {
     }
   }, [attemptId]);
 
-  // Full page unload: closing the tab, hard refresh, or browser back that leaves the site.
-  useEffect(() => {
-    if (status !== 'running') return;
-    window.addEventListener('pagehide', closeContainer);
-    window.addEventListener('beforeunload', closeContainer);
-    return () => {
-      window.removeEventListener('pagehide', closeContainer);
-      window.removeEventListener('beforeunload', closeContainer);
-    };
-  }, [status, closeContainer]);
-
-  // In-app navigation away (back arrow, router back button, Exit): closing the lab
-  // page unmounts this component, so fire the exit on unmount.
+  // Full page reload (F5) keeps the session alive; only in-app navigation away
+  // (back arrow, router back button, Exit) closes the container.
   useEffect(() => {
     return () => {
       if (statusRef.current === 'running') closeContainer();
