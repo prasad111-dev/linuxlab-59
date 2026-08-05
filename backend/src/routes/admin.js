@@ -98,7 +98,7 @@ module.exports = async function adminRoutes(app) {
       lastLoginAt: u.lastLoginAt,
       lastSeenAt: u.lastSeenAt || null,
       lastLogoutAt: u.lastLogoutAt || null,
-      online: u.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < 60_000 : false,
+      online: u.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < 25_000 : false,
     }));
   });
 

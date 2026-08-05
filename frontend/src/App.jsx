@@ -59,7 +59,7 @@ export default function App() {
   useEffect(() => {
     const beat = () => api('/auth/presence', { method: 'POST' }).catch(() => {});
     beat();
-    const t = setInterval(beat, 30_000);
+    const t = setInterval(beat, 10_000);
     return () => clearInterval(t);
   }, []);
 
