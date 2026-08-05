@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle, Sparkles, RefreshCw, Zap, Flame } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, XCircle, Sparkles, RefreshCw, Zap } from 'lucide-react';
 import { api } from '../lib/api';
 import { cn } from '../lib/format';
 import { useInterviewProgress } from '../lib/useInterviewProgress';
@@ -58,7 +58,9 @@ function buildDaily() {
   return shuffle(list);
 }
 
-export default function InterviewDrill({ mode }) {
+export default function InterviewDrill({ mode: modeProp }) {
+  const params = useParams();
+  const mode = modeProp || params.mode;
   const meta = modeMeta(mode);
   const { data, loaded, save, clear } = useInterviewProgress(mode);
   const startedAt = useRef(Date.now());
@@ -107,14 +109,14 @@ export default function InterviewDrill({ mode }) {
     if (!loaded || engine !== 'career' || !careerConfig) return;
     if (data && Array.isArray(data.answers) && data.answers.length > 0) {
       setAnswers(data.answers);
+      let remaining = data.answers.length;
       let lvl = 0;
-      let count = careerConfig.levels[0].questions.length;
-      while (lvl < careerConfig.levels.length && data.answers.length >= count + (careerConfig.levels[lvl + 1]?.questions.length || 0)) {
+      while (lvl < careerConfig.levels.length && remaining >= careerConfig.levels[lvl].questions.length) {
+        remaining -= careerConfig.levels[lvl].questions.length;
         lvl += 1;
-        count += careerConfig.levels[lvl].questions.length;
       }
       setCareerLevel(Math.min(lvl, careerConfig.levels.length - 1));
-      setCareerIdx(0);
+      setCareerIdx(remaining);
     }
   }, [loaded, engine, careerConfig, data]);
 
@@ -181,7 +183,7 @@ export default function InterviewDrill({ mode }) {
   }
 
   function recordAnswer(correct, userAnswer, explanation) {
-    const q = list[index];
+    const q = engine === 'career' ? list[careerIdx] : list[index];
     const expected = q.answer || (Array.isArray(q.options) ? q.options[q.correctIndex] : '') || q.model || '';
     const a = {
       prompt: q.prompt,
@@ -289,7 +291,19 @@ export default function InterviewDrill({ mode }) {
   }
 
   if (report) {
-    return <InterviewReport session={report} onRetry={() => { setReport(null); setAnswers([]); setIndex(0); }} />;
+    return (
+      <InterviewReport
+        session={report}
+        onRetry={() => {
+          setReport(null);
+          setAnswers([]);
+          setIndex(0);
+          setCareerLevel(0);
+          setCareerIdx(0);
+          setFailedLevels([]);
+        }}
+      />
+    );
   }
 
   if (engine === 'virtual') {
