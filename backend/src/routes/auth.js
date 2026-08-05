@@ -32,31 +32,18 @@ module.exports = async function authRoutes(app) {
     '/presence',
     { preHandler: [requireAuth], config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
     async (req) => {
-      const now = new Date();
-      const GAP_MS = 5 * 60 * 1000;
-      await User.updateOne(
-        { _id: req.userId },
-        [
-          {
-            $set: {
-              lastSeenAt: now,
-              lastHeartbeatAt: now,
-              totalActiveMs: {
-                $cond: {
-                  if: {
-                    $and: [
-                      { $ne: ['$lastHeartbeatAt', null] },
-                      { $lt: [{ $subtract: [now, '$lastHeartbeatAt'] }, GAP_MS] },
-                    ],
-                  },
-                  then: { $add: ['$totalActiveMs', { $subtract: [now, '$lastHeartbeatAt'] }] },
-                  else: '$totalActiveMs',
-                },
-              },
-            },
-          },
-        ]
-      );
+      const now = Date.now();
+      const user = await User.findById(req.userId);
+      if (user) {
+        const prev = user.lastHeartbeatAt ? user.lastHeartbeatAt.getTime() : 0;
+        const gap = prev ? now - prev : 0;
+        if (prev && gap > 0 && gap < 5 * 60 * 1000) {
+          user.totalActiveMs = (user.totalActiveMs || 0) + gap;
+        }
+        user.lastSeenAt = new Date(now);
+        user.lastHeartbeatAt = new Date(now);
+        await user.save();
+      }
       return { ok: true };
     }
   );
