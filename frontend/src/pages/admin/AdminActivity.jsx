@@ -154,17 +154,23 @@ export default function AdminActivity() {
                         </td>
                         <td className="hidden px-4 py-2.5 text-slate-500 dark:text-slate-400 sm:table-cell">{l.email}</td>
                         <td className="hidden px-4 py-2.5 md:table-cell">
-                          <span className="block text-slate-700 dark:text-slate-300">{timeAgo(l.lastLoginAt)}</span>
-                          <span className="block text-xs text-slate-400">{fmtDateTime(l.lastLoginAt)}</span>
+                          {l.online ? (
+                            <span className="text-slate-400">—</span>
+                          ) : (
+                            <>
+                              <span className="block text-slate-700 dark:text-slate-300">{timeAgo(l.lastLoginAt)}</span>
+                              <span className="block text-xs text-slate-400">{fmtDateTime(l.lastLoginAt)}</span>
+                            </>
+                          )}
                         </td>
                         <td className="hidden px-4 py-2.5 md:table-cell">
-                          {l.lastLogoutAt ? (
+                          {l.online || !l.lastLogoutAt ? (
+                            <span className="text-slate-400">—</span>
+                          ) : (
                             <>
                               <span className="block text-slate-700 dark:text-slate-300">{timeAgo(l.lastLogoutAt)}</span>
                               <span className="block text-xs text-slate-400">{fmtDateTime(l.lastLogoutAt)}</span>
                             </>
-                          ) : (
-                            <span className="text-slate-400">—</span>
                           )}
                         </td>
                         <td className="px-4 py-2.5 text-right">
