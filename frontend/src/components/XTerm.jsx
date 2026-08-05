@@ -4,6 +4,10 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { terminalSocketUrl } from '../lib/api';
 
+const isTouchDevice = () =>
+  typeof window !== 'undefined' &&
+  ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
 export default function XTerm({ attemptId, ticket, onConnected }) {
   const ref = useRef(null);
 
@@ -42,12 +46,23 @@ export default function XTerm({ attemptId, ticket, onConnected }) {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(ref.current);
-    fit.fit();
+
+    const safeFit = () => {
+      const el = ref.current;
+      if (!el || el.clientWidth <= 0 || el.clientHeight <= 0) return;
+      try {
+        fit.fit();
+      } catch {
+        /* hidden or too small to fit */
+      }
+    };
+    safeFit();
 
     let ws = null;
     let disposed = false;
     let retryTimer = null;
     let retries = 0;
+    let firstOpen = true;
 
     const send = (data) => {
       if (ws && ws.readyState === WebSocket.OPEN) ws.send(data);
@@ -73,7 +88,12 @@ export default function XTerm({ attemptId, ticket, onConnected }) {
 
       ws.onopen = () => {
         retries = 0;
-        term.clear();
+        // Only wipe the screen on the very first connection; reconnects attach
+        // to the same live shell (orchestrator replays buffered output).
+        if (firstOpen) {
+          term.clear();
+          firstOpen = false;
+        }
         onConnected?.();
       };
       ws.onmessage = (e) => {
@@ -102,13 +122,25 @@ export default function XTerm({ attemptId, ticket, onConnected }) {
       };
     };
 
-    const dataDisposable = term.onData(send);
+    // Some mobile keyboards/composition helpers emit the same character twice
+    // back-to-back. Drop an identical single-character echo within a tiny
+    // window so `ls` doesn't come out as `lss`. Desktop is unaffected.
+    const dedupe = isTouchDevice();
+    let lastData = '';
+    let lastDataAt = 0;
+    const dataDisposable = term.onData((data) => {
+      if (dedupe && data.length === 1 && data === lastData && Date.now() - lastDataAt < 90) {
+        return;
+      }
+      lastData = data;
+      lastDataAt = Date.now();
+      send(data);
+    });
     connect();
 
-    const ro = new ResizeObserver(() => fit.fit());
+    const ro = new ResizeObserver(safeFit);
     ro.observe(ref.current);
-    const onResize = () => fit.fit();
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize', safeFit);
 
     return () => {
       disposed = true;
@@ -116,7 +148,7 @@ export default function XTerm({ attemptId, ticket, onConnected }) {
       dataDisposable.dispose();
       cleanupWs();
       ro.disconnect();
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', safeFit);
       term.dispose();
     };
   }, [attemptId, ticket, onConnected]);
