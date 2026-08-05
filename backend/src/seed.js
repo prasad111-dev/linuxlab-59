@@ -395,6 +395,116 @@ const SEED_TASKS = [
       { type: 'file_owner', label: '/shared/sham.txt is owned by sham', params: { path: '/shared/sham.txt', expected: 'sham:sham' } },
     ],
   },
+  {
+    title: 'Linux Permission Management - Enterprise Production Scenario',
+    categorySlug: 'permissions',
+    difficulty: 'intermediate',
+    estimatedMinutes: 45,
+    points: 250,
+    scenario:
+      'ABC FinTech runs its core banking application from /opt/banking on a shared production host. ' +
+      'A rushed deployment left nearly every file and directory wide open (777), and the security audit ' +
+      'flagged it as a critical risk. You must restore the correct ownership and permissions so the ' +
+      'application works for the team while sensitive files stay locked down. Work only inside /opt/banking.',
+    objectives: [
+      'Audit /opt/banking and identify every insecure file and directory',
+      'Lock down /opt/banking itself to 755',
+      'Restrict the sensitive config.conf to 640',
+      'Make the application scripts executable (app.sh, deploy.sh, backup.sh)',
+      'Keep the user data file users.csv at 644',
+      'Make reports/ and logs/ group-writable (775)',
+      'Set the SGID bit on scripts/ so new files inherit the group (2775)',
+      'Ensure shared/ is group-writable at 775',
+      'Protect uploads/ with the sticky bit (1777)',
+      'Verify every mode with stat and ls -ld',
+    ],
+    requirements: [
+      '/opt/banking is mode 755 owned by root:root',
+      '/opt/banking/config.conf is mode 640',
+      '/opt/banking/app.sh is mode 755',
+      '/opt/banking/deploy.sh is mode 755',
+      '/opt/banking/backup.sh is mode 755',
+      '/opt/banking/users.csv is mode 644',
+      '/opt/banking/reports is mode 775',
+      '/opt/banking/logs is mode 775',
+      '/opt/banking/scripts is mode 2775 (SGID, drwxrwsr-x)',
+      '/opt/banking/shared is mode 775',
+      '/opt/banking/uploads is mode 1777 (sticky, drwxrwxrwt)',
+    ],
+    instructions: [
+      'Start by auditing the tree: ls -la /opt/banking, find /opt/banking -maxdepth 1 -printf "%m %u:%g %p\\n", namei -l /opt/banking.',
+      'Lock down the parent directory: chmod 755 /opt/banking.',
+      'Config holds credentials — restrict it: chmod 640 /opt/banking/config.conf.',
+      'Make the scripts executable but strip group/other write: chmod 755 /opt/banking/app.sh, chmod 755 /opt/banking/backup.sh. deploy.sh should already be 755.',
+      'users.csv is read-only data: chmod 644 /opt/banking/users.csv.',
+      'Team collaboration dirs: chmod 775 /opt/banking/reports, chmod 775 /opt/banking/logs, chmod 775 /opt/banking/shared.',
+      'Scripts must inherit the owning group for new files: chmod 2775 /opt/banking/scripts.',
+      'Uploads need the sticky bit so users cannot delete each other\'s files: chmod 1777 /opt/banking/uploads.',
+      'Verify everything with: stat -c "%A %a %U:%G %n" /opt/banking/* and ls -ld /opt/banking/uploads.',
+    ],
+    expectedOutcome:
+      'stat shows /opt/banking/config.conf as -rw-r-----, app.sh/deploy.sh/backup.sh as executable, ' +
+      'scripts/ as drwxrwsr-x (SGID), uploads/ as drwxrwxrwt (sticky), and every directory without ' +
+      'unnecessary world access.',
+    learningOutcomes: [
+      'Audit filesystem permissions with find, namei, and stat',
+      'Set standard modes with numeric chmod',
+      'Apply and verify the SGID and sticky special bits',
+      'Reason about minimum privilege for production files',
+    ],
+    hints: [
+      'Find every 777 first — those are the offenders: find /opt/banking -maxdepth 1 -printf "%m %p\\n".',
+      'Use numeric modes (755, 640, 2775, 1777) with chmod; stat -c "%a" prints the numeric mode.',
+      'drwxrwsr-x means 2775: the s in the group position is the SGID bit.',
+      'drwxrwxrwt means 1777: the t in the others position is the sticky bit.',
+      'The output of stat -c "%A" shows symbolic permissions; the numeric check uses stat -c "%a".',
+    ],
+    solution:
+      'find /opt/banking -maxdepth 1 -printf "%m %u:%g %p\\n"\n' +
+      'chmod 755 /opt/banking\n' +
+      'chmod 640 /opt/banking/config.conf\n' +
+      'chmod 755 /opt/banking/app.sh\n' +
+      'chmod 755 /opt/banking/deploy.sh\n' +
+      'chmod 755 /opt/banking/backup.sh\n' +
+      'chmod 644 /opt/banking/users.csv\n' +
+      'chmod 775 /opt/banking/reports\n' +
+      'chmod 775 /opt/banking/logs\n' +
+      'chmod 2775 /opt/banking/scripts\n' +
+      'chmod 775 /opt/banking/shared\n' +
+      'chmod 1777 /opt/banking/uploads\n' +
+      'stat -c "%A %a %U:%G %n" /opt/banking/*',
+    setupCommands: [
+      'mkdir -p /opt/banking/reports /opt/banking/logs /opt/banking/scripts /opt/banking/shared /opt/banking/uploads',
+      'touch /opt/banking/app.sh /opt/banking/deploy.sh /opt/banking/backup.sh /opt/banking/config.conf /opt/banking/users.csv',
+      'chmod 777 /opt/banking',
+      'chmod 777 /opt/banking/config.conf',
+      'chmod 644 /opt/banking/app.sh',
+      'chmod 755 /opt/banking/deploy.sh',
+      'chmod 777 /opt/banking/backup.sh',
+      'chmod 644 /opt/banking/users.csv',
+      'chmod 777 /opt/banking/reports',
+      'chmod 777 /opt/banking/logs',
+      'chmod 755 /opt/banking/scripts',
+      'chmod 777 /opt/banking/shared',
+      'chmod 777 /opt/banking/uploads',
+      'chown -R root:root /opt/banking',
+    ],
+    validationRules: [
+      { type: 'file_permissions', label: '/opt/banking is locked down to 755', params: { path: '/opt/banking', expected: '755' } },
+      { type: 'file_permissions', label: 'config.conf is restricted to 640', params: { path: '/opt/banking/config.conf', expected: '640' } },
+      { type: 'file_permissions', label: 'app.sh is executable (755)', params: { path: '/opt/banking/app.sh', expected: '755' } },
+      { type: 'file_permissions', label: 'deploy.sh is executable (755)', params: { path: '/opt/banking/deploy.sh', expected: '755' } },
+      { type: 'file_permissions', label: 'backup.sh group/other write removed (755)', params: { path: '/opt/banking/backup.sh', expected: '755' } },
+      { type: 'file_permissions', label: 'users.csv stays at 644', params: { path: '/opt/banking/users.csv', expected: '644' } },
+      { type: 'file_permissions', label: 'reports/ is group-writable (775)', params: { path: '/opt/banking/reports', expected: '775' } },
+      { type: 'file_permissions', label: 'logs/ is group-writable (775)', params: { path: '/opt/banking/logs', expected: '775' } },
+      { type: 'file_permissions', label: 'scripts/ has the SGID bit (2775)', params: { path: '/opt/banking/scripts', expected: '2775' } },
+      { type: 'command_contains', label: 'scripts/ shows SGID as drwxrwsr-x', params: { command: 'ls -ld /opt/banking/scripts', needle: 'drwxrwsr-x' } },
+      { type: 'file_permissions', label: 'shared/ is 775', params: { path: '/opt/banking/shared', expected: '775' } },
+      { type: 'file_permissions', label: 'uploads/ has the sticky bit (1777)', params: { path: '/opt/banking/uploads', expected: '1777' } },
+      { type: 'command_contains', label: 'uploads/ shows sticky bit as drwxrwxrwt', params: { command: 'ls -ld /opt/banking/uploads', needle: 'drwxrwxrwt' } },
+    ],
+  },
 ];
 
 async function seedDatabase() {

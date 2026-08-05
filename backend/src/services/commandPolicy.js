@@ -17,7 +17,7 @@ const READ_ONLY = new Set([
   'top', 'ps', 'pgrep', 'pidof', 'wc', 'sort', 'uniq', 'cut', 'tr', 'awk',
   'xargs', 'nl', 'od', 'hexdump', 'file', 'readlink', 'realpath',
   'basename', 'dirname', 'seq', 'test', 'time', 'tty', 'stty', 'yes',
-  'sha256sum', 'sha1sum', 'md5sum', 'cksum', 'tar',
+  'sha256sum', 'sha1sum', 'md5sum', 'cksum', 'tar', 'find', 'namei', 'tree',
 ]);
 
 const PIPE_FILTERS = new Set([
