@@ -14,9 +14,8 @@ export default function AuthPage() {
   useEffect(() => {
     const token = params.get('token');
     if (token) {
-      login(token).then(() => {
-        navigate(location.state?.from || '/dashboard', { replace: true });
-      });
+      login(token);
+      navigate(location.state?.from || '/dashboard', { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

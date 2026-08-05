@@ -4,7 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Protected from './components/ProtectedRoute';
 import { FullPageSpinner } from './components/Spinner';
-import { api } from './lib/api';
+import { api, API_URL } from './lib/api';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -60,6 +60,13 @@ export default function App() {
     const beat = () => api('/auth/presence', { method: 'POST' }).catch(() => {});
     beat();
     const t = setInterval(beat, 10_000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const keepWarm = () => fetch(`${API_URL}/health`).catch(() => {});
+    keepWarm();
+    const t = setInterval(keepWarm, 8 * 60 * 1000);
     return () => clearInterval(t);
   }, []);
 
