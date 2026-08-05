@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Outlet, Navigate, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -45,6 +45,16 @@ function AppLayout() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const idle = typeof requestIdleCallback === 'function' ? requestIdleCallback : (fn) => setTimeout(fn, 1500);
+    const t = idle(() => {
+      import('./pages/Dashboard');
+      import('./pages/Practicals');
+      import('./pages/Leaderboard');
+    });
+    return () => (typeof t.cancel === 'function' ? t.cancel() : clearTimeout(t));
+  }, []);
+
   return (
     <Routes>
       <Route element={<AppLayout />}>
