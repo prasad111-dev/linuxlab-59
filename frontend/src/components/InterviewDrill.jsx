@@ -35,6 +35,32 @@ function shuffle(arr) {
   return a;
 }
 
+// Gemini judges a typed command and accepts any valid approach. Falls back to
+// an exact-match comparison whenever the AI is unavailable (or in timed modes,
+// where pacing matters more than spellings).
+async function aiCheck(q, typed, timed) {
+  try {
+    if (timed) throw new Error('exact-match mode');
+    const res = await api('/interview/evaluate-command', {
+      method: 'POST',
+      body: { question: { prompt: q.prompt, answer: q.answer, topic: q.topic }, answer: typed },
+    });
+    if (res.correct) {
+      return { correct: true, explanation: res.feedback || q.explanation || 'Valid approach.' };
+    }
+    return {
+      correct: false,
+      explanation: `Expected: ${res.expected || q.answer}${res.feedback ? ` — ${res.feedback}` : ''}`,
+    };
+  } catch {
+    const correct = normalize(typed) === normalize(q.answer);
+    return {
+      correct,
+      explanation: correct ? q.explanation : `Expected: ${q.answer}${q.explanation ? ` — ${q.explanation}` : ''}`,
+    };
+  }
+}
+
 const PRIORITY_STYLES = {
   critical: 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400',
   high: 'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400',
@@ -87,6 +113,7 @@ export default function InterviewDrill({ mode: modeProp }) {
   const [typed, setTyped] = useState('');
   const [freeText, setFreeText] = useState('');
   const [grading, setGrading] = useState(false);
+  const [evaluating, setEvaluating] = useState(false);
   const [report, setReport] = useState(null);
   const [saving, setSaving] = useState(false);
   const [genQuestions, setGenQuestions] = useState(null);
@@ -146,7 +173,7 @@ export default function InterviewDrill({ mode: modeProp }) {
 
   // per-question countdown
   useEffect(() => {
-    if (!timed || !list.length || index >= list.length || selected) return;
+    if (!timed || !list.length || index >= list.length || selected || evaluating) return;
     const deadline = Date.now() + timePer * 1000;
     const iv = setInterval(() => {
       const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
@@ -158,7 +185,7 @@ export default function InterviewDrill({ mode: modeProp }) {
     }, 200);
     return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timed, index, list.length, selected]);
+  }, [timed, index, list.length, selected, evaluating]);
 
   async function generate() {
     setGenerating(true);
@@ -290,6 +317,21 @@ export default function InterviewDrill({ mode: modeProp }) {
     }
   }
 
+  // Gemini judges the typed command, accepting any valid approach. If the AI
+  // is unavailable we fall back to an exact-match comparison so drills always
+  // work. Timed modes (speedrun/battle) stay on exact-match for pacing.
+  async function submitCommand(q, typed) {
+    if (!typed.trim() || evaluating) return;
+    setEvaluating(true);
+    try {
+      const result = await aiCheck(q, typed, timed);
+      setSelected({ correct: result.correct, userAnswer: typed, explanation: result.explanation });
+      recordAnswer(result.correct, result.userAnswer, result.explanation);
+    } finally {
+      setEvaluating(false);
+    }
+  }
+
   if (report) {
     return (
       <InterviewReport
@@ -303,6 +345,18 @@ export default function InterviewDrill({ mode: modeProp }) {
           setFailedLevels([]);
         }}
       />
+    );
+  }
+
+  if (saving) {
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-24 text-center">
+        <Spinner size={30} className="text-brand-500" />
+        <h2 className="mt-5 text-xl font-extrabold">Finishing your {meta.title}…</h2>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Saving your session and asking the AI coach to analyze your answers. This takes a few seconds.
+        </p>
+      </div>
     );
   }
 
@@ -367,7 +421,9 @@ export default function InterviewDrill({ mode: modeProp }) {
           freeText={freeText}
           setFreeText={setFreeText}
           grading={grading}
+          evaluating={evaluating}
           submitFree={submitFree}
+          submitCommand={submitCommand}
           recordAnswer={recordAnswer}
           timed={timed}
           secondsLeft={secondsLeft}
@@ -399,7 +455,7 @@ export default function InterviewDrill({ mode: modeProp }) {
   if (!q) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <p className="text-slate-500">No questions loaded for this mode yet.</p>
+        <p className="text-slate-500">Getting this drill ready…</p>
         <Link to="/interview" className="btn-ghost mt-4"><ArrowLeft size={16} /> Back to hub</Link>
       </div>
     );
@@ -429,7 +485,9 @@ export default function InterviewDrill({ mode: modeProp }) {
         freeText={freeText}
         setFreeText={setFreeText}
         grading={grading}
+        evaluating={evaluating}
         submitFree={submitFree}
+        submitCommand={submitCommand}
         recordAnswer={recordAnswer}
         timed={timed}
         secondsLeft={secondsLeft}
@@ -493,7 +551,7 @@ function TimedBar({ secondsLeft, total }) {
   );
 }
 
-function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, grading, submitFree, recordAnswer, timed, secondsLeft, engine }) {
+function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, grading, evaluating, submitFree, submitCommand, recordAnswer, timed, secondsLeft, engine }) {
   if (!q) return null;
   const isCommand = q._type === 'command';
   const isMcq = q._type === 'mcq';
@@ -501,9 +559,7 @@ function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, gra
 
   const submitCmd = (e) => {
     e.preventDefault();
-    if (!typed.trim()) return;
-    const correct = normalize(typed) === normalize(q.answer);
-    recordAnswer(correct, typed, correct ? q.explanation : `Expected: ${q.answer}${q.explanation ? ' — ' + q.explanation : ''}`);
+    submitCommand(q, typed);
   };
 
   return (
@@ -522,20 +578,38 @@ function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, gra
       <h2 className="text-lg font-extrabold leading-snug">{q.prompt}</h2>
 
       {isCommand && !selected && (
-        <form onSubmit={submitCmd} className="mt-4 flex items-center gap-2">
-          <span className="font-mono text-sm text-emerald-500">$</span>
-          <input
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-            spellCheck={false}
-            autoCapitalize="off"
-            autoCorrect="off"
-            autoFocus
-            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-white/10 dark:bg-white/5"
-            placeholder="type the command…"
-          />
-          <button type="submit" className="btn-primary">Submit</button>
-        </form>
+        <div className="mt-4 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-lg dark:border-white/10">
+          <div className="flex items-center gap-1.5 border-b border-white/10 bg-slate-900 px-3 py-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+            <span className="ml-2 font-mono text-xs text-slate-400">{q.topic || 'admin'}-lab · bash</span>
+          </div>
+          <form onSubmit={submitCmd} className="flex items-center gap-2 p-4">
+            <span className="shrink-0 font-mono text-sm font-bold text-emerald-400">student@lab:~$</span>
+            <input
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
+              autoFocus
+              disabled={evaluating}
+              className="flex-1 bg-transparent font-mono text-sm text-slate-100 outline-none placeholder:text-slate-500"
+              placeholder="type the command…"
+            />
+            <button type="submit" disabled={!typed.trim() || evaluating} className="btn-primary !px-3 !py-1.5 text-sm">
+              {evaluating ? <Spinner size={14} className="mr-1 text-white" /> : null}
+              {evaluating ? 'Checking…' : 'Run'}
+            </button>
+          </form>
+          {evaluating && (
+            <div className="border-t border-white/10 bg-slate-900/60 px-4 py-2.5 font-mono text-xs text-brand-300">
+              <Sparkles size={12} className="mr-1.5 inline" />
+              AI is verifying your approach (multiple correct answers accepted)…
+            </div>
+          )}
+        </div>
       )}
 
       {isMcq && !selected && (
@@ -574,15 +648,18 @@ function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, gra
         <div className={cn('mt-4 rounded-xl border p-4', selected.correct ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/20 dark:bg-emerald-500/5' : 'border-red-200 bg-red-50/70 dark:border-red-500/20 dark:bg-red-500/5')}>
           <div className="flex items-center gap-2 text-sm font-bold">
             {selected.correct ? <CheckCircle2 size={17} className="text-emerald-500" /> : <XCircle size={17} className="text-red-500" />}
-            {selected.correct ? 'Correct!' : 'Not quite.'}
+            {selected.correct ? (isCommand ? 'Correct — valid approach!' : 'Correct!') : 'Not quite.'}
           </div>
-          {!selected.correct && (
+          {!selected.correct && selected.userAnswer && (
             <p className="mt-1.5 font-mono text-sm text-slate-600 dark:text-slate-300">
-              Expected: <span className="text-emerald-600 dark:text-emerald-400">{q.answer}</span>
-              {selected.userAnswer ? <> — you typed: <span className="text-red-500">{selected.userAnswer}</span></> : null}
+              You typed: <span className="text-red-500">{selected.userAnswer}</span>
             </p>
           )}
-          {selected.explanation && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{selected.explanation}</p>}
+          {selected.explanation && (
+            <p className={cn('whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300', !selected.correct && 'mt-1.5')}>
+              {selected.explanation}
+            </p>
+          )}
           <div className="mt-3 flex justify-end">
             <span className="text-xs font-semibold text-slate-400">Moving on…</span>
           </div>
@@ -606,26 +683,33 @@ function TicketView({ meta, tickets, answers, save, onFinish }) {
     onFinish(ans);
   };
 
-  const submit = (e) => {
+  const [checking, setChecking] = useState(false);
+
+  const submit = async (e) => {
     e.preventDefault();
-    if (!typed.trim() || !current) return;
-    const correct = normalize(typed) === normalize(current.answer);
-    const a = {
-      prompt: `${PRIORITY_LABEL[current.priority] || ''} ${current.title}: ${current.prompt}`,
-      answer: current.answer,
-      userAnswer: typed,
-      correct,
-      topic: current.topic || 'Linux',
-      explanation: current.explanation || '',
-    };
-    const next = [...answers, a];
-    save({ answers: next });
-    setFlash({ correct, text: correct ? `+XP — Ticket closed` : `Ticket still open — expected: ${current.answer}` });
-    setTimeout(() => {
-      setFlash(null);
-      setTyped('');
-      if (next.length >= tickets.length) finish(next);
-    }, correct ? 500 : 2200);
+    if (!typed.trim() || !current || checking) return;
+    setChecking(true);
+    try {
+      const check = await aiCheck(current, typed, false);
+      const a = {
+        prompt: `${PRIORITY_LABEL[current.priority] || ''} ${current.title}: ${current.prompt}`,
+        answer: current.answer,
+        userAnswer: typed,
+        correct: check.correct,
+        topic: current.topic || 'Linux',
+        explanation: check.explanation,
+      };
+      const next = [...answers, a];
+      save({ answers: next });
+      setFlash({ correct: check.correct, text: check.correct ? `+XP — Ticket closed (valid approach!)` : `Ticket still open — ${check.explanation}` });
+      setTimeout(() => {
+        setFlash(null);
+        setTyped('');
+        if (next.length >= tickets.length) finish(next);
+      }, check.correct ? 500 : 2600);
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -673,10 +757,18 @@ function TicketView({ meta, tickets, answers, save, onFinish }) {
               className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-white/10 dark:bg-white/5"
               placeholder="resolve the ticket…"
             />
-            <button type="submit" className="btn-primary">Resolve</button>
+            <button type="submit" disabled={checking} className="btn-primary">
+              {checking ? <Spinner size={14} className="mr-1 text-white" /> : null}
+              {checking ? 'Checking…' : 'Resolve'}
+            </button>
           </form>
+          {checking && (
+            <p className="mt-2 text-xs font-semibold text-brand-500">
+              <Sparkles size={12} className="mr-1 inline" /> AI verifying your fix (any valid approach accepted)…
+            </p>
+          )}
           {flash && (
-            <p className={cn('mt-3 text-sm font-semibold', flash.correct ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500')}>
+            <p className={cn('mt-3 whitespace-pre-wrap text-sm font-semibold', flash.correct ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500')}>
               {flash.text}
             </p>
           )}
@@ -697,23 +789,29 @@ function ChecklistView({ meta, steps, answers, save, onFinish }) {
   const idx = answers.length;
   const current = steps[idx];
   const [typed, setTyped] = useState('');
+  const [checking, setChecking] = useState(false);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!typed.trim() || !current) return;
-    const correct = normalize(typed) === normalize(current.answer);
-    const a = {
-      prompt: `Step ${idx + 1}: ${current.title} — ${current.prompt}`,
-      answer: current.answer,
-      userAnswer: typed,
-      correct,
-      topic: current.topic || 'Linux',
-      explanation: current.explanation || '',
-    };
-    const next = [...answers, a];
-    save({ answers: next });
-    setTyped('');
-    if (next.length >= steps.length) onFinish(next);
+    if (!typed.trim() || !current || checking) return;
+    setChecking(true);
+    try {
+      const check = await aiCheck(current, typed, false);
+      const a = {
+        prompt: `Step ${idx + 1}: ${current.title} — ${current.prompt}`,
+        answer: current.answer,
+        userAnswer: typed,
+        correct: check.correct,
+        topic: current.topic || 'Linux',
+        explanation: check.explanation,
+      };
+      const next = [...answers, a];
+      save({ answers: next });
+      setTyped('');
+      if (next.length >= steps.length) onFinish(next);
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -759,8 +857,16 @@ function ChecklistView({ meta, steps, answers, save, onFinish }) {
               className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-white/10 dark:bg-white/5"
               placeholder={`step ${idx + 1} command…`}
             />
-            <button type="submit" className="btn-primary">Run step</button>
+            <button type="submit" disabled={checking} className="btn-primary">
+              {checking ? <Spinner size={14} className="mr-1 text-white" /> : null}
+              {checking ? 'Checking…' : 'Run step'}
+            </button>
           </form>
+          {checking && (
+            <p className="mt-2 text-xs font-semibold text-brand-500">
+              <Sparkles size={12} className="mr-1 inline" /> AI verifying this step…
+            </p>
+          )}
         </div>
       )}
 

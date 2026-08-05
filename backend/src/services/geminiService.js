@@ -325,6 +325,50 @@ async function gradeInterviewAnswer(question, answer) {
   };
 }
 
+/**
+ * Judge whether a user's typed command correctly accomplishes a task.
+ * Accepts ANY valid approach (different tools/flags/pipelines that achieve
+ * the same result) — not just the canonical answer. Returns
+ * { correct, score (0-5), feedback, expected }.
+ */
+async function evaluateCommandAnswer(question, answer) {
+  const text = await callGemini(
+    'You are a senior Linux/DevOps engineer grading a candidate command in a lab. ' +
+      'The candidate is NOT expected to reproduce one exact command — any safe, correct approach that accomplishes the task is a pass ' +
+      '(e.g. ls -l vs ll, systemctl restart vs service restart, du -sh vs du -sh --apparent-size, find with different but equivalent expressions). ' +
+      'Return ONLY JSON, no markdown: {"correct": true or false, "score": 0-5, "feedback": "1-2 short sentences explaining whether it is correct or what is wrong", "expected": "the canonical command or key steps"}.',
+    `Task: ${question.prompt}\nExpected approach (for reference only): ${question.answer || 'not provided'}\nCandidate command:\n${answer}\n\nIs the candidate command a correct way to accomplish the task? Be fair to alternative valid approaches.`,
+    { temperature: 0.2, maxTokens: 400 }
+  );
+
+  const cleaned = String(text || '')
+    .replace(/```json/gi, '```')
+    .trim();
+  const match = cleaned.match(/```\s*([\s\S]*?)\s*```/);
+  const raw = match ? match[1] : cleaned;
+  const obj = (() => {
+    try {
+      const start = raw.indexOf('{');
+      const end = raw.lastIndexOf('}');
+      return JSON.parse(start !== -1 && end > start ? raw.slice(start, end + 1) : raw);
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!obj || typeof obj !== 'object' || typeof obj.correct !== 'boolean') {
+    throw new HttpError(502, 'AI grader could not parse its verdict');
+  }
+
+  const score = Math.max(0, Math.min(5, Math.round(Number(obj.score) || (obj.correct ? 5 : 0))));
+  return {
+    correct: obj.correct,
+    score,
+    feedback: String(obj.feedback || '').slice(0, 500),
+    expected: String(obj.expected || question.answer || '').slice(0, 300),
+  };
+}
+
 module.exports = {
   callGemini,
   generateHint,
@@ -333,4 +377,5 @@ module.exports = {
   generateInterviewReport,
   generateInterviewQuestions,
   gradeInterviewAnswer,
+  evaluateCommandAnswer,
 };

@@ -7,6 +7,7 @@ const {
   generateInterviewReport,
   generateInterviewQuestions,
   gradeInterviewAnswer,
+  evaluateCommandAnswer,
 } = require('../services/geminiService');
 
 function computeWeakTopics(answers) {
@@ -125,6 +126,24 @@ module.exports = async function interviewRoutes(app) {
       String(body.answer).slice(0, 1200)
     );
     return result;
+  });
+
+  // AI verdict on a typed command — accepts any valid approach, not just the
+  // canonical command. Body: { question: {prompt, answer?, topic?}, answer }.
+  // Falls back to exact-match on the client when Gemini is unavailable.
+  app.post('/evaluate-command', { preHandler: [requireAuth] }, async (req) => {
+    const body = req.body || {};
+    const question = body.question && typeof body.question === 'object' ? body.question : {};
+    if (!question.prompt) throw new HttpError(400, 'question.prompt is required');
+    if (!body.answer) throw new HttpError(400, 'answer is required');
+    return evaluateCommandAnswer(
+      {
+        prompt: String(question.prompt).slice(0, 300),
+        answer: String(question.answer || '').slice(0, 300),
+        topic: String(question.topic || 'Linux').slice(0, 80),
+      },
+      String(body.answer).slice(0, 1200)
+    );
   });
 
   app.post('/sessions', { preHandler: [requireAuth] }, async (req) => {
