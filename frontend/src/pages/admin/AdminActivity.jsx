@@ -8,6 +8,7 @@ import {
   FileText,
   FolderTree,
   ShieldAlert,
+  Power,
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { FullPageSpinner } from '../../components/Spinner';
@@ -42,6 +43,20 @@ export default function AdminActivity() {
   const [reachable, setReachable] = useState(true);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [terminatingId, setTerminatingId] = useState(null);
+
+  const terminateSession = async (s) => {
+    if (!window.confirm(`Terminate the lab for ${s.user?.name || 'this user'}? The container will be destroyed.`)) return;
+    setTerminatingId(s.id);
+    try {
+      await api(`/admin/sessions/${s.id}/terminate`, { method: 'POST' });
+      load();
+    } catch (e) {
+      window.alert(e.message);
+    } finally {
+      setTerminatingId(null);
+    }
+  };
 
   const load = () => {
     Promise.all([
@@ -158,6 +173,7 @@ export default function AdminActivity() {
                       <th className="hidden px-4 py-3 sm:table-cell">Started</th>
                       <th className="px-4 py-3">Environment</th>
                       <th className="hidden px-4 py-3 lg:table-cell">Container</th>
+                      <th className="px-4 py-3 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -206,6 +222,16 @@ export default function AdminActivity() {
                             <Terminal size={12} />
                             <span className="max-w-[10rem] truncate font-mono">{s.containerId}</span>
                           </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => terminateSession(s)}
+                            disabled={terminatingId === s.id}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10"
+                          >
+                            <Power size={13} />
+                            {terminatingId === s.id ? 'Closing…' : 'Terminate'}
+                          </button>
                         </td>
                       </tr>
                     ))}

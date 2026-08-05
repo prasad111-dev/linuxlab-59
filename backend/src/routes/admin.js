@@ -147,6 +147,17 @@ module.exports = async function adminRoutes(app) {
     return { sessions, orchestratorReachable };
   });
 
+  app.post('/sessions/:id/terminate', { preHandler: [requireAdmin] }, async (req) => {
+    const attempt = await Attempt.findById(req.params.id);
+    if (!attempt) throw new HttpError(404, 'Attempt not found');
+    if (attempt.status === 'running') {
+      if (attempt.containerId) await orchestrator.destroyContainer(attempt.containerId).catch(() => {});
+      attempt.status = 'terminated';
+      await attempt.save();
+    }
+    return { ok: true };
+  });
+
   app.get('/attempts', { preHandler: [requireAdmin] }, async (req) => {
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
     const attempts = await Attempt.find()
