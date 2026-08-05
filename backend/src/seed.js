@@ -323,6 +323,78 @@ const SEED_TASKS = [
       { type: 'command_contains', label: 'priya has sudo access', params: { command: 'groups priya', needle: 'sudo' } },
     ],
   },
+  {
+    title: 'Protect a shared directory with the sticky bit',
+    categorySlug: 'permissions',
+    difficulty: 'intermediate',
+    estimatedMinutes: 30,
+    points: 150,
+    scenario:
+      'The team shares one directory, /shared, where everyone uploads their deliverables. ' +
+      'It was opened up with 777 permissions so anyone could write — and last week somebody accidentally ' +
+      'deleted a teammate\'s file. Set up the shared directory correctly with the sticky bit so users can ' +
+      'add and edit their own files, but nobody can delete a file they do not own.',
+    objectives: [
+      'Create users ankit, ram, and sham',
+      'Create the shared directory /shared with full access (777)',
+      'Have each user create their own file in /shared',
+      'Enable the sticky bit on /shared',
+      'Verify the sticky bit appears as drwxrwxrwt',
+    ],
+    requirements: [
+      'Users ankit, ram, and sham exist',
+      '/shared exists',
+      'Sticky bit is enabled on /shared (mode 1777, shown as drwxrwxrwt)',
+      '/shared/ankit.txt exists and is owned by ankit',
+      '/shared/ram.txt exists and is owned by ram',
+      '/shared/sham.txt exists and is owned by sham',
+    ],
+    instructions: [
+      'Create the three users: useradd ankit, useradd ram, useradd sham. Optionally set passwords with passwd.',
+      'Create the shared directory: mkdir /shared',
+      'Give everyone full access: chmod 777 /shared',
+      'Switch to each user and create their own file: su - ankit, then touch /shared/ankit.txt, then exit.',
+      'Before enabling the sticky bit, try (as ram) rm /shared/ankit.txt — it succeeds because 777 lets anyone delete.',
+      'Enable the sticky bit: chmod 1777 /shared  (or chmod +t /shared)',
+      'Verify with ls -ld /shared — it must show drwxrwxrwt.',
+      'Test again as ram: rm /shared/ankit.txt must now be blocked with "Operation not permitted", while rm /shared/ram.txt still works.',
+    ],
+    expectedOutcome:
+      'ls -ld /shared shows drwxrwxrwt, each user owns their own file, and a user can no longer delete another user\'s file.',
+    learningOutcomes: [
+      'Understand why a plain 777 directory is unsafe for sharing',
+      'Set and verify the sticky bit with chmod 1777 / chmod +t',
+      'Read the special permission t/T in ls -ld output',
+    ],
+    hints: [
+      'The sticky bit is set with: chmod 1777 /shared  or  chmod +t /shared',
+      'After enabling it, ls -ld /shared shows drwxrwxrwt (lowercase t).',
+      'Uppercase T (drwxrwxrwT) means the sticky bit is set but the execute bit is missing — not what you want.',
+      'Use su - <user> to switch to a user (then exit to return to root).',
+      'Files must be created by the user themselves so ownership is correct.',
+    ],
+    solution:
+      'useradd ankit\nuseradd ram\nuseradd sham\npasswd ankit\npasswd ram\npasswd sham\n' +
+      'mkdir /shared\nchmod 777 /shared\n' +
+      'su - ankit\ntouch /shared/ankit.txt\nexit\n' +
+      'su - ram\ntouch /shared/ram.txt\nexit\n' +
+      'su - sham\ntouch /shared/sham.txt\nexit\n' +
+      'chmod 1777 /shared\nls -ld /shared',
+    validationRules: [
+      { type: 'user_exists', label: 'User ankit exists', params: { username: 'ankit' } },
+      { type: 'user_exists', label: 'User ram exists', params: { username: 'ram' } },
+      { type: 'user_exists', label: 'User sham exists', params: { username: 'sham' } },
+      { type: 'dir_exists', label: '/shared directory exists', params: { path: '/shared' } },
+      { type: 'file_permissions', label: 'Sticky bit is enabled on /shared (1777)', params: { path: '/shared', expected: '1777' } },
+      { type: 'command_contains', label: 'ls -ld /shared shows drwxrwxrwt', params: { command: 'ls -ld /shared', needle: 'drwxrwxrwt' } },
+      { type: 'file_exists', label: '/shared/ankit.txt exists', params: { path: '/shared/ankit.txt' } },
+      { type: 'file_owner', label: '/shared/ankit.txt is owned by ankit', params: { path: '/shared/ankit.txt', expected: 'ankit:ankit' } },
+      { type: 'file_exists', label: '/shared/ram.txt exists', params: { path: '/shared/ram.txt' } },
+      { type: 'file_owner', label: '/shared/ram.txt is owned by ram', params: { path: '/shared/ram.txt', expected: 'ram:ram' } },
+      { type: 'file_exists', label: '/shared/sham.txt exists', params: { path: '/shared/sham.txt' } },
+      { type: 'file_owner', label: '/shared/sham.txt is owned by sham', params: { path: '/shared/sham.txt', expected: 'sham:sham' } },
+    ],
+  },
 ];
 
 async function seedDatabase() {

@@ -31,7 +31,7 @@ const PACKAGE_WORDS = new Set([
 ]);
 
 const USER_WORDS = new Set([
-  'useradd', 'adduser', 'usermod', 'userdel', 'passwd', 'chpasswd', 'chsh', 'chfn', 'login',
+  'useradd', 'adduser', 'usermod', 'userdel', 'passwd', 'chpasswd', 'chsh', 'chfn', 'login', 'su',
 ]);
 
 const GROUP_WORDS = new Set([
