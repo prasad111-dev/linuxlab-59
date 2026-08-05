@@ -394,6 +394,42 @@ const SEED_TASKS = [
       { type: 'file_exists', label: '/shared/sham.txt exists', params: { path: '/shared/sham.txt' } },
       { type: 'file_owner', label: '/shared/sham.txt is owned by sham', params: { path: '/shared/sham.txt', expected: 'sham:sham' } },
     ],
+    sections: [
+      {
+        title: 'Create the users and the shared directory',
+        instructions: [
+          'Create the three users: useradd ankit, useradd ram, useradd sham.',
+          'Create the shared directory with: mkdir /shared',
+          'Give everyone full access: chmod 777 /shared',
+          'Check your progress: getent passwd ankit, ls -ld /shared',
+        ],
+        checks: [
+          { type: 'user_exists', label: 'User ankit exists', params: { username: 'ankit' } },
+          { type: 'user_exists', label: 'User ram exists', params: { username: 'ram' } },
+          { type: 'user_exists', label: 'User sham exists', params: { username: 'sham' } },
+          { type: 'dir_exists', label: '/shared directory exists', params: { path: '/shared' } },
+        ],
+      },
+      {
+        title: 'Enable the sticky bit and verify it protects files',
+        instructions: [
+          'Switch to each user and create their own file: su - ankit, then touch /shared/ankit.txt, then exit.',
+          'Enable the sticky bit: chmod 1777 /shared  (or chmod +t /shared)',
+          'Verify with ls -ld /shared — it must show drwxrwxrwt.',
+          'Test as ram: rm /shared/ankit.txt must be blocked with "Operation not permitted".',
+        ],
+        checks: [
+          { type: 'file_permissions', label: 'Sticky bit is enabled on /shared (1777)', params: { path: '/shared', expected: '1777' } },
+          { type: 'command_contains', label: 'ls -ld /shared shows drwxrwxrwt', params: { command: 'ls -ld /shared', needle: 'drwxrwxrwt' } },
+          { type: 'file_exists', label: '/shared/ankit.txt exists', params: { path: '/shared/ankit.txt' } },
+          { type: 'file_owner', label: '/shared/ankit.txt is owned by ankit', params: { path: '/shared/ankit.txt', expected: 'ankit:ankit' } },
+          { type: 'file_exists', label: '/shared/ram.txt exists', params: { path: '/shared/ram.txt' } },
+          { type: 'file_owner', label: '/shared/ram.txt is owned by ram', params: { path: '/shared/ram.txt', expected: 'ram:ram' } },
+          { type: 'file_exists', label: '/shared/sham.txt exists', params: { path: '/shared/sham.txt' } },
+          { type: 'file_owner', label: '/shared/sham.txt is owned by sham', params: { path: '/shared/sham.txt', expected: 'sham:sham' } },
+        ],
+      },
+    ],
   },
   {
     title: 'Linux Permission Management - Enterprise Production Scenario',
@@ -504,6 +540,44 @@ const SEED_TASKS = [
       { type: 'file_permissions', label: 'uploads/ has the sticky bit (1777)', params: { path: '/opt/banking/uploads', expected: '1777' } },
       { type: 'command_contains', label: 'uploads/ shows sticky bit as drwxrwxrwt', params: { command: 'ls -ld /opt/banking/uploads', needle: 'drwxrwxrwt' } },
     ],
+    sections: [
+      {
+        title: 'Lock down the application files',
+        instructions: [
+          'Audit first: ls -la /opt/banking, then find /opt/banking -maxdepth 1 -printf "%m %p\\n"',
+          'Lock down the parent directory: chmod 755 /opt/banking',
+          'Config holds credentials — restrict it: chmod 640 /opt/banking/config.conf',
+          'Make the scripts executable: chmod 755 /opt/banking/app.sh, chmod 755 /opt/banking/backup.sh (deploy.sh should already be 755)',
+          'users.csv is read-only data: chmod 644 /opt/banking/users.csv',
+        ],
+        checks: [
+          { type: 'file_permissions', label: '/opt/banking is locked down to 755', params: { path: '/opt/banking', expected: '755' } },
+          { type: 'file_permissions', label: 'config.conf is restricted to 640', params: { path: '/opt/banking/config.conf', expected: '640' } },
+          { type: 'file_permissions', label: 'app.sh is executable (755)', params: { path: '/opt/banking/app.sh', expected: '755' } },
+          { type: 'file_permissions', label: 'deploy.sh is executable (755)', params: { path: '/opt/banking/deploy.sh', expected: '755' } },
+          { type: 'file_permissions', label: 'backup.sh group/other write removed (755)', params: { path: '/opt/banking/backup.sh', expected: '755' } },
+          { type: 'file_permissions', label: 'users.csv stays at 644', params: { path: '/opt/banking/users.csv', expected: '644' } },
+        ],
+      },
+      {
+        title: 'Fix the shared directories with special bits',
+        instructions: [
+          'Team collaboration dirs: chmod 775 /opt/banking/reports, chmod 775 /opt/banking/logs, chmod 775 /opt/banking/shared',
+          'Scripts must inherit the owning group for new files: chmod 2775 /opt/banking/scripts',
+          'Uploads need the sticky bit so users cannot delete each other\'s files: chmod 1777 /opt/banking/uploads',
+          'Verify everything: stat -c "%A %a %U:%G %n" /opt/banking/* and ls -ld /opt/banking/uploads',
+        ],
+        checks: [
+          { type: 'file_permissions', label: 'reports/ is group-writable (775)', params: { path: '/opt/banking/reports', expected: '775' } },
+          { type: 'file_permissions', label: 'logs/ is group-writable (775)', params: { path: '/opt/banking/logs', expected: '775' } },
+          { type: 'file_permissions', label: 'scripts/ has the SGID bit (2775)', params: { path: '/opt/banking/scripts', expected: '2775' } },
+          { type: 'command_contains', label: 'scripts/ shows SGID as drwxrwsr-x', params: { command: 'ls -ld /opt/banking/scripts', needle: 'drwxrwsr-x' } },
+          { type: 'file_permissions', label: 'shared/ is 775', params: { path: '/opt/banking/shared', expected: '775' } },
+          { type: 'file_permissions', label: 'uploads/ has the sticky bit (1777)', params: { path: '/opt/banking/uploads', expected: '1777' } },
+          { type: 'command_contains', label: 'uploads/ shows sticky bit as drwxrwxrwt', params: { command: 'ls -ld /opt/banking/uploads', needle: 'drwxrwxrwt' } },
+        ],
+      },
+    ],
   },
 ];
 
@@ -549,7 +623,13 @@ async function seedDatabase() {
       } else {
         await Task.updateOne(
           { _id: existing._id },
-          { $set: { setupCommands: taskData.setupCommands || [] } }
+          {
+            $set: {
+              setupCommands: taskData.setupCommands || [],
+              sections: taskData.sections || [],
+              validationRules: taskData.validationRules || [],
+            },
+          }
         );
       }
     }

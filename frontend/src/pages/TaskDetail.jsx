@@ -139,22 +139,61 @@ export default function TaskDetail() {
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="mt-6 card">
-        <h2 className="flex items-center gap-2 text-lg font-extrabold">
-          <GraduationCap size={20} className="text-amber-500" /> Instructions
-        </h2>
-        <ol className="mt-3 space-y-2">
-          {task.instructions?.map((s, i) => (
-            <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                {i + 1}
-              </span>
-              {s}
-            </li>
+      {/* Step-by-step guide (sections) */}
+      {task.sections?.length > 0 ? (
+        <div className="mt-6 space-y-4">
+          <h2 className="flex items-center gap-2 text-lg font-extrabold">
+            <GraduationCap size={20} className="text-amber-500" /> Step-by-step guide
+          </h2>
+          {task.sections.map((sec, i) => (
+            <div key={i} className="card">
+              <h3 className="flex items-center gap-2 text-lg font-extrabold">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                  {i + 1}
+                </span>
+                {sec.title}
+              </h3>
+              {sec.instructions?.length > 0 && (
+                <ol className="mt-3 space-y-2">
+                  {sec.instructions.map((s, j) => (
+                    <li key={j} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" /> {s}
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {sec.checks?.length > 0 && (
+                <div className="mt-4 rounded-xl bg-slate-50 p-3 dark:bg-white/5">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Checks in this step</p>
+                  <ul className="mt-2 space-y-1.5">
+                    {sec.checks.map((c, j) => (
+                      <li key={j} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <Target size={14} className="mt-0.5 shrink-0 text-brand-500" /> {c.label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           ))}
-        </ol>
-      </div>
+        </div>
+      ) : (
+        <div className="mt-6 card">
+          <h2 className="flex items-center gap-2 text-lg font-extrabold">
+            <GraduationCap size={20} className="text-amber-500" /> Instructions
+          </h2>
+          <ol className="mt-3 space-y-2">
+            {task.instructions?.map((s, i) => (
+              <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                  {i + 1}
+                </span>
+                {s}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       {/* Expected outcome + learning */}
       <div className="mt-6 grid gap-6 md:grid-cols-2">

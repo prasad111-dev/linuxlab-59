@@ -22,6 +22,7 @@ const TASK_FIELDS = [
   'hints',
   'solution',
   'validationRules',
+  'sections',
   'setupCommands',
 ];
 

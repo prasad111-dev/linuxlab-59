@@ -39,6 +39,15 @@ const validationRuleSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const taskSectionSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    instructions: { type: [String], default: [] },
+    checks: { type: [validationRuleSchema], default: [] },
+  },
+  { _id: false }
+);
+
 const taskSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
@@ -59,6 +68,7 @@ const taskSchema = new mongoose.Schema(
     hints: { type: [String], default: [] },
     solution: { type: String, default: '' },
     validationRules: { type: [validationRuleSchema], default: [] },
+    sections: { type: [taskSectionSchema], default: [] },
     setupCommands: { type: [String], default: [] },
     status: { type: String, enum: ['draft', 'published'], default: 'draft' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

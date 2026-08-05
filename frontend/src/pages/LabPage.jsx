@@ -22,6 +22,72 @@ import XTerm from '../components/XTerm';
 import { FullPageSpinner } from '../components/Spinner';
 import { formatClock, formatDuration, cn } from '../lib/format';
 
+function sliceBySections(items, sections) {
+  const out = [];
+  let offset = 0;
+  for (const s of sections || []) {
+    const n = (s.checks || []).length;
+    out.push({ title: s.title, instructions: s.instructions || [], items: (items || []).slice(offset, offset + n) });
+    offset += n;
+  }
+  return out;
+}
+
+function SectionBlock({ num, title, instructions, items, live }) {
+  const passed = live ? items.filter((c) => c.passed).length : null;
+  return (
+    <div className="rounded-xl border border-slate-100 p-3 dark:border-white/10">
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="flex items-start gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[10px] font-extrabold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
+            {num}
+          </span>
+          <span className="leading-tight">{title}</span>
+        </h4>
+        {live && items.length > 0 && (
+          <span
+            className={cn(
+              'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold',
+              passed === items.length
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+                : 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
+            )}
+          >
+            {passed}/{items.length}
+          </span>
+        )}
+      </div>
+      {instructions.length > 0 && (
+        <ol className="mt-2 space-y-1 border-l border-dashed border-slate-200 pl-3 dark:border-white/10">
+          {instructions.map((ins, j) => (
+            <li key={j} className="text-xs leading-relaxed text-slate-400 dark:text-slate-500">{ins}</li>
+          ))}
+        </ol>
+      )}
+      <ul className="mt-2 space-y-1.5">
+        {items.map((item, j) => (
+          <li
+            key={j}
+            className={cn(
+              'flex items-start gap-2 text-sm leading-snug',
+              live ? (item.passed ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400') : 'text-slate-500 dark:text-slate-400'
+            )}
+          >
+            {live == null ? (
+              <Loader2 size={15} className="mt-0.5 shrink-0 animate-spin text-slate-400" />
+            ) : item.passed ? (
+              <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-500" />
+            ) : (
+              <XCircle size={15} className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600" />
+            )}
+            <span>{item.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function LabPage() {
   const { attemptId } = useParams();
   const navigate = useNavigate();
@@ -339,13 +405,21 @@ export default function LabPage() {
               Live from your lab container — refreshes automatically.
             </p>
             {!checks && task?.validationRules?.length > 0 && (
-              <ul className="mt-3 space-y-2">
-                {task.validationRules.map((r, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
-                    <Loader2 size={15} className="mt-0.5 shrink-0 animate-spin text-slate-400" /> {r.label}
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-3 space-y-3">
+                {(task.sections?.length || 0) > 0 ? (
+                  sliceBySections(task.validationRules, task.sections).map((sec, i) => (
+                    <SectionBlock key={i} num={i + 1} title={sec.title} instructions={sec.instructions} items={sec.items} live={null} />
+                  ))
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {task.validationRules.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
+                        <Loader2 size={15} className="mt-0.5 shrink-0 animate-spin text-slate-400" /> {r.label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
             {!checks && !task?.validationRules?.length && (
               <p className="mt-3 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
@@ -353,25 +427,33 @@ export default function LabPage() {
               </p>
             )}
             {checks && (
-              <ul className="mt-3 space-y-2">
-                {checks.checks.map((c) => (
-                  <li
-                    key={c.index}
-                    className={cn('flex items-start gap-2 text-sm',
-                      c.passed ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400')}
-                  >
-                    {c.passed ? (
-                      <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-500" />
-                    ) : (
-                      <XCircle size={15} className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600" />
+              <div className="mt-3 space-y-3">
+                {(task?.sections?.length || 0) > 0 ? (
+                  sliceBySections(checks.checks, task.sections).map((sec, i) => (
+                    <SectionBlock key={i} num={i + 1} title={sec.title} instructions={sec.instructions} items={sec.items} live />
+                  ))
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {checks.checks.map((c) => (
+                      <li
+                        key={c.index}
+                        className={cn('flex items-start gap-2 text-sm',
+                          c.passed ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400')}
+                      >
+                        {c.passed ? (
+                          <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-500" />
+                        ) : (
+                          <XCircle size={15} className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600" />
+                        )}
+                        <span>{c.label}</span>
+                      </li>
+                    ))}
+                    {checks.totalRules === 0 && (
+                      <li className="text-sm text-slate-400">No automated checks configured for this task.</li>
                     )}
-                    <span>{c.label}</span>
-                  </li>
-                ))}
-                {checks.totalRules === 0 && (
-                  <li className="text-sm text-slate-400">No automated checks configured for this task.</li>
+                  </ul>
                 )}
-              </ul>
+              </div>
             )}
           </div>
 

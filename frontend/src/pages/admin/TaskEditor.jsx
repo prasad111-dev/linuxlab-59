@@ -35,6 +35,8 @@ const FIELD_LABELS = {
   command: 'Command',
 };
 
+const input = 'input';
+
 function listToState(raw) {
   if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
   if (typeof raw === 'string') return raw.split('\n').filter((s) => s.trim());
@@ -48,6 +50,62 @@ function rulesToState(raw) {
     label: r.label || '',
     params: { ...(r.params || {}) },
   }));
+}
+
+function sectionsToState(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((s) => ({
+    title: s.title || '',
+    instructions: listToState(s.instructions),
+    checks: rulesToState(s.checks),
+  }));
+}
+
+function cleanRule(r) {
+  const meta = RULE_TYPES.find((x) => x.value === r.type) || { fields: [] };
+  const params = {};
+  for (const f of meta.fields) {
+    const v = r.params[f];
+    params[f] = f === 'port' ? Number(v) : typeof v === 'string' ? v.trim() : v;
+  }
+  return { type: r.type, label: r.label.trim(), params };
+}
+
+function RuleRow({ rule, onChange, onRemove }) {
+  const meta = RULE_TYPES.find((x) => x.value === rule.type) || { fields: [] };
+  return (
+    <div className="rounded-xl border border-slate-200 p-3 dark:border-white/10">
+      <div className="flex items-center gap-2">
+        <select className={input + ' sm:w-64'} value={rule.type} onChange={(e) => onChange({ type: e.target.value })}>
+          {RULE_TYPES.map((r) => (
+            <option key={r.value} value={r.value}>{r.value.replace(/_/g, ' ')}</option>
+          ))}
+        </select>
+        <input
+          className={input + ' flex-1'}
+          value={rule.label}
+          onChange={(e) => onChange({ label: e.target.value })}
+          placeholder="Rule label shown to students"
+        />
+        <button type="button" onClick={onRemove} className="icon-btn text-red-500">
+          <Trash2 size={16} />
+        </button>
+      </div>
+      {meta.fields.length > 0 && (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {meta.fields.map((f) => (
+            <input
+              key={f}
+              className={input}
+              value={rule.params[f] ?? ''}
+              onChange={(e) => onChange({ params: { ...rule.params, [f]: e.target.value } })}
+              placeholder={FIELD_LABELS[f]}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ListEditor({ value, onChange, placeholder }) {
@@ -95,6 +153,8 @@ const EMPTY = {
   solution: '',
   setupCommands: '',
   validationRules: [],
+  useSections: false,
+  sections: [],
 };
 
 export default function TaskEditor() {
@@ -126,6 +186,8 @@ export default function TaskEditor() {
         hints: listToState(draft.hints),
         setupCommands: listToState(draft.setupCommands).join('\n'),
         validationRules: rulesToState(draft.validationRules),
+        useSections: (draft.sections?.length || 0) > 0,
+        sections: sectionsToState(draft.sections),
       });
       return;
     }
@@ -143,6 +205,8 @@ export default function TaskEditor() {
           hints: listToState(t.hints),
           setupCommands: listToState(t.setupCommands).join('\n'),
           validationRules: rulesToState(t.validationRules),
+          useSections: (t.sections?.length || 0) > 0,
+          sections: sectionsToState(t.sections),
         });
       })
       .catch((e) => setError(e.message))
@@ -157,9 +221,6 @@ export default function TaskEditor() {
       validationRules: f.validationRules.map((r, j) => (j === i ? { ...r, ...patch } : r)),
     }));
 
-  const setRuleParam = (i, key, v) =>
-    setRule(i, { params: { ...form.validationRules[i].params, [key]: v } });
-
   const addRule = () =>
     setForm((f) => ({
       ...f,
@@ -172,9 +233,54 @@ export default function TaskEditor() {
       validationRules: f.validationRules.filter((_, j) => j !== i),
     }));
 
+  const setSection = (i, patch) =>
+    setForm((f) => ({
+      ...f,
+      sections: f.sections.map((s, j) => (j === i ? { ...s, ...patch } : s)),
+    }));
+
+  const setSectionRule = (i, j, patch) =>
+    setForm((f) => ({
+      ...f,
+      sections: f.sections.map((s, si) =>
+        si === i ? { ...s, checks: s.checks.map((r, rj) => (rj === j ? { ...r, ...patch } : r)) } : s
+      ),
+    }));
+
+  const addSection = () =>
+    setForm((f) => ({ ...f, sections: [...f.sections, { title: '', instructions: [], checks: [] }] }));
+
+  const removeSection = (i) =>
+    setForm((f) => ({ ...f, sections: f.sections.filter((_, j) => j !== i) }));
+
+  const addSectionRule = (i) =>
+    setForm((f) => ({
+      ...f,
+      sections: f.sections.map((s, si) =>
+        si === i ? { ...s, checks: [...s.checks, { type: 'file_exists', label: '', params: {} }] } : s
+      ),
+    }));
+
+  const removeSectionRule = (i, j) =>
+    setForm((f) => ({
+      ...f,
+      sections: f.sections.map((s, si) =>
+        si === i ? { ...s, checks: s.checks.filter((_, rj) => rj !== j) } : s
+      ),
+    }));
+
   const save = async () => {
     setSaving(true);
     setError('');
+    const sections = form.useSections
+      ? form.sections
+          .filter((s) => s.title.trim() || s.checks.some((c) => c.label.trim()))
+          .map((s, i) => ({
+            title: s.title.trim() || `Step ${i + 1}`,
+            instructions: s.instructions.map((x) => x.trim()).filter(Boolean),
+            checks: s.checks.filter((c) => c.label.trim()).map(cleanRule),
+          }))
+      : [];
     const body = {
       title: form.title.trim(),
       category: form.category,
@@ -193,17 +299,10 @@ export default function TaskEditor() {
         .split('\n')
         .map((s) => s.trim())
         .filter(Boolean),
-      validationRules: form.validationRules
-        .filter((r) => r.label.trim())
-        .map((r) => {
-          const meta = RULE_TYPES.find((x) => x.value === r.type) || { fields: [] };
-          const params = {};
-          for (const f of meta.fields) {
-            const v = r.params[f];
-            params[f] = f === 'port' ? Number(v) : typeof v === 'string' ? v.trim() : v;
-          }
-          return { type: r.type, label: r.label.trim(), params };
-        }),
+      validationRules: form.useSections
+        ? sections.flatMap((s) => s.checks)
+        : form.validationRules.filter((r) => r.label.trim()).map(cleanRule),
+      sections,
     };
     try {
       if (isEdit) {
@@ -221,8 +320,6 @@ export default function TaskEditor() {
   };
 
   if (loading) return <FullPageSpinner label="Loading task…" />;
-
-  const input = 'input';
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
@@ -323,52 +420,79 @@ export default function TaskEditor() {
         <section className="card space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-extrabold">Validation rules</h2>
-            <button type="button" onClick={addRule} className="btn-secondary !py-1.5">
-              <Plus size={14} /> Add rule
-            </button>
+            {!form.useSections && (
+              <button type="button" onClick={addRule} className="btn-secondary !py-1.5">
+                <Plus size={14} /> Add rule
+              </button>
+            )}
           </div>
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={form.useSections}
+              onChange={(e) => set('useSections', e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 accent-brand-500"
+            />
+            Step-by-step sections — group the checks into guided steps (shown to students as a numbered guide)
+          </label>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Each rule is checked inside the lab container when the user submits. Every rule needs a label; leave rules empty to delete.
           </p>
-          {form.validationRules.length === 0 && (
-            <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-white/5">No rules yet — add at least one so attempts can be scored.</p>
-          )}
-          {form.validationRules.map((rule, i) => {
-            const meta = RULE_TYPES.find((x) => x.value === rule.type) || { fields: [] };
-            return (
-              <div key={i} className="rounded-xl border border-slate-200 p-3 dark:border-white/10">
-                <div className="flex items-center gap-2">
-                  <select className={input + ' sm:w-64'} value={rule.type} onChange={(e) => setRule(i, { type: e.target.value })}>
-                    {RULE_TYPES.map((r) => (
-                      <option key={r.value} value={r.value}>{r.value.replace(/_/g, ' ')}</option>
-                    ))}
-                  </select>
-                  <input
-                    className={input + ' flex-1'}
-                    value={rule.label}
-                    onChange={(e) => setRule(i, { label: e.target.value })}
-                    placeholder="Rule label shown to students"
-                  />
-                  <button type="button" onClick={() => removeRule(i)} className="icon-btn text-red-500">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                {meta.fields.length > 0 && (
-                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                    {meta.fields.map((f) => (
-                      <input
-                        key={f}
-                        className={input}
-                        value={rule.params[f] ?? ''}
-                        onChange={(e) => setRuleParam(i, f, e.target.value)}
-                        placeholder={FIELD_LABELS[f]}
-                      />
-                    ))}
+
+          {form.useSections ? (
+            <>
+              {form.sections.length === 0 && (
+                <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-white/5">No steps yet — add a step, then give it a title, instructions and its own checks.</p>
+              )}
+              {form.sections.map((sec, i) => (
+                <div key={i} className="rounded-xl border border-slate-200 p-3 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                      {i + 1}
+                    </span>
+                    <input
+                      className={input + ' flex-1 font-semibold'}
+                      value={sec.title}
+                      onChange={(e) => setSection(i, { title: e.target.value })}
+                      placeholder="Step title, e.g. Create the users and the shared directory"
+                    />
+                    <button type="button" onClick={() => removeSection(i)} className="icon-btn text-red-500">
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  <div className="mt-3">
+                    <span className="label">Instructions for this step</span>
+                    <ListEditor value={sec.instructions} onChange={(v) => setSection(i, { instructions: v })} placeholder="chmod 1777 /shared" />
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    <span className="label">Checks in this step</span>
+                    {sec.checks.map((rule, j) => (
+                      <RuleRow key={j} rule={rule} onChange={(patch) => setSectionRule(i, j, patch)} onRemove={() => removeSectionRule(i, j)} />
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => addSectionRule(i)}
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:underline dark:text-brand-400"
+                    >
+                      <Plus size={14} /> Add check
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <button type="button" onClick={addSection} className="btn-secondary !py-1.5">
+                <Plus size={14} /> Add step
+              </button>
+            </>
+          ) : (
+            <>
+              {form.validationRules.length === 0 && (
+                <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-white/5">No rules yet — add at least one so attempts can be scored.</p>
+              )}
+              {form.validationRules.map((rule, i) => (
+                <RuleRow key={i} rule={rule} onChange={(patch) => setRule(i, patch)} onRemove={() => removeRule(i)} />
+              ))}
+            </>
+          )}
         </section>
 
         <div className="sticky bottom-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur dark:border-white/10 dark:bg-slate-950/95">
