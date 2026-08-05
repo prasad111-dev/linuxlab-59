@@ -148,46 +148,69 @@ export default function AdminActivity() {
             ) : sessions.length === 0 ? (
               <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">No students are in a lab right now.</p>
             ) : (
-              <div className="divide-y divide-slate-100 dark:divide-white/5">
-                {sessions.map((s) => (
-                  <div key={s.id} className="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
-                    <span className="flex min-w-0 flex-1 items-center gap-3">
-                      {s.user?.picture ? (
-                        <img src={s.user.picture} alt="" className="h-9 w-9 shrink-0 rounded-full" />
-                      ) : (
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-fuchsia-600 text-sm font-black text-white">
-                          {s.user?.name?.charAt(0).toUpperCase() || '?'}
-                        </span>
-                      )}
-                      <span className="min-w-0">
-                        <span className="block truncate font-semibold">{s.user?.name || 'Unknown user'}</span>
-                        <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{s.user?.email}</span>
-                      </span>
-                    </span>
-                    <span className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-                      <FileText size={15} className="shrink-0 text-brand-500" />
-                      <span className="truncate font-semibold">{s.task?.title || 'Unknown task'}</span>
-                      {s.task?.difficulty && (
-                        <span className={cn('rounded-md px-1.5 py-0.5 text-[10px] font-bold', difficultyMeta(s.task.difficulty).cls)}>
-                          {difficultyMeta(s.task.difficulty).label}
-                        </span>
-                      )}
-                    </span>
-                    <span className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                      <FolderTree size={15} className="shrink-0" />
-                      {s.category?.icon} {s.category?.name || 'Uncategorized'}
-                    </span>
-                    <span className="text-sm text-slate-500 dark:text-slate-400" title={fmtDateTime(s.startedAt)}>
-                      started {timeAgo(s.startedAt)}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <StatusBadge alive={s.containerAlive} />
-                      <span className="hidden items-center gap-1.5 text-xs text-slate-400 xl:flex" title="Container ID">
-                        <Terminal size={12} /> <span className="font-mono">{s.containerId}</span>
-                      </span>
-                    </span>
-                  </div>
-                ))}
+              <div className="max-h-[32rem] overflow-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="sticky top-0 z-10 bg-white dark:bg-slate-900">
+                    <tr className="border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:text-slate-400">
+                      <th className="px-4 py-3">User</th>
+                      <th className="px-4 py-3">Task</th>
+                      <th className="hidden px-4 py-3 md:table-cell">Category</th>
+                      <th className="hidden px-4 py-3 sm:table-cell">Started</th>
+                      <th className="px-4 py-3">Environment</th>
+                      <th className="hidden px-4 py-3 lg:table-cell">Container</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sessions.map((s) => (
+                      <tr key={s.id} className="border-b border-slate-100 align-middle last:border-0 dark:border-white/5">
+                        <td className="px-4 py-3">
+                          <span className="flex min-w-0 items-center gap-3">
+                            {s.user?.picture ? (
+                              <img src={s.user.picture} alt="" className="h-9 w-9 shrink-0 rounded-full" />
+                            ) : (
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-fuchsia-600 text-sm font-black text-white">
+                                {s.user?.name?.charAt(0).toUpperCase() || '?'}
+                              </span>
+                            )}
+                            <span className="min-w-0">
+                              <span className="block truncate font-semibold">{s.user?.name || 'Unknown user'}</span>
+                              <span className="block truncate text-xs text-slate-500 dark:text-slate-400">{s.user?.email}</span>
+                            </span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <FileText size={15} className="shrink-0 text-brand-500" />
+                            <span className="truncate font-semibold">{s.task?.title || 'Unknown task'}</span>
+                            {s.task?.difficulty && (
+                              <span className={cn('shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold', difficultyMeta(s.task.difficulty).cls)}>
+                                {difficultyMeta(s.task.difficulty).label}
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="hidden px-4 py-3 text-slate-600 dark:text-slate-300 md:table-cell">
+                          <span className="flex items-center gap-2">
+                            <FolderTree size={15} className="shrink-0 text-slate-400" />
+                            {s.category?.icon} {s.category?.name || 'Uncategorized'}
+                          </span>
+                        </td>
+                        <td className="hidden px-4 py-3 text-slate-600 dark:text-slate-300 sm:table-cell" title={fmtDateTime(s.startedAt)}>
+                          {timeAgo(s.startedAt)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge alive={s.containerAlive} />
+                        </td>
+                        <td className="hidden px-4 py-3 lg:table-cell">
+                          <span className="flex items-center gap-1.5 text-xs text-slate-400" title={`Container ID: ${s.containerId}`}>
+                            <Terminal size={12} />
+                            <span className="max-w-[10rem] truncate font-mono">{s.containerId}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
