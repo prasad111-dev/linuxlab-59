@@ -93,36 +93,50 @@ export default function LabPage() {
     return () => clearInterval(iv);
   }, [status, attemptId]);
 
-  // If the user leaves the lab (back button, closes tab, navigates away),
+  // If the user leaves the lab (exit/back button, closes tab, navigates away),
   // destroy the container — no lingering environments.
   const leftRef = useRef(false);
+  const statusRef = useRef(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+  const closeContainer = useCallback(() => {
+    if (leftRef.current) return;
+    leftRef.current = true;
+    const token = getToken();
+    try {
+      fetch(`${API_URL}/attempts/${attemptId}/exit`, {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: '{}',
+      }).catch(() => {});
+    } catch {
+      /* best-effort on unload */
+    }
+  }, [attemptId]);
+
+  // Full page unload: closing the tab, hard refresh, or browser back that leaves the site.
   useEffect(() => {
     if (status !== 'running') return;
-    const closeContainer = () => {
-      if (leftRef.current) return;
-      leftRef.current = true;
-      const token = getToken();
-      try {
-        fetch(`${API_URL}/attempts/${attemptId}/exit`, {
-          method: 'POST',
-          keepalive: true,
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: '{}',
-        }).catch(() => {});
-      } catch {
-        /* best-effort on unload */
-      }
-    };
     window.addEventListener('pagehide', closeContainer);
     window.addEventListener('beforeunload', closeContainer);
     return () => {
       window.removeEventListener('pagehide', closeContainer);
       window.removeEventListener('beforeunload', closeContainer);
     };
-  }, [status, attemptId]);
+  }, [status, closeContainer]);
+
+  // In-app navigation away (back arrow, router back button, Exit): closing the lab
+  // page unmounts this component, so fire the exit on unmount.
+  useEffect(() => {
+    return () => {
+      if (statusRef.current === 'running') closeContainer();
+    };
+  }, [closeContainer]);
 
   const [chat, setChat] = useState([]);
   const [chatText, setChatText] = useState('');
