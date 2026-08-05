@@ -3,7 +3,6 @@ const Task = require('../models/Task');
 const Attempt = require('../models/Attempt');
 const Category = require('../models/Category');
 const Suggestion = require('../models/Suggestion');
-const LoginLog = require('../models/LoginLog');
 const { requireAdmin } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { getLeaderboard } = require('../services/leaderboardService');
@@ -84,16 +83,21 @@ module.exports = async function adminRoutes(app) {
 
   app.get('/login-logs', { preHandler: [requireAdmin] }, async (req) => {
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
-    const logs = await LoginLog.find()
-      .sort({ createdAt: -1 })
+    const users = await User.find({ lastLoginAt: { $ne: null } })
+      .sort({ lastLoginAt: -1 })
       .limit(limit)
+      .select('name email picture role lastLoginAt lastSeenAt')
       .lean();
-    return logs.map((l) => ({
-      id: l._id.toString(),
-      user: l.user ? l.user.toString() : null,
-      name: l.name,
-      email: l.email,
-      at: l.createdAt,
+    const now = Date.now();
+    return users.map((u) => ({
+      id: u._id.toString(),
+      name: u.name,
+      email: u.email,
+      picture: u.picture,
+      role: u.role,
+      lastLoginAt: u.lastLoginAt,
+      lastSeenAt: u.lastSeenAt || null,
+      online: u.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < 60_000 : false,
     }));
   });
 

@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Protected from './components/ProtectedRoute';
 import { FullPageSpinner } from './components/Spinner';
+import { api } from './lib/api';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -53,6 +54,13 @@ export default function App() {
       import('./pages/Leaderboard');
     });
     return () => (typeof t.cancel === 'function' ? t.cancel() : clearTimeout(t));
+  }, []);
+
+  useEffect(() => {
+    const beat = () => api('/auth/presence', { method: 'POST' }).catch(() => {});
+    beat();
+    const t = setInterval(beat, 30_000);
+    return () => clearInterval(t);
   }, []);
 
   return (

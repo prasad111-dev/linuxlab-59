@@ -28,5 +28,14 @@ module.exports = async function authRoutes(app) {
     return user.toSafeJSON();
   });
 
+  app.post(
+    '/presence',
+    { preHandler: [requireAuth], config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
+    async (req) => {
+      await User.updateOne({ _id: req.userId }, { $set: { lastSeenAt: new Date() } });
+      return { ok: true };
+    }
+  );
+
   app.post('/logout', async () => ({ ok: true }));
 };
