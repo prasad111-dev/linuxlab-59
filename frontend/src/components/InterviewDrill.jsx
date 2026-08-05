@@ -90,6 +90,7 @@ export default function InterviewDrill({ mode: modeProp }) {
   const meta = modeMeta(mode);
   const { data, loaded, save, clear } = useInterviewProgress(mode);
   const startedAt = useRef(Date.now());
+  const typedRef = useRef('');
 
   // question list per engine
   const engine = meta.engine;
@@ -111,6 +112,7 @@ export default function InterviewDrill({ mode: modeProp }) {
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState(null); // { correct, userAnswer, explanation }
   const [typed, setTyped] = useState('');
+  typedRef.current = typed;
   const [freeText, setFreeText] = useState('');
   const [grading, setGrading] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
@@ -169,23 +171,30 @@ export default function InterviewDrill({ mode: modeProp }) {
   }, [engine, baseList, genQuestions, careerConfig, careerLevel]);
 
   const timed = meta.timed;
-  const timePer = engine === 'command-speedrun' ? 5 : engine === 'command-battle' ? 10 : 0;
+  const timePer = mode === 'command-speedrun' ? 5 : mode === 'command-battle' ? 10 : 0;
 
   // per-question countdown
   useEffect(() => {
-    if (!timed || !list.length || index >= list.length || selected || evaluating) return;
+    if (!timed || timePer <= 0 || !list.length || index >= list.length || selected || evaluating) return;
+    const q = list[index];
     const deadline = Date.now() + timePer * 1000;
     const iv = setInterval(() => {
       const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
       setSecondsLeft(left);
       if (left <= 0) {
         clearInterval(iv);
-        recordAnswer(false, '(timeout)', '(out of time)');
+        const attempt = typedRef.current;
+        if (attempt.trim()) {
+          const correct = normalize(attempt) === normalize(q.answer);
+          recordAnswer(correct, attempt, correct ? q.explanation : `Expected: ${q.answer}${q.explanation ? ` — ${q.explanation}` : ''}`);
+        } else {
+          recordAnswer(false, '(timeout)', '(out of time)');
+        }
       }
     }, 200);
     return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timed, index, list.length, selected, evaluating]);
+  }, [timed, timePer, index, list.length, selected, evaluating]);
 
   async function generate() {
     setGenerating(true);
