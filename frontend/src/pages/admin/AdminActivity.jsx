@@ -133,6 +133,7 @@ export default function AdminActivity() {
                       <th className="px-4 py-3">User</th>
                       <th className="hidden px-4 py-3 sm:table-cell">Email</th>
                       <th className="hidden px-4 py-3 md:table-cell">Last login</th>
+                      <th className="hidden px-4 py-3 md:table-cell">Logout</th>
                       <th className="px-4 py-3 text-right">Status</th>
                     </tr>
                   </thead>
@@ -155,6 +156,16 @@ export default function AdminActivity() {
                         <td className="hidden px-4 py-2.5 md:table-cell">
                           <span className="block text-slate-700 dark:text-slate-300">{timeAgo(l.lastLoginAt)}</span>
                           <span className="block text-xs text-slate-400">{fmtDateTime(l.lastLoginAt)}</span>
+                        </td>
+                        <td className="hidden px-4 py-2.5 md:table-cell">
+                          {l.lastLogoutAt ? (
+                            <>
+                              <span className="block text-slate-700 dark:text-slate-300">{timeAgo(l.lastLogoutAt)}</span>
+                              <span className="block text-xs text-slate-400">{fmtDateTime(l.lastLogoutAt)}</span>
+                            </>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-2.5 text-right">
                           {l.online ? (

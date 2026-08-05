@@ -86,7 +86,7 @@ module.exports = async function adminRoutes(app) {
     const users = await User.find({ lastLoginAt: { $ne: null } })
       .sort({ lastLoginAt: -1 })
       .limit(limit)
-      .select('name email picture role lastLoginAt lastSeenAt')
+      .select('name email picture role lastLoginAt lastSeenAt lastLogoutAt')
       .lean();
     const now = Date.now();
     return users.map((u) => ({
@@ -97,6 +97,7 @@ module.exports = async function adminRoutes(app) {
       role: u.role,
       lastLoginAt: u.lastLoginAt,
       lastSeenAt: u.lastSeenAt || null,
+      lastLogoutAt: u.lastLogoutAt || null,
       online: u.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < 60_000 : false,
     }));
   });

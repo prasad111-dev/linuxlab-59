@@ -37,6 +37,7 @@ export function AuthProvider({ children }) {
   );
 
   const logout = useCallback(() => {
+    api('/auth/logout', { method: 'POST' }).catch(() => {});
     setToken(null);
     setUser(null);
   }, []);

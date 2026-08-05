@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema(
     ],
     lastLoginAt: { type: Date, default: null },
     lastSeenAt: { type: Date, default: null },
+    lastLogoutAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

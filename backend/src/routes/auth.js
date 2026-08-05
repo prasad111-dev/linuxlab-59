@@ -37,5 +37,12 @@ module.exports = async function authRoutes(app) {
     }
   );
 
-  app.post('/logout', async () => ({ ok: true }));
+  app.post(
+    '/logout',
+    { preHandler: [requireAuth], config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
+    async (req) => {
+      await User.updateOne({ _id: req.userId }, { $set: { lastLogoutAt: new Date(), lastSeenAt: new Date() } });
+      return { ok: true };
+    }
+  );
 };
