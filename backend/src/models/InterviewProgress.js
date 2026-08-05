@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
+const { INTERVIEW_MODES } = require('../constants/interviewModes');
 
 const interviewProgressSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     mode: {
       type: String,
-      enum: ['flashcard', 'quest', 'typing'],
+      enum: INTERVIEW_MODES,
       required: true,
     },
     data: { type: mongoose.Schema.Types.Mixed, default: {} },

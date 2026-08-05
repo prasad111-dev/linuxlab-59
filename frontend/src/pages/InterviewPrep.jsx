@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, ChevronRight, History } from 'lucide-react';
 import { api } from '../lib/api';
 import { FullPageSpinner } from '../components/Spinner';
-import { MODES } from '../data/interviewData';
+import { MODES, CATEGORIES, modeMeta } from '../data/interviewData';
 import { timeAgo, cn } from '../lib/format';
 
 export default function InterviewPrep() {
@@ -15,6 +15,11 @@ export default function InterviewPrep() {
       .catch(() => setSessions([]));
   }, []);
 
+  const byCategory = CATEGORIES.map((cat) => ({
+    cat,
+    modes: MODES.filter((m) => m.category === cat),
+  })).filter((g) => g.modes.length > 0);
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -23,8 +28,8 @@ export default function InterviewPrep() {
             Interview <span className="gradient-text">Preparation</span>
           </h1>
           <p className="mt-1 text-slate-500 dark:text-slate-400">
-            Sharpen your Linux command skills with three AI-powered drills. Each session ends with a
-            personalized analysis from the AI coach.
+            {MODES.length} AI-powered drills — from command tickets to career simulators. Every session ends
+            with a personalized analysis from the AI coach, and several modes generate fresh questions on demand.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
@@ -32,26 +37,46 @@ export default function InterviewPrep() {
         </div>
       </div>
 
-      <div className="mt-8 grid gap-5 md:grid-cols-3">
-        {MODES.map((m) => (
-          <Link
-            key={m.mode}
-            to={m.route}
-            className="card group relative flex flex-col !p-6 transition hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl dark:hover:border-brand-500/40"
-          >
-            <div className={cn('flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-3xl text-white shadow-lg', m.gradient)}>
-              {m.icon}
-            </div>
-            <h2 className="mt-4 text-lg font-extrabold">{m.title}</h2>
-            <p className="mt-1 flex-1 text-sm text-slate-500 dark:text-slate-400">{m.tagline}</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 dark:text-brand-400">
-              Start practice <ArrowRight size={15} className="transition group-hover:translate-x-1" />
-            </span>
-          </Link>
-        ))}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="badge bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">{MODES.length} drills</span>
+        <span className="badge bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300">{CATEGORIES.length} categories</span>
+        <span className="badge bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">Gemini-generated scenarios</span>
       </div>
 
-      <div className="mt-12">
+      {byCategory.map(({ cat, modes }) => (
+        <section key={cat} className="mt-10">
+          <h2 className="text-sm font-extrabold uppercase tracking-widest text-slate-400">{cat}</h2>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {modes.map((m) => (
+              <Link
+                key={m.mode}
+                to={m.route}
+                className="card group relative flex flex-col !p-6 transition hover:-translate-y-1 hover:border-brand-300 hover:shadow-xl dark:hover:border-brand-500/40"
+              >
+                <div className={cn('flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-3xl text-white shadow-lg', m.gradient)}>
+                  {m.icon}
+                </div>
+                <h3 className="mt-4 text-base font-extrabold">{m.title}</h3>
+                <p className="mt-1 flex-1 text-sm text-slate-500 dark:text-slate-400">{m.tagline}</p>
+                <div className="mt-4 flex items-center justify-between">
+                  {m.gemini ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-500">
+                      <Sparkles size={12} /> AI-generated
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 dark:text-brand-400">
+                    Start <ArrowRight size={15} className="transition group-hover:translate-x-1" />
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <div className="mt-14">
         <div className="mb-4 flex items-center gap-2">
           <History size={18} className="text-slate-400" />
           <h2 className="text-lg font-extrabold">Your interview history</h2>
@@ -68,33 +93,25 @@ export default function InterviewPrep() {
           </div>
         ) : (
           <div className="space-y-3">
-            {sessions.map((s) => (
-              <div key={s.id} className="card flex items-center gap-4 !p-4">
-                <div
-                  className={cn(
-                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl',
-                    s.mode === 'flashcard'
-                      ? 'bg-brand-100 dark:bg-brand-500/15'
-                      : s.mode === 'quest'
-                        ? 'bg-emerald-100 dark:bg-emerald-500/15'
-                        : 'bg-brand-100 dark:bg-brand-500/15'
-                  )}
-                >
-                  {s.mode === 'flashcard' ? '🧠' : s.mode === 'quest' ? '🗺️' : '⌨️'}
+            {sessions.map((s) => {
+              const meta = modeMeta(s.mode);
+              return (
+                <div key={s.id} className="card flex items-center gap-4 !p-4">
+                  <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-xl text-white', meta.gradient)}>
+                    {meta.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold">{meta.title}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {s.score}/{s.maxScore} · {s.accuracy}% accuracy{s.wpm ? ` · ${s.wpm} WPM` : ''} · {timeAgo(s.createdAt)}
+                    </p>
+                  </div>
+                  <Link to={`/interview/session/${s.id}`} className="icon-btn text-slate-400 hover:text-brand-500">
+                    <ChevronRight size={18} />
+                  </Link>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="capitalize font-bold">
-                    {s.mode === 'flashcard' ? 'Flashcard Duel' : s.mode === 'quest' ? 'Quest Mode' : 'Typing Shooter'}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {s.score}/{s.maxScore} · {s.accuracy}% accuracy{s.wpm ? ` · ${s.wpm} WPM` : ''} · {timeAgo(s.createdAt)}
-                  </p>
-                </div>
-                <Link to={`/interview/session/${s.id}`} className="icon-btn text-slate-400 hover:text-brand-500">
-                  <ChevronRight size={18} />
-                </Link>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

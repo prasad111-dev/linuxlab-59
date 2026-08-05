@@ -2,7 +2,12 @@ const InterviewSession = require('../models/InterviewSession');
 const InterviewProgress = require('../models/InterviewProgress');
 const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
-const { generateInterviewReport } = require('../services/geminiService');
+const { isInterviewMode } = require('../constants/interviewModes');
+const {
+  generateInterviewReport,
+  generateInterviewQuestions,
+  gradeInterviewAnswer,
+} = require('../services/geminiService');
 
 function computeWeakTopics(answers) {
   const byTopic = {};
@@ -47,16 +52,19 @@ function clampProgressData(data, mode) {
 }
 
 module.exports = async function interviewRoutes(app) {
+  const validMode = (mode) => {
+    if (!isInterviewMode(mode)) throw new HttpError(400, `unknown mode "${mode}"`);
+    return String(mode).trim();
+  };
+
   app.get('/progress/:mode', { preHandler: [requireAuth] }, async (req) => {
-    const mode = req.params.mode;
-    if (!['flashcard', 'quest', 'typing'].includes(mode)) throw new HttpError(400, 'invalid mode');
+    const mode = validMode(req.params.mode);
     const progress = await InterviewProgress.findOne({ user: req.userId, mode });
     return progress ? progress.toSafeJSON() : { id: null, mode, data: {}, updatedAt: null };
   });
 
   app.put('/progress/:mode', { preHandler: [requireAuth] }, async (req) => {
-    const mode = req.params.mode;
-    if (!['flashcard', 'quest', 'typing'].includes(mode)) throw new HttpError(400, 'invalid mode');
+    const mode = validMode(req.params.mode);
     const data = clampProgressData(req.body?.data || req.body || {}, mode);
     const progress = await InterviewProgress.findOneAndUpdate(
       { user: req.userId, mode },
@@ -67,8 +75,7 @@ module.exports = async function interviewRoutes(app) {
   });
 
   app.delete('/progress/:mode', { preHandler: [requireAuth] }, async (req) => {
-    const mode = req.params.mode;
-    if (!['flashcard', 'quest', 'typing'].includes(mode)) throw new HttpError(400, 'invalid mode');
+    const mode = validMode(req.params.mode);
     await InterviewProgress.deleteOne({ user: req.userId, mode });
     return { ok: true };
   });
@@ -89,12 +96,40 @@ module.exports = async function interviewRoutes(app) {
     return session.toSafeJSON();
   });
 
+  // Gemini-powered question generator: fresh questions for any drill mode.
+  // Body: { mode, topic?, count? } — mode determines the JSON shape returned
+  // (command / mcq / free) so the frontend can render them directly.
+  app.post('/questions/generate', { preHandler: [requireAuth] }, async (req) => {
+    const body = req.body || {};
+    const mode = validMode(String(body.mode || '').trim());
+    const questions = await generateInterviewQuestions(mode, {
+      topic: String(body.topic || '').slice(0, 80),
+      count: Math.floor(Number(body.count) || 5),
+    });
+    return { mode, questions };
+  });
+
+  // Gemini free-answer grading for interview-simulation style drills.
+  // Body: { question: {prompt, topic?, model?}, answer }.
+  app.post('/grade', { preHandler: [requireAuth] }, async (req) => {
+    const body = req.body || {};
+    const question = body.question && typeof body.question === 'object' ? body.question : {};
+    if (!question.prompt) throw new HttpError(400, 'question.prompt is required');
+    if (!body.answer) throw new HttpError(400, 'answer is required');
+    const result = await gradeInterviewAnswer(
+      {
+        prompt: String(question.prompt).slice(0, 300),
+        topic: String(question.topic || 'Linux').slice(0, 80),
+        model: String(question.model || '').slice(0, 300),
+      },
+      String(body.answer).slice(0, 1200)
+    );
+    return result;
+  });
+
   app.post('/sessions', { preHandler: [requireAuth] }, async (req) => {
     const body = req.body || {};
-    const mode = String(body.mode || '').trim();
-    if (!['flashcard', 'quest', 'typing'].includes(mode)) {
-      throw new HttpError(400, 'mode must be flashcard, quest or typing');
-    }
+    const mode = validMode(String(body.mode || '').trim());
     const answers = clampAnswers(body.answers);
     const maxScore = Number(body.maxScore) || answers.length || 0;
     const score = Math.min(Number(body.score) || 0, maxScore);

@@ -37,7 +37,7 @@ const QUICK_ACTIONS = [
   {
     to: '/interview',
     title: 'Interview Prep',
-    desc: 'Flashcards · Quest · Typing',
+    desc: '23 drills · tickets · scenarios',
     icon: Brain,
     badge: 'AI',
   },

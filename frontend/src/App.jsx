@@ -22,6 +22,7 @@ const FlashcardDuel = lazy(() => import('./pages/FlashcardDuel'));
 const QuestMode = lazy(() => import('./pages/QuestMode'));
 const TypingShooter = lazy(() => import('./pages/TypingShooter'));
 const InterviewSessionDetail = lazy(() => import('./pages/InterviewSessionDetail'));
+const InterviewDrill = lazy(() => import('./components/InterviewDrill'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminTasks = lazy(() => import('./pages/admin/AdminTasks'));
 const TaskEditor = lazy(() => import('./pages/admin/TaskEditor'));
@@ -164,6 +165,14 @@ export default function App() {
           element={
             <Protected>
               <TypingShooter />
+            </Protected>
+          }
+        />
+        <Route
+          path="/interview/drill/:mode"
+          element={
+            <Protected>
+              <InterviewDrill />
             </Protected>
           }
         />

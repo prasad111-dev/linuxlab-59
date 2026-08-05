@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { modeMeta } from '../data/interviewData';
 import { FullPageSpinner } from '../components/Spinner';
 import { cn, timeAgo } from '../lib/format';
 
@@ -140,7 +141,7 @@ export default function Profile() {
             <div>
               <p className="text-sm font-semibold">No interview drills yet</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Try a Flashcard Duel or Quest Mode to get an AI analysis.
+                Try any of the 23 interview drills to get an AI analysis.
               </p>
             </div>
           </div>
@@ -152,11 +153,9 @@ export default function Profile() {
                 to={`/interview/session/${s.id}`}
                 className="card flex items-center gap-3 !p-3.5 transition hover:border-brand-300 dark:hover:border-brand-500/40"
               >
-                <span className="text-xl">{s.mode === 'flashcard' ? '🧠' : s.mode === 'quest' ? '🗺️' : '⌨️'}</span>
+                <span className="text-xl">{modeMeta(s.mode).icon}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold capitalize">
-                    {s.mode === 'flashcard' ? 'Flashcard Duel' : s.mode === 'quest' ? 'Quest Mode' : 'Typing Shooter'}
-                  </p>
+                  <p className="truncate text-sm font-bold">{modeMeta(s.mode).title}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {s.score}/{s.maxScore} · {s.accuracy}% · {timeAgo(s.createdAt)}
                   </p>

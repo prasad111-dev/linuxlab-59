@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, RotateCcw, ArrowLeft, XCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '../lib/format';
 import { Spinner } from './Spinner';
+import { modeMeta } from '../data/interviewData';
 
 export function renderMarkdownish(text) {
   const lines = String(text || '').split('\n');
@@ -29,12 +30,12 @@ export function renderMarkdownish(text) {
 }
 
 export function ModeMeta({ mode }) {
-  const meta = {
-    flashcard: { label: 'Flashcard Duel', cls: 'bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' },
-    quest: { label: 'Quest Mode', cls: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400' },
-    typing: { label: 'Typing Shooter', cls: 'bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400' },
-  }[mode];
-  return <span className={cn('badge', meta.cls)}>{meta.label}</span>;
+  const meta = modeMeta(mode);
+  return (
+    <span className="badge inline-flex items-center gap-1 bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
+      <span>{meta.icon}</span> {meta.title}
+    </span>
+  );
 }
 
 export default function InterviewReport({ session, onRetry }) {
