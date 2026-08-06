@@ -64,6 +64,8 @@ const attemptSchema = new mongoose.Schema(
 
 attemptSchema.index({ user: 1, status: 1 });
 attemptSchema.index({ user: 1, createdAt: -1 });
-attemptSchema.index({ task: 1, user: 1 });
+attemptSchema.index({ user: 1, task: 1, score: -1 });
+attemptSchema.index({ user: 1, pointsAwarded: 1 });
+attemptSchema.index({ startedAt: 1 });
 
 module.exports = mongoose.model('Attempt', attemptSchema);

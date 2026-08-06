@@ -11,7 +11,8 @@ function slugify(s) {
 }
 
 module.exports = async function categoryRoutes(app) {
-  app.get('/', async () => {
+  app.get('/', async (req, reply) => {
+    reply.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
     const cats = await Category.find({ isActive: true }).sort({ order: 1, name: 1 }).lean();
     return cats.map((c) => ({ ...c, id: c._id.toString() }));
   });

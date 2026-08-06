@@ -102,20 +102,25 @@ export default function LabPage() {
   const [remaining, setRemaining] = useState(null);
   const [checks, setChecks] = useState(null);
 
-  // Real-time validation checklist — poll the running container every 5s
+  // Real-time validation checklist — poll the running container (never overlapping)
   useEffect(() => {
     if (status !== 'running') return;
     let cancelled = false;
+    let inflight = false;
     const run = async () => {
+      if (inflight) return;
+      inflight = true;
       try {
         const data = await api(`/attempts/${attemptId}/live-check`);
         if (!cancelled) setChecks(data);
       } catch {
         /* container may be warming up — keep polling */
+      } finally {
+        inflight = false;
       }
     };
     run();
-    const iv = setInterval(run, 5000);
+    const iv = setInterval(run, 10000);
     return () => {
       cancelled = true;
       clearInterval(iv);

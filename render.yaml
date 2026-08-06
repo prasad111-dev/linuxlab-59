@@ -63,5 +63,7 @@ services:
         value: prasadghavghave0@gmail.com
       - key: SESSION_TTL_MINUTES
         value: "60"
+      - key: TERMINAL_POLICY
+        value: task
       - key: CONTAINER_MEM_MB
         value: "512"

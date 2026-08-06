@@ -42,7 +42,7 @@ function stripCodeFences(text) {
 }
 
 module.exports = async function taskRoutes(app) {
-  app.get('/', { preHandler: [optionalAuth] }, async (req) => {
+  app.get('/', { preHandler: [optionalAuth] }, async (req, reply) => {
     const { category, difficulty, q } = req.query;
     const filter = {};
     if (req.userRole !== 'admin') filter.status = 'published';
@@ -51,15 +51,24 @@ module.exports = async function taskRoutes(app) {
     if (difficulty) filter.difficulty = difficulty;
     if (q) filter.$text = { $search: String(q) };
 
+    // The list is a grid of cards — fetch only the fields the cards render.
+    // Admin keeps validationRules so the admin table can show a check count.
+    const select =
+      req.userRole === 'admin'
+        ? 'title category difficulty estimatedMinutes points status validationRules createdAt'
+        : 'title category difficulty estimatedMinutes points status';
+
     const tasks = await Task.find(filter)
+      .select(select)
       .populate('category', 'name slug icon color')
       .sort({ createdAt: -1 })
       .lean();
 
-    return tasks.map((t) => {
-      const { solution, ...rest } = t;
-      return { ...rest, id: t._id.toString() };
-    });
+    if (req.userRole !== 'admin') {
+      reply.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    }
+
+    return tasks.map((t) => ({ ...t, id: t._id.toString() }));
   });
 
   app.get('/:id', { preHandler: [optionalAuth] }, async (req) => {

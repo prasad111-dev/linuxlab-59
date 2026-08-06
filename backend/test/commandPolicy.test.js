@@ -95,3 +95,26 @@ test('user commands only target the task users', () => {
   assert.equal(checkCommand('useradd bob', USER_TASK).allowed, false);
   assert.equal(checkCommand('cat /etc/passwd', USER_TASK).allowed, true);
 });
+
+test('safe file commands may create parent dirs of task paths, destructive ones may not', () => {
+  assert.equal(checkCommand('mkdir -p /var/www/acme', NGINX_TASK).allowed, true);
+  assert.equal(checkCommand('mkdir -p /var/www', NGINX_TASK).allowed, true);
+  assert.equal(checkCommand('touch /var/www/acme/extra.txt', NGINX_TASK).allowed, false);
+  assert.equal(checkCommand('rm /var/www/acme/index.html', NGINX_TASK).allowed, true);
+  assert.equal(checkCommand('rm /var/www/acme', NGINX_TASK).allowed, false);
+  assert.equal(checkCommand('rm -rf /var/www', NGINX_TASK).allowed, false);
+});
+
+test('daemon config tests and service commands are allowed for their service tasks', () => {
+  assert.equal(checkCommand('nginx -t', NGINX_TASK).allowed, true);
+  assert.equal(checkCommand('nginx -s reload', NGINX_TASK).allowed, true);
+  assert.equal(checkCommand('sshd -t', NGINX_TASK).allowed, true);
+
+  const SSH_TASK = policy([
+    { type: 'service_active', params: { service: 'ssh' } },
+    { type: 'file_exists', params: { path: '/etc/ssh/sshd_config' } },
+  ]);
+  assert.equal(checkCommand('sshd -t', SSH_TASK).allowed, true);
+  assert.equal(checkCommand('systemctl restart ssh', SSH_TASK).allowed, true);
+  assert.equal(checkCommand('sshd -T', SSH_TASK).allowed, true);
+});

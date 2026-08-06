@@ -1,6 +1,7 @@
 const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const rateLimit = require('@fastify/rate-limit');
+const compress = require('@fastify/compress');
 
 const config = require('./config');
 const { HttpError } = require('./utils/httpError');
@@ -48,6 +49,8 @@ async function buildApp() {
     },
     credentials: true,
   });
+
+  await app.register(compress, { global: true, threshold: 1024 });
 
   await app.register(rateLimit, {
     global: true,

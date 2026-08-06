@@ -45,6 +45,19 @@ const FILE_WORDS = new Set([
   'nano', 'vi', 'vim', 'tee', 'sed', 'install', 'truncate', 'tar',
 ]);
 
+// These file commands create or place content, so they may also target a
+// parent directory of a task path (e.g. `mkdir -p /var/www/acme` when the
+// task file is /var/www/acme/index.html). Destructive ones (rm, sed -i,
+// tar, truncate) stay exact-path-only.
+const SAFE_FILE_WORDS = new Set([
+  'mkdir', 'touch', 'chmod', 'chown', 'chgrp', 'ln', 'cp', 'mv',
+  'nano', 'vi', 'vim', 'tee', 'install',
+]);
+
+// Destructive commands only ever target an exact task path or a nested path
+// (no loose basename matching, no parent-dir allowance).
+const DESTRUCTIVE_FILE_WORDS = new Set(['rm', 'truncate', 'tar', 'sed']);
+
 const CRON_WORDS = new Set(['crontab']);
 
 const SERVICE_WORDS = new Set(['systemctl', 'service', 'systemd-run', 'initctl']);
@@ -103,10 +116,30 @@ function targetPath(segment, paths) {
   return false;
 }
 
+/** Exact-path / nested-path match only (no loose basename matching). */
+function targetPathSubpath(segment, paths) {
+  for (const p of paths) {
+    if (segment.includes(p)) return true;
+  }
+  return false;
+}
+
 function targetName(segment, names) {
   const seg = ` ${segment.replace(/[=:]/g, ' ')} `;
   for (const n of names) {
     if (seg.includes(` ${n} `) || seg.includes(`'${n}'`) || seg.includes(`"${n}"`)) return true;
+  }
+  return false;
+}
+
+/** True when a token in the segment is a parent directory of a policy path. */
+function targetIsParentDir(segment, paths) {
+  for (const token of String(segment).split(/\s+/)) {
+    const t = token.replace(/^['"]/, '').replace(/['"]$/, '');
+    if (!t || t.startsWith('-') || /[^A-Za-z0-9._~/@+-]/.test(t)) continue;
+    for (const p of paths) {
+      if (String(p).startsWith(`${t}/`)) return true;
+    }
   }
   return false;
 }
@@ -297,12 +330,21 @@ function isAllowedAction(segment, policy) {
 
   if (FILE_WORDS.has(word)) {
     if (policy.paths.size === 0) return false;
-    return targetPath(segment, policy.paths);
+    if (DESTRUCTIVE_FILE_WORDS.has(word)) return targetPathSubpath(segment, policy.paths);
+    if (targetPath(segment, policy.paths)) return true;
+    if (SAFE_FILE_WORDS.has(word) && targetIsParentDir(segment, policy.paths)) return true;
+    return false;
+  }
+
+  // Daemon config tests (`nginx -t`, `sshd -t`) are safe verification steps
+  // for the service tasks; the daemons themselves are service-gated.
+  if (word === 'nginx' || word === 'sshd') {
+    if (/(^|\s)-[tT](\s|$)/.test(segment)) return true;
+    return policy.services.size > 0 && targetName(segment, policy.services);
   }
 
   return false;
 }
-
 /**
  * Validate a typed command line against the policy.
  * Returns { allowed: boolean, command: string, hint: string }.

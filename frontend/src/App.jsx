@@ -66,7 +66,7 @@ export default function App() {
       api('/auth/presence', { method: 'POST', body: { active } }).catch(() => {});
     };
     beat();
-    const t = setInterval(beat, 10_000);
+    const t = setInterval(beat, 20_000);
     return () => clearInterval(t);
   }, []);
 
