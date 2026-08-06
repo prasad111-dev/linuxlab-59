@@ -2,6 +2,7 @@ const Fastify = require('fastify');
 const cors = require('@fastify/cors');
 const rateLimit = require('@fastify/rate-limit');
 const compress = require('@fastify/compress');
+const helmet = require('@fastify/helmet');
 
 const config = require('./config');
 const { HttpError } = require('./utils/httpError');
@@ -30,6 +31,8 @@ async function buildApp() {
     try {
       done(null, body && body.trim() ? JSON.parse(body) : undefined);
     } catch (err) {
+      err.statusCode = 400;
+      err.code = 'FST_ERR_CTP_INVALID_JSON_BODY';
       done(err, undefined);
     }
   });
@@ -52,6 +55,12 @@ async function buildApp() {
 
   await app.register(compress, { global: true, threshold: 1024 });
 
+  // Security headers for a JSON API (no CSP/CORP — those apply to documents).
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: false,
+  });
+
   await app.register(rateLimit, {
     global: true,
     max: 300,
@@ -65,8 +74,8 @@ async function buildApp() {
     if (err.validation) {
       return reply.status(400).send({ error: 'invalid request', details: err.message });
     }
-    req.log.error(err);
     const status = err.statusCode || 500;
+    if (status >= 500) req.log.error(err);
     return reply.status(status).send({ error: status >= 500 ? 'internal server error' : err.message });
   });
 
