@@ -8,6 +8,10 @@ const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'];
 
 const RULE_TYPES = [
   { value: 'file_exists', fields: ['path'] },
+  { value: 'file_type', fields: ['path', 'expected'] },
+  { value: 'file_linkcount', fields: ['path', 'expected'] },
+  { value: 'hardlink_exists', fields: ['a', 'b'] },
+  { value: 'symlink_exists', fields: ['path'] },
   { value: 'dir_exists', fields: ['path'] },
   { value: 'user_exists', fields: ['username'] },
   { value: 'user_absent', fields: ['username'] },
@@ -32,6 +36,8 @@ const FIELD_LABELS = {
   port: 'Port',
   needle: 'Expected text',
   expected: 'Expected value',
+  a: 'First path',
+  b: 'Second path',
   command: 'Command',
 };
 

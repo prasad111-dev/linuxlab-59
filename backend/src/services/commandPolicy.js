@@ -142,7 +142,18 @@ function buildPolicy(task) {
       case 'file_contains':
       case 'file_permissions':
       case 'file_owner':
+      case 'file_type':
+      case 'file_linkcount':
+      case 'symlink_exists':
         if (p.path) paths.add(String(p.path));
+        break;
+      case 'symlink_target':
+        if (p.path) paths.add(String(p.path));
+        if (p.target) paths.add(String(p.target));
+        break;
+      case 'hardlink_exists':
+        if (p.a) paths.add(String(p.a));
+        if (p.b) paths.add(String(p.b));
         break;
       case 'port_open':
         ports = true;

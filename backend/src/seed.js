@@ -579,6 +579,117 @@ const SEED_TASKS = [
       },
     ],
   },
+  {
+    title: 'Fix the app links — hard links vs symbolic links',
+    categorySlug: 'file-system',
+    difficulty: 'intermediate',
+    estimatedMinutes: 30,
+    points: 180,
+    scenario:
+      'The web app at /srv/webapp stopped working after a cleanup deleted its links. ' +
+      'The service reads its settings from /srv/webapp/config.yml, but the ops team keeps the master copy as ' +
+      '/srv/webapp/settings.yml — the previous admin linked them with a HARD LINK so both names are the same file ' +
+      '(one copy on disk; updating either name updates both). The website also lost its assets: /srv/webapp/www/assets ' +
+      'used to point at the shared asset store /srv/webapp/shared-assets through a SYMBOLIC LINK. ' +
+      'Recreate both links exactly the way they were set up, then prove you understand the difference between the two kinds of links.',
+    objectives: [
+      'Understand why the config used a hard link instead of a copy or a symlink',
+      'Recreate the hard link config.yml → settings.yml (same file, same inode)',
+      'Recreate the symbolic link www/assets → shared-assets',
+      'Verify the hard link shares one inode and has a link count of 2',
+      'Verify the symbolic link resolves to the shared assets folder',
+    ],
+    requirements: [
+      '/srv/webapp/config.yml exists and is a regular file (a hard link, not a symlink)',
+      '/srv/webapp/config.yml and /srv/webapp/settings.yml are the same file (same inode)',
+      '/srv/webapp/config.yml has a link count of 2',
+      'config.yml exposes the same settings content as settings.yml',
+      '/srv/webapp/www/assets is a symbolic link',
+      'www/assets resolves to the shared-assets directory (logo.png is reachable through it)',
+    ],
+    instructions: [
+      'Start by inspecting the current state: ls -li /srv/webapp and ls -ld /srv/webapp/www /srv/webapp/shared-assets.',
+      'Recreate the config hard link so the service can read its settings again — a new name for the existing master file on the same filesystem.',
+      'Check the inode numbers of config.yml and settings.yml — they must match, and the link count of config.yml must be 2.',
+      'Recreate the assets symbolic link so the website can load images through /srv/webapp/www/assets.',
+      'Verify the symlink is a link (type l in ls -l) and that it resolves to the shared folder (read a file through the link).',
+      'Learning check: cat the config through the new name — you should see the same content as settings.yml.',
+    ],
+    expectedOutcome:
+      'stat -c "%i" /srv/webapp/config.yml matches settings.yml and the link count is 2; ls -l shows www/assets as a symlink; ' +
+      'a file inside shared-assets is reachable through www/assets.',
+    learningOutcomes: [
+      'Create hard links with ln and read their inode and link count with ls -li and stat',
+      'Create symbolic links with ln -s and distinguish them from hard links with ls -l and file',
+      'Choose the right link: hard links are one file with many names (same filesystem only), symbolic links are separate pathnames that can target directories and cross filesystems',
+    ],
+    hints: [
+      'Hard link: ln /srv/webapp/settings.yml /srv/webapp/config.yml — both names share one inode; stat -c "%h" shows the link count (2).',
+      'A hard link is NOT a symbolic link: if config.yml shows up as type l (symlink), you used the wrong command (ln -s).',
+      'Symbolic link: create it inside the web root so it resolves to the shared folder — e.g. ln -s ../shared-assets /srv/webapp/www/assets (an absolute path also works).',
+      'ls -li prints inode numbers; ls -l shows a symlink with a leading l and an arrow to its target.',
+      'test -d /srv/webapp/www/assets and cat /srv/webapp/www/assets/logo.png prove the symlink resolves correctly.',
+    ],
+    solution:
+      'ls -li /srv/webapp\n' +
+      'ln /srv/webapp/settings.yml /srv/webapp/config.yml\n' +
+      'stat -c "%i %h" /srv/webapp/config.yml\n' +
+      'ln -s ../shared-assets /srv/webapp/www/assets\n' +
+      'ls -l /srv/webapp/www\n' +
+      'file /srv/webapp/www/assets\n' +
+      'cat /srv/webapp/www/assets/logo.png',
+    setupCommands: [
+      'mkdir -p /srv/webapp/www /srv/webapp/shared-assets',
+      'printf "app_port: 8080\\nmode: production\\n" > /srv/webapp/settings.yml',
+      'printf "GLBX-LOGO-DATA\\n" > /srv/webapp/shared-assets/logo.png',
+      'printf "GLBX-ICONS\\n" > /srv/webapp/shared-assets/icons.css',
+      'chown -R root:root /srv/webapp',
+    ],
+    validationRules: [
+      { type: 'file_exists', label: 'config.yml exists', params: { path: '/srv/webapp/config.yml' } },
+      { type: 'file_type', label: 'config.yml is a regular file (hard link, not a symlink)', params: { path: '/srv/webapp/config.yml', expected: 'regular file' } },
+      { type: 'hardlink_exists', label: 'config.yml and settings.yml are the same file (same inode)', params: { a: '/srv/webapp/config.yml', b: '/srv/webapp/settings.yml' } },
+      { type: 'file_linkcount', label: 'config.yml has a link count of 2', params: { path: '/srv/webapp/config.yml', expected: '2' } },
+      { type: 'file_contains', label: 'config.yml exposes the settings content', params: { path: '/srv/webapp/config.yml', needle: 'app_port: 8080' } },
+      { type: 'symlink_exists', label: 'www/assets is a symbolic link', params: { path: '/srv/webapp/www/assets' } },
+      { type: 'dir_exists', label: 'www/assets resolves to the shared-assets directory', params: { path: '/srv/webapp/www/assets' } },
+      { type: 'file_exists', label: 'logo.png is reachable through the symlink', params: { path: '/srv/webapp/www/assets/logo.png' } },
+      { type: 'file_contains', label: 'logo.png content is reachable through the symlink', params: { path: '/srv/webapp/www/assets/logo.png', needle: 'GLBX-LOGO-DATA' } },
+    ],
+    sections: [
+      {
+        title: 'Recreate the config hard link',
+        instructions: [
+          'Inspect the current state: list /srv/webapp with inode numbers (ls -li) and confirm settings.yml is still there.',
+          'Create config.yml as a HARD LINK to the master copy settings.yml — both names must share the same inode.',
+          'Verify with stat: the inode of both names matches and the link count of config.yml is 2.',
+          'Confirm config.yml is a regular file, not a symbolic link.',
+        ],
+        checks: [
+          { type: 'file_exists', label: 'config.yml exists', params: { path: '/srv/webapp/config.yml' } },
+          { type: 'file_type', label: 'config.yml is a regular file (hard link, not a symlink)', params: { path: '/srv/webapp/config.yml', expected: 'regular file' } },
+          { type: 'hardlink_exists', label: 'config.yml and settings.yml are the same file (same inode)', params: { a: '/srv/webapp/config.yml', b: '/srv/webapp/settings.yml' } },
+          { type: 'file_linkcount', label: 'config.yml has a link count of 2', params: { path: '/srv/webapp/config.yml', expected: '2' } },
+          { type: 'file_contains', label: 'config.yml exposes the settings content', params: { path: '/srv/webapp/config.yml', needle: 'app_port: 8080' } },
+        ],
+      },
+      {
+        title: 'Recreate the assets symbolic link',
+        instructions: [
+          'Inspect /srv/webapp/www and /srv/webapp/shared-assets.',
+          'Create www/assets as a SYMBOLIC LINK to the shared asset store. An absolute path works, and so does a relative one that resolves correctly from inside www/.',
+          'Verify: ls -l /srv/webapp/www shows assets as a link (type l) with an arrow to its target.',
+          'Prove it resolves: read a file that only exists in shared-assets through the link, e.g. cat /srv/webapp/www/assets/logo.png.',
+        ],
+        checks: [
+          { type: 'symlink_exists', label: 'www/assets is a symbolic link', params: { path: '/srv/webapp/www/assets' } },
+          { type: 'dir_exists', label: 'www/assets resolves to the shared-assets directory', params: { path: '/srv/webapp/www/assets' } },
+          { type: 'file_exists', label: 'logo.png is reachable through the symlink', params: { path: '/srv/webapp/www/assets/logo.png' } },
+          { type: 'file_contains', label: 'logo.png content is reachable through the symlink', params: { path: '/srv/webapp/www/assets/logo.png', needle: 'GLBX-LOGO-DATA' } },
+        ],
+      },
+    ],
+  },
 ];
 
 async function seedDatabase() {
