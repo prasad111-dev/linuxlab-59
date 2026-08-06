@@ -130,7 +130,6 @@ module.exports = async function attemptRoutes(app) {
     attempt.score = result.score;
     attempt.maxScore = result.maxScore;
     attempt.passed = result.passed;
-    attempt.pointsAwarded = result.score;
     attempt.timeTakenSeconds = result.timeTakenSeconds;
     attempt.feedback = result.feedback;
     attempt.optimization = result.optimization;
@@ -152,6 +151,9 @@ module.exports = async function attemptRoutes(app) {
       .select('score');
     const prevBest = prev ? prev.score : 0;
     const delta = Math.max(0, result.score - prevBest);
+
+    attempt.pointsAwarded = delta;
+    await attempt.save();
 
     const user = await User.findById(attempt.user);
     if (user && delta > 0) {

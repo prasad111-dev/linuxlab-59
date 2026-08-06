@@ -91,6 +91,7 @@ export default function InterviewDrill({ mode: modeProp }) {
   const { data, loaded, save, clear } = useInterviewProgress(mode);
   const startedAt = useRef(Date.now());
   const typedRef = useRef('');
+  const busyRef = useRef(false);
 
   // question list per engine
   const engine = meta.engine;
@@ -186,8 +187,11 @@ export default function InterviewDrill({ mode: modeProp }) {
         const attempt = typedRef.current;
         if (attempt.trim()) {
           const correct = normalize(attempt) === normalize(q.answer);
-          recordAnswer(correct, attempt, correct ? q.explanation : `Expected: ${q.answer}${q.explanation ? ` — ${q.explanation}` : ''}`);
+          const explanation = correct ? q.explanation : `Expected: ${q.answer}${q.explanation ? ` — ${q.explanation}` : ''}`;
+          setSelected({ correct, userAnswer: attempt, explanation });
+          recordAnswer(correct, attempt, explanation);
         } else {
+          setSelected({ correct: false, userAnswer: '(timeout)', explanation: '(out of time)' });
           recordAnswer(false, '(timeout)', '(out of time)');
         }
       }
@@ -219,6 +223,8 @@ export default function InterviewDrill({ mode: modeProp }) {
   }
 
   function recordAnswer(correct, userAnswer, explanation) {
+    if (busyRef.current) return;
+    busyRef.current = true;
     const q = engine === 'career' ? list[careerIdx] : list[index];
     const expected = q.answer || (Array.isArray(q.options) ? q.options[q.correctIndex] : '') || q.model || '';
     const a = {
@@ -232,11 +238,12 @@ export default function InterviewDrill({ mode: modeProp }) {
     const next = [...answers, a];
     setAnswers(next);
     if (engine === 'career') {
-      save({ answers: next, careerLevel });
+      save({ ...data, answers: next, careerLevel });
     } else {
-      save({ answers: next, index: next.length });
+      save({ ...data, answers: next, index: next.length });
     }
     setTimeout(() => {
+      busyRef.current = false;
       setSelected(null);
       setTyped('');
       setFreeText('');
@@ -258,7 +265,7 @@ export default function InterviewDrill({ mode: modeProp }) {
             const trimmed = next.slice(0, next.length - lvl.questions.length);
             setAnswers(trimmed);
             setCareerIdx(0);
-            save({ answers: trimmed, careerLevel });
+            save({ ...data, answers: trimmed, careerLevel });
           }
         } else {
           setCareerIdx((i) => i + 1);
@@ -318,9 +325,10 @@ export default function InterviewDrill({ mode: modeProp }) {
       const correct = grade.score >= 3;
       const explanation = `${grade.score}/5 — ${grade.feedback}${grade.missing ? `\nMissing: ${grade.missing}` : ''}`;
       setSelected({ correct, userAnswer: freeText, explanation });
-      setFreeText(freeText);
+      recordAnswer(correct, freeText, explanation);
     } catch {
       setSelected({ correct: true, userAnswer: freeText, explanation: 'AI grader unavailable — answer recorded.' });
+      recordAnswer(true, freeText, 'AI grader unavailable — answer recorded.');
     } finally {
       setGrading(false);
     }
@@ -335,10 +343,18 @@ export default function InterviewDrill({ mode: modeProp }) {
     try {
       const result = await aiCheck(q, typed, timed);
       setSelected({ correct: result.correct, userAnswer: typed, explanation: result.explanation });
-      recordAnswer(result.correct, result.userAnswer, result.explanation);
+      recordAnswer(result.correct, typed, result.explanation);
     } finally {
       setEvaluating(false);
     }
+  }
+
+  function submitMcq(q, opt, i) {
+    if (selected) return;
+    const correct = i === q.correctIndex;
+    const explanation = correct ? q.explanation : `Expected: ${q.options[q.correctIndex]} — ${q.explanation || ''}`;
+    setSelected({ correct, userAnswer: opt, explanation });
+    recordAnswer(correct, opt, explanation);
   }
 
   if (report) {
@@ -433,7 +449,7 @@ export default function InterviewDrill({ mode: modeProp }) {
           evaluating={evaluating}
           submitFree={submitFree}
           submitCommand={submitCommand}
-          recordAnswer={recordAnswer}
+          submitMcq={submitMcq}
           timed={timed}
           secondsLeft={secondsLeft}
           engine="command"
@@ -497,7 +513,7 @@ export default function InterviewDrill({ mode: modeProp }) {
         evaluating={evaluating}
         submitFree={submitFree}
         submitCommand={submitCommand}
-        recordAnswer={recordAnswer}
+        submitMcq={submitMcq}
         timed={timed}
         secondsLeft={secondsLeft}
         engine={engine}
@@ -560,7 +576,7 @@ function TimedBar({ secondsLeft, total }) {
   );
 }
 
-function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, grading, evaluating, submitFree, submitCommand, recordAnswer, timed, secondsLeft, engine }) {
+function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, grading, evaluating, submitFree, submitCommand, submitMcq, timed, secondsLeft, engine }) {
   if (!q) return null;
   const isCommand = q._type === 'command';
   const isMcq = q._type === 'mcq';
@@ -626,7 +642,7 @@ function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, gra
           {(q.options || []).map((opt, i) => (
             <button
               key={i}
-              onClick={() => recordAnswer(i === q.correctIndex, opt, i === q.correctIndex ? q.explanation : `Expected: ${q.options[q.correctIndex]} — ${q.explanation || ''}`)}
+              onClick={() => submitMcq(q, opt, i)}
               className="rounded-xl border border-slate-200 bg-white p-3 text-left text-sm font-medium transition hover:border-brand-400 hover:bg-brand-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-brand-500/10"
             >
               <span className="mr-2 font-mono text-xs text-slate-400">{String.fromCharCode(97 + i)})</span>
@@ -696,7 +712,7 @@ function TicketView({ meta, tickets, answers, save, onFinish }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!typed.trim() || !current || checking) return;
+    if (!typed.trim() || !current || checking || flash) return;
     setChecking(true);
     try {
       const check = await aiCheck(current, typed, false);
@@ -710,10 +726,10 @@ function TicketView({ meta, tickets, answers, save, onFinish }) {
       };
       const next = [...answers, a];
       save({ answers: next });
-      setFlash({ correct: check.correct, text: check.correct ? `+XP — Ticket closed (valid approach!)` : `Ticket still open — ${check.explanation}` });
+      setTyped('');
+      setFlash({ correct: check.correct, text: check.correct ? `Ticket closed (valid approach!)` : `Ticket still open — ${check.explanation}` });
       setTimeout(() => {
         setFlash(null);
-        setTyped('');
         if (next.length >= tickets.length) finish(next);
       }, check.correct ? 500 : 2600);
     } finally {
