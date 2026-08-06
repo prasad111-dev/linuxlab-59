@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2, XCircle, Sparkles, RefreshCw, Zap } from 'luci
 import { api } from '../lib/api';
 import { cn } from '../lib/format';
 import { useInterviewProgress } from '../lib/useInterviewProgress';
+import { normalize, buildDaily } from '../lib/drillLogic';
 import InterviewReport from './InterviewReport';
 import VirtualLab from './VirtualLab';
 import { Spinner } from './Spinner';
@@ -16,24 +17,8 @@ import {
   FREE_DATA,
   CAREER_DATA,
   VIRTUAL_LABS,
-  DAILY_POOL,
   SCENARIO_FALLBACK,
 } from '../data/interviewData';
-
-function normalize(s) {
-  return String(s || '')
-    .trim()
-    .replace(/\s+/g, ' ');
-}
-
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 // Gemini judges a typed command and accepts any valid approach. Falls back to
 // an exact-match comparison whenever the AI is unavailable (or in timed modes,
@@ -67,22 +52,6 @@ const PRIORITY_STYLES = {
   low: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
 };
 const PRIORITY_LABEL = { critical: '🔴 Critical', high: '🟠 High', low: '🟢 Low' };
-
-function buildDaily() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  const day = Math.floor((now - start) / 86400000);
-  const list = [];
-  for (let i = 0; i < 3; i++) {
-    const q = DAILY_POOL.command[(day + i * 3) % DAILY_POOL.command.length];
-    list.push({ ...q, _type: 'command' });
-  }
-  for (let i = 0; i < 2; i++) {
-    const q = DAILY_POOL.mcq[(day * 2 + i * 5) % DAILY_POOL.mcq.length];
-    list.push({ ...q, _type: 'mcq' });
-  }
-  return shuffle(list);
-}
 
 export default function InterviewDrill({ mode: modeProp }) {
   const params = useParams();

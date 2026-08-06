@@ -10,6 +10,7 @@ function updateStreak(user, now = new Date()) {
 
   if (!last) {
     user.streak.current = 1;
+    user.streak.longest = Math.max(user.streak.longest || 0, 1);
     user.streak.lastActive = now;
     return user;
   }
@@ -22,6 +23,7 @@ function updateStreak(user, now = new Date()) {
   } else {
     user.streak.current = 1;
   }
+  user.streak.longest = Math.max(user.streak.longest || 0, user.streak.current);
   user.streak.lastActive = now;
   return user;
 }

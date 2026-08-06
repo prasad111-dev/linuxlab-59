@@ -17,7 +17,9 @@ const READ_ONLY = new Set([
   'top', 'ps', 'pgrep', 'pidof', 'wc', 'sort', 'uniq', 'cut', 'tr', 'awk',
   'xargs', 'nl', 'od', 'hexdump', 'file', 'readlink', 'realpath',
   'basename', 'dirname', 'seq', 'test', 'time', 'tty', 'stty', 'yes',
-  'sha256sum', 'sha1sum', 'md5sum', 'cksum', 'tar', 'find', 'namei', 'tree',
+  'sha256sum', 'sha1sum', 'md5sum', 'cksum', 'find', 'namei', 'tree',
+  'curl', 'wget', 'ss', 'netstat', 'lsof', 'ip', 'route', 'arp', 'ping',
+  'dig', 'nslookup', 'host', 'dnsdomainname', 'getent',
 ]);
 
 const PIPE_FILTERS = new Set([
@@ -40,8 +42,10 @@ const GROUP_WORDS = new Set([
 
 const FILE_WORDS = new Set([
   'mkdir', 'touch', 'chmod', 'chown', 'chgrp', 'ln', 'rm', 'cp', 'mv',
-  'nano', 'vi', 'vim', 'tee', 'sed', 'install', 'truncate',
+  'nano', 'vi', 'vim', 'tee', 'sed', 'install', 'truncate', 'tar',
 ]);
+
+const CRON_WORDS = new Set(['crontab']);
 
 const SERVICE_WORDS = new Set(['systemctl', 'service', 'systemd-run', 'initctl']);
 
@@ -108,6 +112,67 @@ function targetName(segment, names) {
 }
 
 /**
+ * Is a path token covered by the task's allowed paths? Accepts the exact
+ * path, a path nested under an allowed directory, or a bare basename.
+ */
+function isPathInSet(token, paths) {
+  const t = String(token).trim().replace(/^['"]/, '').replace(/['"]$/, '');
+  if (!t) return false;
+  for (const p of paths) {
+    if (!p) continue;
+    if (t === p) return true;
+    if (t.startsWith(`${p}/`)) return true;
+    const base = p.split('/').filter(Boolean).pop();
+    if (base && (t === base || t.endsWith(`/${base}`) || t.startsWith(`${base}/`))) return true;
+  }
+  return false;
+}
+
+/** Replace quoted spans with spaces so redirect detection ignores quoted text. */
+function stripQuoted(line) {
+  let out = '';
+  let i = 0;
+  while (i < line.length) {
+    const c = line[i];
+    if (c === "'") {
+      const end = line.indexOf("'", i + 1);
+      if (end === -1) return out + line.slice(i);
+      out += ' '.repeat(end - i + 1);
+      i = end + 1;
+    } else if (c === '"') {
+      let j = i + 1;
+      while (j < line.length && (line[j] !== '"' || line[j - 1] === '\\')) j += 1;
+      const end = j < line.length ? j : line.length - 1;
+      out += ' '.repeat(end - i + 1);
+      i = end + 1;
+    } else {
+      out += c;
+      i += 1;
+    }
+  }
+  return out;
+}
+
+/** Extract the target of every output redirection (>, >>, &>, n>) on a segment. */
+function outputRedirectTargets(segment) {
+  const targets = [];
+  const re = /(?:^|\s)(\d*&?>>?)(?:\s*)([^\s;&|()<>]+)/g;
+  let m;
+  while ((m = re.exec(stripQuoted(segment)))) targets.push(m[2]);
+  return targets;
+}
+
+/** A redirect target is safe when it is an fd dup (/dev/null etc.) or an allowed task path. */
+function isSafeRedirectTarget(target, paths) {
+  const t = String(target).trim().replace(/^['"]/, '').replace(/['"]$/, '');
+  if (!t) return true;
+  if (/^\d+$/.test(t)) return true; // fd-style target (e.g. 2>, &1)
+  if (t.startsWith('&')) return true; // 2>&1 style dup
+  if (/^\/dev\/(null|zero|tty|stdin|stdout|stderr)(\/.*)?$/.test(t)) return true;
+  return isPathInSet(t, paths);
+}
+
+/**
  * Build a policy object from a task document.
  */
 function buildPolicy(task) {
@@ -118,6 +183,7 @@ function buildPolicy(task) {
   const services = new Set();
   let packages = false;
   let ports = false;
+  let cron = false;
 
   for (const r of rules) {
     const p = r.params || {};
@@ -132,6 +198,9 @@ function buildPolicy(task) {
         break;
       case 'package_installed':
         packages = true;
+        break;
+      case 'command_contains':
+        if (String(p.command || '').includes('crontab')) cron = true;
         break;
       case 'service_active':
       case 'service_enabled':
@@ -180,6 +249,7 @@ function buildPolicy(task) {
   if (services.size > 0) hints.push(`service commands for: ${[...services].join(', ')}`);
   if (paths.size > 0) hints.push('file commands (only for the files in this task)');
   if (ports) hints.push('firewall (ufw/iptables)');
+  if (cron) hints.push('cron scheduling (crontab)');
 
   return {
     allowAll: rules.length === 0,
@@ -189,6 +259,7 @@ function buildPolicy(task) {
     services,
     packages,
     ports,
+    cron,
     hint: hints.join('; ') || 'read-only commands',
   };
 }
@@ -197,6 +268,13 @@ function isAllowedAction(segment, policy) {
   if (policy.allowAll) return true;
 
   const word = firstWord(segment);
+
+  // find is read-only for inspection, but its destructive flags are not
+  if (word === 'find') {
+    if (/-(?:delete|exec|execdir|ok|okdir)\b/.test(segment)) return false;
+    return true;
+  }
+
   if (READ_ONLY.has(word)) return true;
 
   if (PACKAGE_WORDS.has(word)) return policy.packages;
@@ -209,6 +287,7 @@ function isAllowedAction(segment, policy) {
   if (word === 'visudo') return policy.users.size > 0 || policy.groups.size > 0;
   if (GROUP_WORDS.has(word)) return policy.groups.size > 0 && targetName(segment, policy.groups);
   if (PORT_WORDS.has(word)) return policy.ports;
+  if (CRON_WORDS.has(word)) return policy.cron;
 
   if (SERVICE_WORDS.has(word)) {
     const arg = firstWord(segment.replace(word, '').trim()) || '';
@@ -247,8 +326,14 @@ function checkCommand(line, policy) {
     }
     for (let i = 1; i < pipeline.length; i++) {
       const w = firstWord(stripPrefix(pipeline[i]));
-      if (w && !PIPE_FILTERS.has(w)) {
+      if (w && !PIPE_FILTERS.has(w) && !(CRON_WORDS.has(w) && policy.cron)) {
         return { allowed: false, command: w, hint: policy.hint };
+      }
+    }
+    // Output redirection to a file is only allowed for this task's paths
+    for (const target of outputRedirectTargets(seg)) {
+      if (!isSafeRedirectTarget(target, policy.paths)) {
+        return { allowed: false, command: `> ${target}`, hint: `writing to "${target}" is not allowed for this task` };
       }
     }
   }

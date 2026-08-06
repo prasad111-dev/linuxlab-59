@@ -8,6 +8,7 @@ const { serializeAttempt } = require('../utils/serialize');
 const { evaluateAttempt, buildRuleCommand, runLiveChecks } = require('../services/evaluationService');
 const { generateHint, generateExplain, chatWithAi } = require('../services/geminiService');
 const { checkAndUnlock } = require('../services/achievementService');
+const { updateStreak } = require('../services/streakService');
 const { startSession, terminateRunning } = require('../services/sessionService');
 const orchestrator = require('../services/orchestratorClient');
 
@@ -156,8 +157,9 @@ module.exports = async function attemptRoutes(app) {
     await attempt.save();
 
     const user = await User.findById(attempt.user);
-    if (user && delta > 0) {
-      user.points += delta;
+    if (user) {
+      updateStreak(user, new Date());
+      if (delta > 0) user.points += delta;
       await user.save();
     }
 

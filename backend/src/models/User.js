@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
     points: { type: Number, default: 0 },
     streak: {
       current: { type: Number, default: 0 },
+      longest: { type: Number, default: 0 },
       lastActive: { type: Date, default: null },
     },
     achievements: [

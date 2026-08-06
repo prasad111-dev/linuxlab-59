@@ -1,8 +1,10 @@
 const InterviewSession = require('../models/InterviewSession');
 const InterviewProgress = require('../models/InterviewProgress');
+const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { isInterviewMode } = require('../constants/interviewModes');
+const { updateStreak } = require('../services/streakService');
 const {
   generateInterviewReport,
   generateInterviewQuestions,
@@ -187,6 +189,13 @@ module.exports = async function interviewRoutes(app) {
     }
     session.aiReport = aiReport;
     await session.save();
+
+    // Practice counts toward the daily streak, not just logging in
+    const user = await User.findById(req.userId);
+    if (user) {
+      updateStreak(user, new Date());
+      await user.save();
+    }
 
     return session.toSafeJSON();
   });
