@@ -136,25 +136,43 @@ export default function FlashcardDuel() {
         </div>
       </div>
 
-      {/* Tier progress — the next tier unlocks once the current one is completed */}
+      {/* Tier progress — unlocked tiers are clickable to jump straight back to
+          an earlier quiz; locked tiers stay locked until the previous one is done */}
       <div className="mt-5 grid grid-cols-10 gap-1.5">
         {FLASHCARD_TIERS.map((t, i) => {
           const tierAnswered = Math.max(0, Math.min(5, answers.length - i * 5));
           const completed = tierAnswered === 5;
-          return (
-            <div
+          const unlocked = i <= tierIndex;
+          const box = (
+            <>
+              {completed ? <CheckCircle2 size={13} /> : !unlocked ? <Lock size={12} /> : i + 1}
+            </>
+          );
+          return unlocked ? (
+            <button
               key={t.id}
-              title={t.name}
+              type="button"
+              title={`Go to tier ${i + 1}: ${t.name}`}
+              aria-label={`Go to tier ${i + 1}: ${t.name}`}
+              onClick={() => setIdx(i * 5)}
               className={cn(
                 'flex h-9 items-center justify-center rounded-lg text-[11px] font-bold transition',
                 completed
-                  ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'
+                  ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:hover:bg-emerald-500/25'
                   : i === tierIndex
-                    ? 'bg-brand-600 text-white'
-                    : 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-600'
+                    ? 'bg-brand-600 text-white hover:bg-brand-700'
+                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-600 dark:hover:bg-white/10'
               )}
             >
-              {completed ? <CheckCircle2 size={13} /> : i > tierIndex ? <Lock size={12} /> : i + 1}
+              {box}
+            </button>
+          ) : (
+            <div
+              key={t.id}
+              title={t.name}
+              className="flex h-9 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-slate-600"
+            >
+              {box}
             </div>
           );
         })}

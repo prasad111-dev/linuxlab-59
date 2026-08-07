@@ -90,6 +90,31 @@ describe('FlashcardDuel', () => {
     expect(screen.getByText(`Q1/${FLASHCARDS.length}`)).toBeTruthy();
   });
 
+  it('jumps straight back to an earlier quiz via the unlocked tier icons', () => {
+    const first = FLASHCARDS[0];
+    const sixth = FLASHCARDS[5];
+    render(
+      <MemoryRouter>
+        <FlashcardDuel />
+      </MemoryRouter>
+    );
+
+    // Complete the first tier (5 cards) to unlock tier 2.
+    for (const card of FLASHCARDS.slice(0, 5)) {
+      fireEvent.click(screen.getByRole('button', { name: card.answer }));
+      fireEvent.click(screen.getByRole('button', { name: /Next card/ }));
+    }
+    expect(screen.getByText(sixth.question)).toBeTruthy();
+
+    // Click the first tier icon at the top -> straight back to quiz 1.
+    fireEvent.click(screen.getByRole('button', { name: `Go to tier 1: ${FLASHCARD_TIERS[0].name}` }));
+    expect(screen.getByText(first.question)).toBeTruthy();
+    expect(screen.queryByText(sixth.question)).toBeNull();
+
+    // And a locked tier is not clickable.
+    expect(screen.queryByRole('button', { name: `Go to tier ${FLASHCARD_TIERS.length}: ${FLASHCARD_TIERS[FLASHCARD_TIERS.length - 1].name}` })).toBeNull();
+  });
+
   it('regression: answering pwd keeps pwd on screen and never leaks the next (clear) card', () => {
     // Repro of the reported bug: cards 3 (pwd) and 4 (clear).
     const pwd = FLASHCARDS.find((c) => c.cmd === 'pwd');
