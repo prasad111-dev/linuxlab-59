@@ -73,4 +73,42 @@ describe('FlashcardDuel', () => {
     expect(screen.getByText('Tier 1/25 · Card 1/5')).toBeTruthy();
     expect(screen.getByText('Q1/125')).toBeTruthy();
   });
+
+  it('regression: answering pwd keeps pwd on screen with pwd\u2019s feedback, never the next (clear) card\u2019s answer', () => {
+    // Repro of the reported bug: cards 3 (pwd) and 4 (clear).
+    const pwd = FLASHCARDS.find((c) => c.cmd === 'pwd');
+    const clear = FLASHCARDS.find((c) => c.cmd === 'clear');
+    expect(pwd).toBeTruthy();
+    expect(clear).toBeTruthy();
+
+    render(
+      <MemoryRouter>
+        <FlashcardDuel />
+      </MemoryRouter>
+    );
+
+    // Advance to card 3 (pwd) by answering the first two cards (ls, cd) correctly.
+    for (const card of FLASHCARDS.slice(0, 2)) {
+      expect(screen.getByText(card.question)).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: card.answer }));
+      fireEvent.click(screen.getByRole('button', { name: 'Next card' }));
+    }
+
+    // Now on pwd. Answer it correctly.
+    expect(screen.getByText(pwd.question)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: pwd.answer }));
+
+    // The card must stay on pwd, graded correct against pwd's answer,
+    // showing pwd's explanation — NOT advancing to clear or showing clear's.
+    expect(screen.getByText(pwd.question)).toBeTruthy();
+    expect(screen.getByText('Correct!')).toBeTruthy();
+    expect(screen.getByText(pwd.explanation)).toBeTruthy();
+    expect(screen.queryByText(clear.question)).toBeNull();
+    expect(screen.queryByText(clear.explanation)).toBeNull();
+
+    // Advancing moves to clear with no feedback banner left behind.
+    fireEvent.click(screen.getByRole('button', { name: 'Next card' }));
+    expect(screen.getByText(clear.question)).toBeTruthy();
+    expect(screen.queryByText('Not quite.')).toBeNull();
+  });
 });
