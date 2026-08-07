@@ -62,11 +62,11 @@ export default function App() {
 
   useEffect(() => {
     const beat = () => {
-      const active = Date.now() - lastActivityAt.current < 60_000;
+      const active = Date.now() - lastActivityAt.current < 5 * 60_000;
       api('/auth/presence', { method: 'POST', body: { active } }).catch(() => {});
     };
     beat();
-    const t = setInterval(beat, 20_000);
+    const t = setInterval(beat, 5_000);
     return () => clearInterval(t);
   }, []);
 

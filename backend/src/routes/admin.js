@@ -102,24 +102,39 @@ module.exports = async function adminRoutes(app) {
 
   app.get('/login-logs', { preHandler: [requireAdmin] }, async (req) => {
     const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
-    const users = await User.find({ lastLoginAt: { $ne: null } })
-      .sort({ lastLoginAt: -1 })
+    const users = await User.find({
+      $or: [{ lastLoginAt: { $ne: null } }, { 'sessions.0': { $exists: true } }],
+    })
       .limit(limit)
-      .select('name email picture role lastLoginAt lastSeenAt lastLogoutAt totalActiveMs')
+      .select('name email picture role lastLoginAt lastSeenAt lastLogoutAt totalActiveMs sessions')
       .lean();
     const now = Date.now();
-    return users.map((u) => ({
-      id: u._id.toString(),
-      name: u.name,
-      email: u.email,
-      picture: u.picture,
-      role: u.role,
-      lastLoginAt: u.lastLoginAt,
-      lastSeenAt: u.lastSeenAt || null,
-      lastLogoutAt: u.lastLogoutAt || null,
-      totalActiveMs: u.totalActiveMs || 0,
-      online: u.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < 25_000 : false,
-    }));
+    return users
+      .map((u) => {
+        // "Last login" must match the session history shown in Time analytics:
+        // the most recent session start, falling back to the OAuth timestamp.
+        // Likewise "Logout" is the end of the most recent session, falling back
+        // to an explicit logout.
+        const sessions = u.sessions || [];
+        const last = sessions[sessions.length - 1];
+        const lastLoginAt = (last && last.loginAt) || u.lastLoginAt || null;
+        const lastLogoutAt = (last && last.logoutAt) || u.lastLogoutAt || null;
+        return {
+          id: u._id.toString(),
+          name: u.name,
+          email: u.email,
+          picture: u.picture,
+          role: u.role,
+          lastLoginAt,
+          lastSeenAt: u.lastSeenAt || null,
+          lastLogoutAt,
+          totalActiveMs: u.totalActiveMs || 0,
+          online: u.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < 25_000 : false,
+        };
+      })
+      .filter((l) => l.lastLoginAt)
+      .sort((a, b) => new Date(b.lastLoginAt).getTime() - new Date(a.lastLoginAt).getTime())
+      .slice(0, limit);
   });
 
   app.get('/active-sessions', { preHandler: [requireAdmin] }, async () => {
@@ -231,7 +246,9 @@ module.exports = async function adminRoutes(app) {
   });
 
   app.get('/engagement', { preHandler: [requireAdmin] }, async () => {
-    const users = await User.find({ lastLoginAt: { $ne: null } })
+    const users = await User.find({
+      $or: [{ lastLoginAt: { $ne: null } }, { 'sessions.0': { $exists: true } }],
+    })
       .sort({ totalActiveMs: -1 })
       .limit(200)
       .select('name email picture lastLoginAt lastSeenAt totalActiveMs activeTimeByDay sessions')

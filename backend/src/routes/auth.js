@@ -5,6 +5,7 @@ const { HttpError } = require('../utils/httpError');
 const { localDateKey } = require('../utils/dateKey');
 
 const GAP_MS = 5 * 60 * 1000;
+const MAX_SESSION_MS = 12 * 60 * 60 * 1000;
 const MAX_SESSIONS = 50;
 const MAX_DAYS = 90;
 
@@ -42,12 +43,16 @@ module.exports = async function authRoutes(app) {
       const user = await User.findById(req.userId);
       if (!user) return { ok: true };
 
+      // Idle heartbeats (open tab, no interaction) must not keep the user
+      // "online" or keep a session open — otherwise presence/time stats would
+      // disagree with the time actually counted. Only active beats matter.
+      if (!active) return { ok: true };
+
       const prev = user.lastHeartbeatAt ? user.lastHeartbeatAt.getTime() : 0;
       const gap = prev ? now - prev : 0;
 
-      // Bank time only when the user is actively interacting and the gap
-      // between heartbeats is sane (both ends active, 0–5 min).
-      if (prev && gap > 0 && gap < GAP_MS && active) {
+      // Bank time only when the gap between heartbeats is sane (0–5 min).
+      if (prev && gap > 0 && gap < GAP_MS) {
         user.totalActiveMs = (user.totalActiveMs || 0) + gap;
 
         const day = localDateKey(new Date(now));
@@ -62,8 +67,10 @@ module.exports = async function authRoutes(app) {
       // Session lifecycle: a session is a continuous active period. If the gap
       // since the last heartbeat is too long, the previous session is over and
       // a new one starts. This also covers browser closes without logout.
+      // A session is also capped at MAX_SESSION_MS so a long-lived open tab can
+      // never keep "last login" looking stale while the user is online.
       const openSession = user.sessions.find((s) => !s.logoutAt);
-      if (openSession && prev && gap > GAP_MS) {
+      if (openSession && ((prev && gap > GAP_MS) || now - openSession.loginAt.getTime() > MAX_SESSION_MS)) {
         openSession.logoutAt = user.lastHeartbeatAt || new Date(prev);
       }
       if (!user.sessions.some((s) => !s.logoutAt)) {

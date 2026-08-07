@@ -64,7 +64,7 @@ export default function AdminEngagement() {
     const t = setInterval(() => {
       setRefreshing(true);
       load();
-    }, 15000);
+    }, 5000);
     return () => clearInterval(t);
   }, []);
 
