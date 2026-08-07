@@ -12,19 +12,21 @@ export default function FlashcardDuel() {
   const cards = useMemo(() => FLASHCARDS, []);
   const { data: saved, loaded, save, clear } = useInterviewProgress('flashcard');
   const [answers, setAnswers] = useState([]);
-  const [picked, setPicked] = useState(null);
+  const [idx, setIdx] = useState(0);
+  const [picked, setPicked] = useState(null); // { card, option, correct } snapshot of the card being answered
   const [report, setReport] = useState(null);
   const [saving, setSaving] = useState(false);
   const startedAt = useRef(Date.now());
   const didInit = useRef(false);
   const saveTimer = useRef(null);
 
-  // Progress is a flat run through 125 cards; the index is derived from how
-  // many cards have been answered, so resuming after login just needs answers.
-  const flatIndex = Math.min(answers.length, cards.length - 1);
-  const tierIndex = Math.min(FLASHCARD_TIERS.length - 1, Math.floor(flatIndex / 5));
-  const cardIndex = flatIndex % 5;
-  const current = cards[flatIndex];
+  // The card on screen is locked by `idx` until the user presses "Next card".
+  // `answers.length` only tracks how many have been answered, so answering a
+  // card must NOT advance the visible card (which previously made the feedback
+  // panel read the next card's answer/explanation).
+  const tierIndex = Math.min(FLASHCARD_TIERS.length - 1, Math.floor(idx / 5));
+  const cardIndex = idx % 5;
+  const current = cards[idx];
   const correctSoFar = answers.filter((a) => a.correct).length;
 
   // Resume from saved progress after login
@@ -33,6 +35,7 @@ export default function FlashcardDuel() {
     didInit.current = true;
     if (saved?.answers?.length) {
       setAnswers(saved.answers);
+      setIdx(saved.answers.length);
       startedAt.current = Date.now() - (saved.elapsedMs || 0);
     }
   }, [loaded, saved]);
@@ -51,17 +54,22 @@ export default function FlashcardDuel() {
 
   const pick = (opt) => {
     if (picked !== null) return;
-    setPicked(opt);
-    const isCorrect = opt === current.answer;
+    const card = current;
+    const isCorrect = opt === card.answer;
+    setPicked({ card, option: opt, correct: isCorrect });
     setAnswers((prev) => [
       ...prev,
-      { prompt: current.question, answer: current.answer, userAnswer: opt, correct: isCorrect, topic: current.tier },
+      { prompt: card.question, answer: card.answer, userAnswer: opt, correct: isCorrect, topic: card.tier },
     ]);
   };
 
   const next = () => {
     setPicked(null);
-    if (answers.length >= cards.length) finish();
+    if (idx + 1 >= cards.length) {
+      finish();
+    } else {
+      setIdx(idx + 1);
+    }
   };
 
   const finish = async () => {
@@ -87,7 +95,7 @@ export default function FlashcardDuel() {
   if (!loaded) return <FullPageSpinner label="Loading your progress…" />;
   if (report) return <InterviewReport session={report} onRetry={() => window.location.reload()} />;
 
-  const finishedAll = answers.length >= cards.length;
+  const finishedAll = answers.length >= cards.length && picked === null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -140,7 +148,7 @@ export default function FlashcardDuel() {
         </div>
       ) : (
         <>
-          <div className="card mt-6 animate-fade-up !p-7" key={flatIndex}>
+          <div className="card mt-6 animate-fade-up !p-7" key={idx}>
             <div className="flex flex-wrap gap-2">
               <span className="badge bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">{current.tier}</span>
               <span className="badge bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400">Q{current.id}/125</span>
@@ -150,8 +158,8 @@ export default function FlashcardDuel() {
 
             <div className="mt-6 space-y-2.5">
               {current.options.map((opt) => {
-                const isAnswer = opt === current.answer;
-                const isPicked = opt === picked;
+                const isAnswer = picked !== null && opt === picked.card.answer;
+                const isPicked = opt === picked?.option;
                 return (
                   <button
                     key={opt}
@@ -182,13 +190,13 @@ export default function FlashcardDuel() {
               <div
                 className={cn(
                   'mt-5 rounded-xl border p-4 text-sm',
-                  picked === current.answer
+                  picked.correct
                     ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/20 dark:bg-emerald-500/5'
                     : 'border-amber-200 bg-amber-50/70 dark:border-amber-500/20 dark:bg-amber-500/5'
                 )}
               >
-                <p className="font-bold">{picked === current.answer ? 'Correct!' : 'Not quite.'}</p>
-                <p className="mt-1 font-mono text-slate-600 dark:text-slate-300">{current.explanation}</p>
+                <p className="font-bold">{picked.correct ? 'Correct!' : 'Not quite.'}</p>
+                <p className="mt-1 font-mono text-slate-600 dark:text-slate-300">{picked.card.explanation}</p>
               </div>
             )}
           </div>
