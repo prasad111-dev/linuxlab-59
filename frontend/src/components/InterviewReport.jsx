@@ -5,25 +5,45 @@ import { cn } from '../lib/format';
 import { Spinner } from './Spinner';
 import { modeMeta } from '../data/interviewData';
 
+export function cleanInlineMarkdown(text) {
+  // Remove markdown emphasis markers so raw **, __, * and backticks never leak
+  // into the rendered report. Order matters: bold first so single-* (which
+  // could be a glob like "*.log") is only stripped when it has a closing pair.
+  return String(text)
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1');
+}
+
 export function renderMarkdownish(text) {
   const lines = String(text || '').split('\n');
   const out = [];
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;
-    if (t.startsWith('## ')) {
-      out.push(<h2 key={out.length} className="mt-5 mb-1 text-lg font-extrabold">{t.slice(3)}</h2>);
+    if (t.startsWith('# ')) {
+      out.push(<h2 key={out.length} className="mt-5 mb-1 text-lg font-extrabold">{cleanInlineMarkdown(t.slice(2))}</h2>);
+    } else if (t.startsWith('## ')) {
+      out.push(<h2 key={out.length} className="mt-5 mb-1 text-lg font-extrabold">{cleanInlineMarkdown(t.slice(3))}</h2>);
     } else if (t.startsWith('### ')) {
-      out.push(<h3 key={out.length} className="mt-4 mb-1 text-base font-bold">{t.slice(4)}</h3>);
+      out.push(<h3 key={out.length} className="mt-4 mb-1 text-base font-bold">{cleanInlineMarkdown(t.slice(4))}</h3>);
     } else if (t.startsWith('- ') || t.startsWith('* ')) {
       out.push(
         <p key={out.length} className="flex gap-2 py-0.5 text-sm text-slate-600 dark:text-slate-300">
           <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
-          <span>{t.slice(2)}</span>
+          <span>{cleanInlineMarkdown(t.slice(2))}</span>
+        </p>
+      );
+    } else if (/^\d+[.)]\s+/.test(t)) {
+      out.push(
+        <p key={out.length} className="flex gap-2 py-0.5 text-sm text-slate-600 dark:text-slate-300">
+          <span className="mt-1.5 shrink-0 font-bold text-brand-500">{`${t.match(/^\d+/)[0]}. `}</span>
+          <span>{cleanInlineMarkdown(t.replace(/^\d+[.)]\s+/, ''))}</span>
         </p>
       );
     } else {
-      out.push(<p key={out.length} className="py-0.5 text-sm text-slate-600 dark:text-slate-300">{t}</p>);
+      out.push(<p key={out.length} className="py-0.5 text-sm text-slate-600 dark:text-slate-300">{cleanInlineMarkdown(t)}</p>);
     }
   }
   return out;
