@@ -82,6 +82,8 @@ async function buildApp() {
   app.get('/api/health', async () => ({
     ok: true,
     service: 'linuxlab-backend',
+    uptime: Math.round(process.uptime()),
+    db: require('mongoose').connection.readyState === 1 ? 'connected' : 'disconnected',
     time: new Date().toISOString(),
   }));
 

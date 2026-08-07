@@ -1,0 +1,17 @@
+name: keep-warm
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Health ping (keep Render instance warm + uptime monitor)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API health endpoint
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" https://linuxlab-59-api.onrender.com/api/health)
+          echo "health -> $code"
+          test "$code" = "200"
