@@ -10,6 +10,28 @@ const orchestrator = require('../services/orchestratorClient');
 const { sendToAttempt } = require('../ws/terminalProxy');
 const { localDateKey, daysAgoKey } = require('../utils/dateKey');
 
+function loginLogRow(u, now) {
+  const sessions = u.sessions || [];
+  const last = sessions[sessions.length - 1];
+  return {
+    id: u._id.toString(),
+    name: u.name,
+    email: u.email,
+    picture: u.picture,
+    role: u.role,
+    // "Last login" must match the session history shown in Time analytics:
+    // the most recent session start, falling back to the OAuth timestamp.
+    lastLoginAt: (last && last.loginAt) || u.lastLoginAt || null,
+    // "Logout" is the end of the most recent session only. A still-open session
+    // has no logout — never fall back to an older explicit logout, otherwise
+    // "logout" would appear before "login".
+    lastLogoutAt: (last && last.logoutAt) || null,
+    lastSeenAt: u.lastSeenAt || null,
+    totalActiveMs: u.totalActiveMs || 0,
+    online: u.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < 25_000 : false,
+  };
+}
+
 module.exports = async function adminRoutes(app) {
   app.get('/users', { preHandler: [requireAdmin] }, async (req) => {
     const q = (req.query.q || '').trim();
@@ -110,28 +132,7 @@ module.exports = async function adminRoutes(app) {
       .lean();
     const now = Date.now();
     return users
-      .map((u) => {
-        // "Last login" must match the session history shown in Time analytics:
-        // the most recent session start, falling back to the OAuth timestamp.
-        // Likewise "Logout" is the end of the most recent session, falling back
-        // to an explicit logout.
-        const sessions = u.sessions || [];
-        const last = sessions[sessions.length - 1];
-        const lastLoginAt = (last && last.loginAt) || u.lastLoginAt || null;
-        const lastLogoutAt = (last && last.logoutAt) || u.lastLogoutAt || null;
-        return {
-          id: u._id.toString(),
-          name: u.name,
-          email: u.email,
-          picture: u.picture,
-          role: u.role,
-          lastLoginAt,
-          lastSeenAt: u.lastSeenAt || null,
-          lastLogoutAt,
-          totalActiveMs: u.totalActiveMs || 0,
-          online: u.lastSeenAt ? now - new Date(u.lastSeenAt).getTime() < 25_000 : false,
-        };
-      })
+      .map((u) => loginLogRow(u, now))
       .filter((l) => l.lastLoginAt)
       .sort((a, b) => new Date(b.lastLoginAt).getTime() - new Date(a.lastLoginAt).getTime())
       .slice(0, limit);
@@ -335,3 +336,5 @@ module.exports = async function adminRoutes(app) {
     return suggestion.toSuggestionJSON();
   });
 };
+
+module.exports.loginLogRow = loginLogRow;
