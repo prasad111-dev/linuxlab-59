@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import FlashcardDuel from '../pages/FlashcardDuel';
-import { FLASHCARDS } from '../data/interviewData';
+import { FLASHCARDS, FLASHCARD_TIERS } from '../data/interviewData';
 
 vi.mock('../lib/useInterviewProgress', () => ({
   useInterviewProgress: () => ({ data: null, loaded: true, save: vi.fn(), clear: vi.fn() }),
@@ -70,8 +70,8 @@ describe('FlashcardDuel', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Tier 1/25 · Card 1/5')).toBeTruthy();
-    expect(screen.getByText('Q1/125')).toBeTruthy();
+    expect(screen.getByText(`Tier 1/${FLASHCARD_TIERS.length} · Card 1/5`)).toBeTruthy();
+    expect(screen.getByText(`Q1/${FLASHCARDS.length}`)).toBeTruthy();
   });
 
   it('regression: answering pwd keeps pwd on screen with pwd\u2019s feedback, never the next (clear) card\u2019s answer', () => {

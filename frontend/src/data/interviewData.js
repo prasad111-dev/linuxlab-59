@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 // Interview Preparation data
-// Flashcard Duel: 25 tiers x 5 commands = 125 flashcards (auto-generated MCQs)
-// Quest Mode: 30 real-world scenarios -> answer command
-// Typing Shooter: 30 commands to type
+// Flashcard Duel: 26 tiers x 5 commands = 130 flashcards (auto-generated MCQs)
+// Quest Mode: 34 real-world scenarios -> answer command
+// Typing Shooter: 34 commands to type
 // ---------------------------------------------------------------------------
 
 export const FLASHCARD_TIERS = [
@@ -281,9 +281,20 @@ export const FLASHCARD_TIERS = [
       { cmd: 'lsusb', desc: 'List USB devices connected to the system' },
     ],
   },
+  {
+    id: 26,
+    name: 'Archives & Compression',
+    commands: [
+      { cmd: 'tar', desc: 'Create or extract archive files (add -z/-j/-J to compress)' },
+      { cmd: 'gzip', desc: 'Compress a file and append .gz (gzip -d to decompress)' },
+      { cmd: 'bzip2', desc: 'Compress a file into .bz2, better ratio than gzip' },
+      { cmd: 'xz', desc: 'Compress a file into .xz, best ratio of the common tools' },
+      { cmd: 'unxz', desc: 'Decompress a .xz file back to its original form' },
+    ],
+  },
 ];
 
-// Auto-build 125 flashcards: question + answer, options = answer + 3 distractors
+// Auto-build 130 flashcards: question + answer, options = answer + 3 distractors
 export const FLASHCARDS = (() => {
   const pool = FLASHCARD_TIERS.flatMap((t) =>
     t.commands.map((c) => ({ cmd: c.cmd, desc: c.desc, tier: t.name }))
@@ -338,6 +349,10 @@ export const QUESTS = [
   { id: 28, prompt: 'Forcefully terminate process 1234.', answer: 'kill -9 1234' },
   { id: 29, prompt: 'Make script.sh executable.', answer: 'chmod +x script.sh' },
   { id: 30, prompt: 'Show free disk space on all mounted filesystems.', answer: 'df -h' },
+  { id: 31, prompt: 'Create a gzip-compressed tar archive of the folder named "app" called backup.tar.gz.', answer: 'tar -czf backup.tar.gz app' },
+  { id: 32, prompt: 'Create a bzip2-compressed tar archive of "app" called backup.tar.bz2.', answer: 'tar -cjf backup.tar.bz2 app' },
+  { id: 33, prompt: 'List the contents of backup.tar.gz WITHOUT extracting it.', answer: 'tar -tzf backup.tar.gz' },
+  { id: 34, prompt: 'Extract backup.tar.bz2 into the current directory.', answer: 'tar -xjf backup.tar.bz2' },
 ];
 
 export const TYPING_COMMANDS = [
@@ -371,6 +386,10 @@ export const TYPING_COMMANDS = [
   'crontab -l',
   'history | grep ssh',
   'ls -l /etc | grep -i conf',
+  'tar -tzf backup.tar.gz',
+  'tar -cjf backup.tar.bz2 src',
+  'gzip -d app.log.gz',
+  'xz -d archive.tar.xz',
 ];
 
 // ---------------------------------------------------------------------------
@@ -382,7 +401,7 @@ export const MODES = [
   {
     mode: 'flashcard',
     title: 'Flashcard Duel',
-    tagline: '125 multiple-choice flashcards across 25 topic tiers',
+    tagline: '130 multiple-choice flashcards across 26 topic tiers',
     icon: '🧠',
     gradient: 'from-purple-500 to-fuchsia-600',
     route: '/interview/flashcard',
@@ -392,7 +411,7 @@ export const MODES = [
   {
     mode: 'quest',
     title: 'Quest Mode',
-    tagline: '30 real-world scenarios — type the exact command',
+    tagline: '34 real-world scenarios — type the exact command',
     icon: '🗺️',
     gradient: 'from-emerald-500 to-brand-600',
     route: '/interview/quest',
@@ -402,7 +421,7 @@ export const MODES = [
   {
     mode: 'typing',
     title: 'Typing Shooter',
-    tagline: '30 commands — type them fast and accurately',
+    tagline: '34 commands — type them fast and accurately',
     icon: '⌨️',
     gradient: 'from-brand-500 to-amber-600',
     route: '/interview/typing',
@@ -673,6 +692,8 @@ export const DRILL_DATA = {
     { prompt: 'Ticket #301 — A process is eating 98% CPU. Identify the heaviest process.', answer: 'top', topic: 'Processes', level: 'Production', explanation: 'top shows live CPU usage; sort by %CPU with the P key or Shift+P.' },
     { prompt: 'Ticket #399 — Security: show only failed login attempts from /var/log/auth.log.', answer: 'grep "Failed password" /var/log/auth.log', topic: 'Security', level: 'Emergency', explanation: 'grep filters the authentication log for brute-force failures.' },
     { prompt: 'Ticket #400 — Emergency: a cryptominer named "xmrig" is running. Stop it immediately.', answer: 'pkill xmrig', topic: 'Processes', level: 'Emergency', explanation: 'pkill kills all processes matching the name; use pkill -9 for hard kill.' },
+    { prompt: 'Ticket #255 — Backup the config folder /srv/app/conf into /backups/app-conf.tgz before we patch the server.', answer: 'tar -czf /backups/app-conf.tgz /srv/app/conf', topic: 'Archives', level: 'Production', explanation: 'tar -czf creates a gzip-compressed archive from the source path.' },
+    { prompt: 'Ticket #263 — A corrupt config must be restored. Confirm /backups/app-conf.tgz contains nginx.conf WITHOUT extracting it.', answer: 'tar -tzf /backups/app-conf.tgz', topic: 'Archives', level: 'Production', explanation: 'tar -tzf lists the archive contents only; nothing is written to disk.' },
   ],
   'build-command': [
     { prompt: 'Create the user "john".', answer: 'useradd john', topic: 'Users', explanation: 'useradd john creates the account.' },
@@ -687,6 +708,8 @@ export const DRILL_DATA = {
     { prompt: 'List all listening TCP ports.', answer: 'ss -tln', topic: 'Network', explanation: 'ss -t TCP, -l listening, -n numeric ports.' },
     { prompt: 'Count how many lines contain "ERROR" in app.log.', answer: 'grep -c "ERROR" app.log', topic: 'Text', explanation: 'grep -c prints a count of matching lines.' },
     { prompt: 'Make file.txt immutable so even root cannot modify it.', answer: 'chattr +i file.txt', topic: 'Security', explanation: 'The +i immutable attribute blocks changes until removed with chattr -i.' },
+    { prompt: 'Create a bzip2-compressed archive of the logs directory called logs.tar.bz2.', answer: 'tar -cjf logs.tar.bz2 logs', topic: 'Archives', explanation: '-j selects bzip2 compression.' },
+    { prompt: 'List what is inside the archive backup.tgz without extracting.', answer: 'tar -tzf backup.tgz', topic: 'Archives', explanation: 'tar -tzf prints the file list; -x would extract.' },
   ],
   'command-chain': [
     { prompt: 'Find all .log files larger than 100 MB and archive them (feed the list to tar).', answer: 'find . -name "*.log" -size +100M | tar -czf big-logs.tgz -T -', topic: 'Pipelines', explanation: 'tar -T - reads the file list from stdin.' },
@@ -699,6 +722,7 @@ export const DRILL_DATA = {
     { prompt: 'List disk usage of the 5 biggest directories in /.', answer: 'du -h --max-depth=1 / | sort -rh | head -5', topic: 'Disk', explanation: 'du per top-level dir, sort descending, head five.' },
     { prompt: 'Check which port nginx is listening on.', answer: 'ss -tlnp | grep nginx', topic: 'Network', explanation: 'ss shows sockets; grep filters the nginx process.' },
     { prompt: 'Find and remove every empty file in /tmp.', answer: 'find /tmp -type f -empty -delete', topic: 'Pipelines', explanation: '-empty matches zero-size files, -delete removes them.' },
+    { prompt: 'Create an xz-compressed archive of /var/log while printing each file as it is added.', answer: 'tar -cJvf logs.tar.xz /var/log', topic: 'Pipelines', explanation: '-c create, -J xz, -v verbose, -f output filename.' },
   ],
   'command-speedrun': [
     { prompt: 'Show your current directory.', answer: 'pwd', topic: 'Basics', explanation: 'pwd prints the working directory.' },
@@ -713,6 +737,7 @@ export const DRILL_DATA = {
     { prompt: 'Search for "error" in app.log.', answer: 'grep error app.log', topic: 'Text', explanation: 'grep filters matching lines.' },
     { prompt: 'Show free disk space.', answer: 'df -h', topic: 'Disk', explanation: 'df -h shows filesystem usage.' },
     { prompt: 'Restart nginx.', answer: 'systemctl restart nginx', topic: 'Services', explanation: 'restart stops then starts the unit.' },
+    { prompt: 'Compress src into src.tgz.', answer: 'tar -czf src.tgz src', topic: 'Archives', explanation: 'tar -czf creates a gzip-compressed archive.' },
   ],
   'command-battle': [
     { prompt: 'Delete the directory old-build and all its contents.', answer: 'rm -rf old-build', topic: 'Files', explanation: 'rm -rf removes recursively and forcefully.' },
@@ -727,6 +752,7 @@ export const DRILL_DATA = {
     { prompt: 'Count unique IPs in access.log.', answer: "awk '{print $1}' access.log | sort -u | wc -l", topic: 'Pipelines', explanation: 'extract, dedupe, count.' },
     { prompt: 'Start nginx and enable it at boot.', answer: 'systemctl enable --now nginx', topic: 'Services', explanation: '--now enables and starts.' },
     { prompt: 'Make file.txt immutable.', answer: 'chattr +i file.txt', topic: 'Security', explanation: 'The immutable flag blocks changes.' },
+    { prompt: 'List the contents of backup.tgz without extracting.', answer: 'tar -tzf backup.tgz', topic: 'Archives', explanation: 'tar -tzf lists entries only.' },
   ],
 };
 
@@ -762,6 +788,8 @@ export const MCQ_DATA = {
     { prompt: 'Check the number of lines in data.txt. Which is WRONG?', options: ['wc -l data.txt', 'cat data.txt | wc -l', 'grep -c "" data.txt', 'rm data.txt'], correctIndex: 3, topic: 'Text', explanation: 'rm destroys the file instead of counting.' },
     { prompt: 'Compress a directory into a tarball. Which is WRONG?', options: ['tar -czf a.tar.gz dir', 'tar -czvf a.tar.gz dir', 'tar -xzf a.tar.gz', 'gzip -c dir > a.tar.gz'], correctIndex: 2, topic: 'Archives', explanation: '-x extracts; the others create/compress.' },
     { prompt: 'Restart the network service. Which is WRONG?', options: ['systemctl restart NetworkManager', 'systemctl status NetworkManager', 'systemctl try-restart NetworkManager', 'reboot'], correctIndex: 3, topic: 'Services', explanation: 'reboot restarts the whole machine — far heavier than needed.' },
+    { prompt: 'Extract backup.tar.gz into the current folder. Which is WRONG?', options: ['tar -xzf backup.tar.gz', 'tar -tzf backup.tar.gz', 'tar -xzvf backup.tar.gz', 'tar -xzf backup.tar.gz -C .'], correctIndex: 1, topic: 'Archives', explanation: 'tar -tzf only LISTS the contents; -x is the flag that extracts.' },
+    { prompt: 'Compress app.log into app.log.gz while keeping the original. Which is WRONG?', options: ['gzip app.log', 'gzip -c app.log > app.log.gz', 'gzip -k app.log', 'gzip -9 -k app.log'], correctIndex: 0, topic: 'Archives', explanation: 'Plain gzip replaces the original file; -k keeps it, -c writes to stdout so you can redirect.' },
   ],
   'command-detective': [
     { prompt: 'Output: /dev/sda2 80G 74G 6G 93% / — which command produced it?', options: ['df -h', 'free -h', 'du -sh /', 'lsblk'], correctIndex: 0, topic: 'Disk', explanation: 'df -h prints filesystems with size/used/avail/use% columns.' },
@@ -776,6 +804,8 @@ export const MCQ_DATA = {
     { prompt: 'Output: tcp 0 0 0.0.0.0:22 0.0.0.0:* LISTEN 1234/sshd. Which command?', options: ['ss -tlnp', 'ps aux', 'netstat -r', 'ping localhost'], correctIndex: 0, topic: 'Network', explanation: 'ss shows listening TCP sockets and the owning process with -p.' },
     { prompt: 'Output: total 12 / -rw-r--r-- 1 root root 512 Mar 1 10:00 app.conf. Which command?', options: ['ls -lh', 'ls', 'df -h', 'du -sh .'], correctIndex: 0, topic: 'Files', explanation: 'ls -lh adds human-readable sizes to the long listing.' },
     { prompt: 'Output: nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin. Which command/file?', options: ['cat /etc/passwd', 'cat /etc/shadow', 'getent hosts', 'id nobody'], correctIndex: 0, topic: 'Users', explanation: 'User account entries with UID/GID/shell live in /etc/passwd.' },
+    { prompt: 'Output: app.log.gz: gzip compressed data, from Unix, original size 1048576. Which command?', options: ['file app.log.gz', 'ls -lh app.log.gz', 'stat app.log.gz', 'gzip -d app.log.gz'], correctIndex: 0, topic: 'Archives', explanation: 'file detects and prints the compression format and original size.' },
+    { prompt: 'Output: etc/passwd / etc/shadow / etc/hostname / etc/nginx/nginx.conf. Which command?', options: ['tar -tzf etc.tar.gz', 'ls -l /etc', 'find /etc -name "*.conf"', 'cat etc.tar.gz'], correctIndex: 0, topic: 'Archives', explanation: 'tar -tzf lists archive contents without extracting them.' },
   ],
   'predict-output': [
     { prompt: 'echo $((3 + 4 * 2)) — what prints?', options: ['11', '14', '20', '35'], correctIndex: 0, topic: 'Shell', explanation: 'Arithmetic follows precedence: 4*2=8, 3+8=11.' },
@@ -804,6 +834,8 @@ export const MCQ_DATA = {
     { prompt: 'chown john file.txt changed the owner, but you wanted the group. Correct fix?', options: ['chgrp john file.txt', 'chown john: file.txt', 'chmod g+w file.txt', 'usermod -aG john'], correctIndex: 0, topic: 'Ownership', explanation: 'chgrp sets the group; the group of a file is not its owner.' },
     { prompt: 'sed -i "s/foo/bar/" config.json edits in place. What should you do first?', options: ['Back up: sed -i.bak "s/foo/bar/" config.json', 'Nothing, -i is safe', 'chmod 777 first', 'Run it as root'], correctIndex: 0, topic: 'Text', explanation: '-i has no undo; giving the extension .bak writes the original first.' },
     { prompt: 'An admin ran systemctl stop nginx to "restart" it. What should they have used?', options: ['systemctl restart nginx', 'systemctl start nginx', 'systemctl daemon-reload', 'nginx -s stop'], correctIndex: 0, topic: 'Services', explanation: 'restart stops then starts; stop leaves it down.' },
+    { prompt: 'A script tried to compress a whole folder with gzip and failed with "is a directory". Correct approach?', options: ['tar -czf backup.tar.gz /var/lib/mysql', 'gzip -r /var/lib/mysql', 'chmod 777 then gzip', 'split the files first'], correctIndex: 0, topic: 'Archives', explanation: 'gzip works on single files; to compress a whole tree, archive it with tar first (using -z for gzip).' },
+    { prompt: 'An admin restored /backup/etc.tar.gz with tar -xf and it worked. What was missing from the review?', options: ['Verifying the restored files match the live ones (e.g. diff)', 'Compressing the archive', 'Running it as root', 'Nothing'], correctIndex: 0, topic: 'Archives', explanation: 'A backup is only proven once you restore it and compare the data with the source.' },
   ],
   'incident-response': [
     { prompt: 'ALERT: CPU at 98%, application unavailable, users cannot log in. Your FIRST step?', options: ['top', 'apt update', 'rm -rf /tmp/*', 'reboot'], correctIndex: 0, topic: 'Incident', explanation: 'top shows the culprit process before you change anything.' },
@@ -834,6 +866,7 @@ export const TICKET_DATA = {
     { priority: 'critical', title: 'Rogue process eating CPU', prompt: 'A process with PID 4821 is at 99% CPU. Terminate it immediately.', answer: 'kill -9 4821', topic: 'Processes', explanation: 'kill -9 force-kills the process.' },
     { priority: 'high', title: 'DNS seems broken', prompt: 'Check which DNS servers the machine is configured to use.', answer: 'cat /etc/resolv.conf', topic: 'Network', explanation: 'resolv.conf lists the nameservers.' },
     { priority: 'low', title: 'Schedule the nightly backup', prompt: 'Run /opt/backup.sh every night at 2am via cron.', answer: 'echo "0 2 * * * /opt/backup.sh" | crontab -', topic: 'Scheduling', explanation: 'The echoed cron line is installed with crontab -.', },
+    { priority: 'high', title: 'Confirm a backup before restoring', prompt: 'nginx.conf was corrupted. Verify /backups/nginx-conf.tgz contains it WITHOUT extracting.', answer: 'tar -tzf /backups/nginx-conf.tgz', topic: 'Archives', explanation: 'tar -tzf lists the archive contents without touching the filesystem.' },
   ],
 };
 
@@ -870,6 +903,8 @@ export const FREE_DATA = {
     { prompt: 'What is the difference between /etc/passwd and /etc/shadow?', topic: 'Users', model: 'passwd holds account info (UID, shell, home); shadow holds encrypted passwords, readable only by root.' },
     { prompt: 'What does the sticky bit do, and where would you find it?', topic: 'Permissions', model: 'Restricts deletion to file owners; used on shared dirs like /tmp (mode 1777).' },
     { prompt: 'How would you troubleshoot a service that keeps crashing?', topic: 'Troubleshooting', model: 'systemctl status, journalctl -u for logs, check configs, resource limits, then restart or escalate.' },
+    { prompt: 'Explain the difference between gzip, bzip2 and xz, and when you would use each.', topic: 'Archives', model: 'All compress a single file. gzip is fastest with a modest ratio, bzip2 compresses better, xz gives the best ratio but is slowest. With tar, pick the flag per need: -z gzip, -j bzip2, -J xz. Use xz for long-term storage of logs, gzip where speed matters.' },
+    { prompt: 'How do you prove a backup actually works before you rely on it?', topic: 'Archives', model: 'Restore it into a scratch directory (tar -xf backup.tar.gz -C /tmp/restore), compare the restored data with the source using diff/cmp, and confirm the files are byte-identical.' },
   ],
 };
 
@@ -923,6 +958,7 @@ export const CAREER_DATA = {
           { prompt: 'Allow HTTPS through ufw.', answer: 'ufw allow 443/tcp', topic: 'Network' },
           { prompt: 'Install a cron entry that runs backup.sh daily at 3am.', answer: 'echo "0 3 * * * /opt/backup.sh" | crontab -', topic: 'Scheduling' },
           { prompt: 'Sync a local folder to a remote host over SSH.', answer: 'rsync -av ./ www@server:/srv/app/', topic: 'Automation' },
+          { prompt: 'Create an xz-compressed archive of the deploy artifacts.', answer: 'tar -cJf deploy-artifacts.tar.xz dist', topic: 'Archives' },
         ],
       },
       {
@@ -1147,6 +1183,7 @@ export const DAILY_POOL = {
     { prompt: 'Kill process with PID 1234.', answer: 'kill 1234', topic: 'Processes' },
     { prompt: 'Set the group to devs on project.txt.', answer: 'chgrp devs project.txt', topic: 'Ownership' },
     { prompt: 'Show the hostname.', answer: 'hostname', topic: 'System' },
+    { prompt: 'List the contents of backup.tar.gz without extracting.', answer: 'tar -tzf backup.tar.gz', topic: 'Archives' },
   ],
   mcq: [
     { prompt: 'Which command shows free memory?', options: ['free -h', 'df -h', 'ls -h', 'du -h'], correctIndex: 0, topic: 'System' },
@@ -1159,6 +1196,8 @@ export const DAILY_POOL = {
     { prompt: 'Which command creates an archive?', options: ['tar -czf', 'gzip -d', 'xz', 'zip -d'], correctIndex: 0, topic: 'Archives' },
     { prompt: 'Which signal does kill -9 send?', options: ['SIGKILL', 'SIGTERM', 'SIGINT', 'SIGHUP'], correctIndex: 0, topic: 'Processes' },
     { prompt: 'Which file lists user accounts?', options: ['/etc/passwd', '/etc/hosts', '/etc/fstab', '/proc/meminfo'], correctIndex: 0, topic: 'Users' },
+    { prompt: 'Which flag makes tar compress with xz?', options: ['-J', '-z', '-j', '-c'], correctIndex: 0, topic: 'Archives' },
+    { prompt: 'Which command shows what is inside backup.tar.gz WITHOUT extracting?', options: ['tar -tzf backup.tar.gz', 'tar -xzf backup.tar.gz', 'gzip -d backup.tar.gz', 'cat backup.tar.gz'], correctIndex: 0, topic: 'Archives' },
   ],
 };
 
@@ -1172,6 +1211,7 @@ export const SCENARIO_FALLBACK = [
   { prompt: 'HR needs an account for intern "intern1" including a home directory.', answer: 'useradd -m intern1', topic: 'Users', explanation: '-m creates the home directory automatically.' },
   { prompt: 'Disk is at 90%. Find the biggest directories under /var.', answer: 'du -h --max-depth=1 /var | sort -rh | head -10', topic: 'Disk', explanation: 'du measures usage, sort -rh orders descending.' },
   { prompt: 'Backups stopped running. Show the crontab to inspect the schedule.', answer: 'crontab -l', topic: 'Scheduling', explanation: 'crontab -l prints the current cron entries.' },
+  { prompt: 'A config was corrupted. Confirm /backups/etc.tar.gz contains /etc/passwd before restoring.', answer: 'tar -tzf /backups/etc.tar.gz | grep etc/passwd', topic: 'Archives', explanation: 'tar -tzf lists the archive; grep confirms the file is inside.' },
 ];
 
 // ---------------------------------------------------------------------------

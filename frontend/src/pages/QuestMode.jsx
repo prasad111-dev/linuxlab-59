@@ -99,7 +99,7 @@ export default function QuestMode() {
           <ArrowLeft size={16} /> Hub
         </Link>
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
-          <Compass size={15} /> Quest {index + 1}/30 · {correctSoFar} solved
+          <Compass size={15} /> Quest {index + 1}/{quests.length} · {correctSoFar} solved
         </div>
       </div>
 
@@ -118,9 +118,9 @@ export default function QuestMode() {
       {finishedAll ? (
         <div className="card mt-6 text-center !p-10">
           <div className="text-5xl">🏁</div>
-          <h2 className="mt-4 text-2xl font-extrabold">All 30 quests solved!</h2>
+          <h2 className="mt-4 text-2xl font-extrabold">All {quests.length} quests solved!</h2>
           <p className="mt-1 text-slate-500 dark:text-slate-400">
-            You solved {correctSoFar}/30. Get your AI analysis now.
+            You solved {correctSoFar}/{quests.length}. Get your AI analysis now.
           </p>
           <button onClick={finish} disabled={saving} className="btn-primary mt-6">
             {saving ? <Spinner size={16} /> : <Sparkles size={16} />} Finish & get AI analysis

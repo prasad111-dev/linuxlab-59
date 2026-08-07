@@ -104,7 +104,7 @@ export default function FlashcardDuel() {
           <ArrowLeft size={16} /> Hub
         </Link>
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
-          <Layers size={15} /> Tier {tierIndex + 1}/25 · Card {cardIndex + 1}/5
+          <Layers size={15} /> Tier {tierIndex + 1}/{FLASHCARD_TIERS.length} · Card {cardIndex + 1}/5
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export default function FlashcardDuel() {
       {finishedAll ? (
         <div className="card mt-6 text-center !p-10">
           <div className="text-5xl">🏁</div>
-          <h2 className="mt-4 text-2xl font-extrabold">All 125 cards answered!</h2>
+          <h2 className="mt-4 text-2xl font-extrabold">All {cards.length} cards answered!</h2>
           <p className="mt-1 text-slate-500 dark:text-slate-400">
             You got {correctSoFar}/{answers.length} correct. Get your AI analysis now.
           </p>
@@ -151,7 +151,7 @@ export default function FlashcardDuel() {
           <div className="card mt-6 animate-fade-up !p-7" key={idx}>
             <div className="flex flex-wrap gap-2">
               <span className="badge bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">{current.tier}</span>
-              <span className="badge bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400">Q{current.id}/125</span>
+              <span className="badge bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400">Q{current.id}/{cards.length}</span>
             </div>
             <h2 className="mt-4 font-mono text-2xl font-bold tracking-tight">{current.cmd}</h2>
             <p className="mt-1 text-lg font-semibold text-slate-700 dark:text-slate-200">{current.question}</p>

@@ -115,7 +115,7 @@ export default function TypingShooter() {
           <ArrowLeft size={16} /> Hub
         </Link>
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
-          <Crosshair size={15} /> Command {index + 1}/30 · {wpm} WPM · {accuracy}%
+          <Crosshair size={15} /> Command {index + 1}/{commands.length} · {wpm} WPM · {accuracy}%
         </div>
       </div>
 
@@ -134,9 +134,9 @@ export default function TypingShooter() {
       {finishedAll ? (
         <div className="card mt-6 text-center !p-10">
           <div className="text-5xl">🏁</div>
-          <h2 className="mt-4 text-2xl font-extrabold">All 30 commands typed!</h2>
+          <h2 className="mt-4 text-2xl font-extrabold">All {commands.length} commands typed!</h2>
           <p className="mt-1 text-slate-500 dark:text-slate-400">
-            {log.filter((l) => l.correct).length}/30 exact · {wpm} WPM · {accuracy}% accuracy.
+            {log.filter((l) => l.correct).length}/{commands.length} exact · {wpm} WPM · {accuracy}% accuracy.
           </p>
           <button onClick={finish} disabled={saving} className="btn-primary mt-6">
             {saving ? <Spinner size={16} /> : <Sparkles size={16} />} Finish & get AI analysis

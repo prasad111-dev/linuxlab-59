@@ -768,6 +768,144 @@ const SEED_TASKS = [
       { type: 'file_permissions', label: 'Set /home/ankit permissions to 750', params: { path: '/home/ankit', expected: '750' } },
     ],
   },
+  {
+    title: 'Backup, compress, and recover the server configuration',
+    categorySlug: 'production-linux',
+    difficulty: 'intermediate',
+    estimatedMinutes: 40,
+    points: 200,
+    scenario:
+      'Your server holds years of critical configuration under /etc and there is no backup anywhere — ' +
+      'one bad change and the whole system could be unrecoverable. As the on-call Linux administrator you must ' +
+      'create three compressed backups of /etc (gzip, bzip2 and xz), compare how well each one compresses, ' +
+      'and then PROVE the backups actually work by restoring a copy into a recovery folder and checking the ' +
+      'restored files against the live configuration. A backup you have never tested is not a backup.',
+    objectives: [
+      'Create the /backup directory',
+      'Create a plain tar archive of /etc as /backup/etc_backup.tar',
+      'Create a gzip-compressed archive /backup/etc_backup_gzip.tar.gz',
+      'Create a bzip2-compressed archive /backup/etc_backup_bzip2.tar.bz2',
+      'Create an xz-compressed archive /backup/etc_backup_xz.tar.xz',
+      'Compare the archive sizes to see which compression wins',
+      'Inspect the contents of an archive without extracting it',
+      'Restore a copy of /etc from each archive and verify the restored files',
+    ],
+    requirements: [
+      '/backup exists and holds all four archives',
+      'etc_backup_gzip.tar.gz is real gzip data, etc_backup_bzip2.tar.bz2 is real bzip2 data, etc_backup_xz.tar.xz is real XZ data',
+      'Each archive contains the /etc configuration tree',
+      '/root/recovery_gzip, /root/recovery_bzip2 and /root/recovery_xz each contain a restored /etc/passwd',
+    ],
+    instructions: [
+      'Create /backup, then create a plain tar archive of /etc: tar -cf /backup/etc_backup.tar /etc',
+      'Create the three compressed archives: tar -czf /backup/etc_backup_gzip.tar.gz /etc, tar -cjf /backup/etc_backup_bzip2.tar.bz2 /etc and tar -cJf /backup/etc_backup_xz.tar.xz /etc',
+      'Compare the sizes: ls -lh /backup — xz compresses the most, plain tar the least.',
+      'Inspect without extracting: tar -tvf /backup/etc_backup_gzip.tar.gz and confirm etc/passwd and etc/hostname are listed.',
+      'Restore a copy of each archive into its own recovery folder: mkdir /root/recovery_gzip && tar -xzf /backup/etc_backup_gzip.tar.gz -C /root/recovery_gzip (repeat with -xjf for bzip2 and -xJf for xz).',
+      'Verify the restore: test -f /root/recovery_gzip/etc/passwd and compare with diff /etc/passwd /root/recovery_gzip/etc/passwd (no output means identical).',
+    ],
+    expectedOutcome:
+      '/backup holds a plain tar plus gzip/bzip2/xz archives of /etc, each archive lists etc/passwd and etc/hostname, and the three recovery folders restore a byte-identical /etc/passwd.',
+    learningOutcomes: [
+      'Create tar archives with and without compression',
+      'Choose between gzip, bzip2 and xz compression tools',
+      'Inspect archive contents without extracting',
+      'Verify a backup by restoring and comparing it',
+    ],
+    hints: [
+      'The letter after -c picks the compression: -z = gzip, -j = bzip2, -J = xz.',
+      'file /backup/etc_backup_gzip.tar.gz prints "gzip compressed data" — a quick way to confirm the format.',
+      'Restoring into /root/recovery_* keeps the live /etc untouched while you test the archives.',
+    ],
+    solution:
+      'mkdir -p /backup\n' +
+      'tar -cf /backup/etc_backup.tar /etc\n' +
+      'tar -czf /backup/etc_backup_gzip.tar.gz /etc\n' +
+      'tar -cjf /backup/etc_backup_bzip2.tar.bz2 /etc\n' +
+      'tar -cJf /backup/etc_backup_xz.tar.xz /etc\n' +
+      'ls -lh /backup\n' +
+      'tar -tvf /backup/etc_backup_gzip.tar.gz\n' +
+      'mkdir -p /root/recovery_gzip /root/recovery_bzip2 /root/recovery_xz\n' +
+      'tar -xzf /backup/etc_backup_gzip.tar.gz -C /root/recovery_gzip\n' +
+      'tar -xjf /backup/etc_backup_bzip2.tar.bz2 -C /root/recovery_bzip2\n' +
+      'tar -xJf /backup/etc_backup_xz.tar.xz -C /root/recovery_xz\n' +
+      'diff /etc/passwd /root/recovery_gzip/etc/passwd && diff /etc/passwd /root/recovery_bzip2/etc/passwd && diff /etc/passwd /root/recovery_xz/etc/passwd',
+    setupCommands: [],
+    validationRules: [
+      { type: 'dir_exists', label: 'Create the /backup directory', params: { path: '/backup' } },
+      { type: 'file_exists', label: 'Create the plain archive /backup/etc_backup.tar', params: { path: '/backup/etc_backup.tar' } },
+      { type: 'file_exists', label: 'Create the gzip archive /backup/etc_backup_gzip.tar.gz', params: { path: '/backup/etc_backup_gzip.tar.gz' } },
+      { type: 'file_exists', label: 'Create the bzip2 archive /backup/etc_backup_bzip2.tar.bz2', params: { path: '/backup/etc_backup_bzip2.tar.bz2' } },
+      { type: 'file_exists', label: 'Create the xz archive /backup/etc_backup_xz.tar.xz', params: { path: '/backup/etc_backup_xz.tar.xz' } },
+      { type: 'command_contains', label: 'etc_backup_gzip.tar.gz must be real gzip data', params: { command: 'file /backup/etc_backup_gzip.tar.gz', needle: 'gzip' } },
+      { type: 'command_contains', label: 'etc_backup_bzip2.tar.bz2 must be real bzip2 data', params: { command: 'file /backup/etc_backup_bzip2.tar.bz2', needle: 'bzip2' } },
+      { type: 'command_contains', label: 'etc_backup_xz.tar.xz must be real XZ data', params: { command: 'file /backup/etc_backup_xz.tar.xz', needle: 'XZ compressed data' } },
+      { type: 'command_contains', label: 'The gzip archive must contain etc/passwd (inspect with tar -tvf)', params: { command: 'tar -tvf /backup/etc_backup_gzip.tar.gz', needle: 'etc/passwd' } },
+      { type: 'dir_exists', label: 'Create the recovery folder /root/recovery_gzip', params: { path: '/root/recovery_gzip' } },
+      { type: 'file_contains', label: 'Restore /etc/passwd from the gzip archive into /root/recovery_gzip', params: { path: '/root/recovery_gzip/etc/passwd', needle: 'root:x:0:0' } },
+      { type: 'dir_exists', label: 'Create the recovery folder /root/recovery_bzip2', params: { path: '/root/recovery_bzip2' } },
+      { type: 'file_contains', label: 'Restore /etc/passwd from the bzip2 archive into /root/recovery_bzip2', params: { path: '/root/recovery_bzip2/etc/passwd', needle: 'root:x:0:0' } },
+      { type: 'dir_exists', label: 'Create the recovery folder /root/recovery_xz', params: { path: '/root/recovery_xz' } },
+      { type: 'file_contains', label: 'Restore /etc/passwd from the xz archive into /root/recovery_xz', params: { path: '/root/recovery_xz/etc/passwd', needle: 'root:x:0:0' } },
+    ],
+    sections: [
+      {
+        title: 'Phase 1 — Take a plain backup of /etc',
+        instructions: [
+          'Create /backup to hold all the archives.',
+          'Create a plain (uncompressed) tar archive of /etc: tar -cf /backup/etc_backup.tar /etc',
+          'Confirm the archive exists: ls -lh /backup',
+        ],
+        checks: [
+          { type: 'dir_exists', label: 'Create the /backup directory', params: { path: '/backup' } },
+          { type: 'file_exists', label: 'Create the plain archive /backup/etc_backup.tar', params: { path: '/backup/etc_backup.tar' } },
+        ],
+      },
+      {
+        title: 'Phase 2 — Compress with gzip, bzip2 and xz',
+        instructions: [
+          'Create a gzip-compressed archive: tar -czf /backup/etc_backup_gzip.tar.gz /etc',
+          'Create a bzip2-compressed archive: tar -cjf /backup/etc_backup_bzip2.tar.bz2 /etc',
+          'Create an xz-compressed archive: tar -cJf /backup/etc_backup_xz.tar.xz /etc',
+          'Compare the sizes with ls -lh /backup and note which tool compresses best.',
+        ],
+        checks: [
+          { type: 'file_exists', label: 'Create the gzip archive /backup/etc_backup_gzip.tar.gz', params: { path: '/backup/etc_backup_gzip.tar.gz' } },
+          { type: 'file_exists', label: 'Create the bzip2 archive /backup/etc_backup_bzip2.tar.bz2', params: { path: '/backup/etc_backup_bzip2.tar.bz2' } },
+          { type: 'file_exists', label: 'Create the xz archive /backup/etc_backup_xz.tar.xz', params: { path: '/backup/etc_backup_xz.tar.xz' } },
+          { type: 'command_contains', label: 'etc_backup_gzip.tar.gz must be real gzip data', params: { command: 'file /backup/etc_backup_gzip.tar.gz', needle: 'gzip' } },
+          { type: 'command_contains', label: 'etc_backup_bzip2.tar.bz2 must be real bzip2 data', params: { command: 'file /backup/etc_backup_bzip2.tar.bz2', needle: 'bzip2' } },
+          { type: 'command_contains', label: 'etc_backup_xz.tar.xz must be real XZ data', params: { command: 'file /backup/etc_backup_xz.tar.xz', needle: 'XZ compressed data' } },
+        ],
+      },
+      {
+        title: 'Phase 3 — Inspect the archives without extracting',
+        instructions: [
+          'List the contents of the gzip archive: tar -tvf /backup/etc_backup_gzip.tar.gz',
+          'Confirm etc/passwd and etc/hostname are inside the archive.',
+        ],
+        checks: [
+          { type: 'command_contains', label: 'The gzip archive must contain etc/passwd (inspect with tar -tvf)', params: { command: 'tar -tvf /backup/etc_backup_gzip.tar.gz', needle: 'etc/passwd' } },
+        ],
+      },
+      {
+        title: 'Phase 4 — Recovery drill: restore and verify',
+        instructions: [
+          'Create the three recovery folders: mkdir -p /root/recovery_gzip /root/recovery_bzip2 /root/recovery_xz',
+          'Restore each archive into its own folder: tar -xzf /backup/etc_backup_gzip.tar.gz -C /root/recovery_gzip (then -xjf for bzip2 and -xJf for xz).',
+          'Verify a restored copy of /etc/passwd exists and matches the live one: diff /etc/passwd /root/recovery_gzip/etc/passwd',
+        ],
+        checks: [
+          { type: 'dir_exists', label: 'Create the recovery folder /root/recovery_gzip', params: { path: '/root/recovery_gzip' } },
+          { type: 'file_contains', label: 'Restore /etc/passwd from the gzip archive into /root/recovery_gzip', params: { path: '/root/recovery_gzip/etc/passwd', needle: 'root:x:0:0' } },
+          { type: 'dir_exists', label: 'Create the recovery folder /root/recovery_bzip2', params: { path: '/root/recovery_bzip2' } },
+          { type: 'file_contains', label: 'Restore /etc/passwd from the bzip2 archive into /root/recovery_bzip2', params: { path: '/root/recovery_bzip2/etc/passwd', needle: 'root:x:0:0' } },
+          { type: 'dir_exists', label: 'Create the recovery folder /root/recovery_xz', params: { path: '/root/recovery_xz' } },
+          { type: 'file_contains', label: 'Restore /etc/passwd from the xz archive into /root/recovery_xz', params: { path: '/root/recovery_xz/etc/passwd', needle: 'root:x:0:0' } },
+        ],
+      },
+    ],
+  },
 ];
 
 async function seedDatabase() {
