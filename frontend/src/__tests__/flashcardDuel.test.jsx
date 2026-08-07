@@ -11,7 +11,7 @@ vi.mock('../lib/useInterviewProgress', () => ({
 afterEach(() => cleanup());
 
 describe('FlashcardDuel', () => {
-  it('keeps the answered card on screen and grades it against its own answer', () => {
+  it('keeps the answered card on screen without revealing the answer or explanation', () => {
     const first = FLASHCARDS[0];
     const second = FLASHCARDS[1];
     render(
@@ -25,26 +25,12 @@ describe('FlashcardDuel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: first.answer }));
 
-    expect(screen.getByText('Correct!')).toBeTruthy();
-    expect(screen.getByText(first.explanation)).toBeTruthy();
+    // The card must stay put — no advancing, no correct/wrong reveal, no explanation.
     expect(screen.getByText(first.question)).toBeTruthy();
     expect(screen.queryByText(second.question)).toBeNull();
-  });
-
-  it('shows "Not quite." with the answered card\u2019s explanation when wrong, without advancing', () => {
-    const first = FLASHCARDS[0];
-    render(
-      <MemoryRouter>
-        <FlashcardDuel />
-      </MemoryRouter>
-    );
-
-    const wrong = first.options.find((o) => o !== first.answer);
-    fireEvent.click(screen.getByRole('button', { name: wrong }));
-
-    expect(screen.getByText('Not quite.')).toBeTruthy();
-    expect(screen.getByText(first.explanation)).toBeTruthy();
-    expect(screen.getByText(first.question)).toBeTruthy();
+    expect(screen.queryByText('Correct!')).toBeNull();
+    expect(screen.queryByText('Not quite.')).toBeNull();
+    expect(screen.queryByText(first.explanation)).toBeNull();
   });
 
   it('only advances to the next card after pressing "Next card"', () => {
@@ -56,11 +42,41 @@ describe('FlashcardDuel', () => {
       </MemoryRouter>
     );
 
+    const nextBtn = screen.getByRole('button', { name: /Next card/ });
+    expect(nextBtn.disabled).toBe(true);
+
     fireEvent.click(screen.getByRole('button', { name: first.answer }));
-    fireEvent.click(screen.getByRole('button', { name: 'Next card' }));
+    fireEvent.click(screen.getByRole('button', { name: /Next card/ }));
 
     expect(screen.getByText(second.question)).toBeTruthy();
     expect(screen.queryByText(first.question)).toBeNull();
+  });
+
+  it('lets the user go back to a completed question and change the answer', () => {
+    const first = FLASHCARDS[0];
+    const second = FLASHCARDS[1];
+    render(
+      <MemoryRouter>
+        <FlashcardDuel />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: first.answer }));
+    fireEvent.click(screen.getByRole('button', { name: /Next card/ }));
+    expect(screen.getByText(second.question)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /Previous/ }));
+    expect(screen.getByText(first.question)).toBeTruthy();
+
+    // Change the answer on the completed question — still no correctness reveal.
+    const wrong = first.options.find((o) => o !== first.answer);
+    fireEvent.click(screen.getByRole('button', { name: wrong }));
+    expect(screen.queryByText('Correct!')).toBeNull();
+    expect(screen.queryByText('Not quite.')).toBeNull();
+
+    // And move forward again.
+    fireEvent.click(screen.getByRole('button', { name: /Next card/ }));
+    expect(screen.getByText(second.question)).toBeTruthy();
   });
 
   it('shows the correct tier/card position for the card on screen', () => {
@@ -74,7 +90,7 @@ describe('FlashcardDuel', () => {
     expect(screen.getByText(`Q1/${FLASHCARDS.length}`)).toBeTruthy();
   });
 
-  it('regression: answering pwd keeps pwd on screen with pwd\u2019s feedback, never the next (clear) card\u2019s answer', () => {
+  it('regression: answering pwd keeps pwd on screen and never leaks the next (clear) card', () => {
     // Repro of the reported bug: cards 3 (pwd) and 4 (clear).
     const pwd = FLASHCARDS.find((c) => c.cmd === 'pwd');
     const clear = FLASHCARDS.find((c) => c.cmd === 'clear');
@@ -91,24 +107,22 @@ describe('FlashcardDuel', () => {
     for (const card of FLASHCARDS.slice(0, 2)) {
       expect(screen.getByText(card.question)).toBeTruthy();
       fireEvent.click(screen.getByRole('button', { name: card.answer }));
-      fireEvent.click(screen.getByRole('button', { name: 'Next card' }));
+      fireEvent.click(screen.getByRole('button', { name: /Next card/ }));
     }
 
-    // Now on pwd. Answer it correctly.
+    // Now on pwd. Answer it correctly — the card stays on screen with no feedback.
     expect(screen.getByText(pwd.question)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: pwd.answer }));
 
-    // The card must stay on pwd, graded correct against pwd's answer,
-    // showing pwd's explanation — NOT advancing to clear or showing clear's.
     expect(screen.getByText(pwd.question)).toBeTruthy();
-    expect(screen.getByText('Correct!')).toBeTruthy();
-    expect(screen.getByText(pwd.explanation)).toBeTruthy();
+    expect(screen.queryByText('Correct!')).toBeNull();
+    expect(screen.queryByText(pwd.explanation)).toBeNull();
     expect(screen.queryByText(clear.question)).toBeNull();
     expect(screen.queryByText(clear.explanation)).toBeNull();
 
-    // Advancing moves to clear with no feedback banner left behind.
-    fireEvent.click(screen.getByRole('button', { name: 'Next card' }));
+    // Advancing moves to clear.
+    fireEvent.click(screen.getByRole('button', { name: /Next card/ }));
     expect(screen.getByText(clear.question)).toBeTruthy();
-    expect(screen.queryByText('Not quite.')).toBeNull();
+    expect(screen.queryByText('Correct!')).toBeNull();
   });
 });
