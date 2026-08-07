@@ -161,3 +161,50 @@ test('daemon config tests and service commands are allowed for their service tas
   assert.equal(checkCommand('systemctl restart ssh', SSH_TASK).allowed, true);
   assert.equal(checkCommand('sshd -T', SSH_TASK).allowed, true);
 });
+
+test('networking diagnostics are read-only and always allowed', () => {
+  for (const cmd of [
+    'ip a',
+    'ip addr show',
+    'ip route show',
+    'ifconfig',
+    'ping -c 3 127.0.0.1',
+    'traceroute -n 127.0.0.1',
+    'dig example.com',
+    'nslookup example.com',
+    'host example.com',
+    'getent hosts app.linuxlab.local',
+    'ss -tulpn',
+    'netstat -tulpn',
+    'cat /etc/resolv.conf',
+    'cat /etc/hosts',
+    'nmap -p 22 127.0.0.1',
+  ]) {
+    assert.equal(checkCommand(cmd, NGINX_TASK).allowed, true, cmd);
+  }
+});
+
+test('networking tasks gate firewall verbs on a port rule and scope file writes to the netplan path', () => {
+  const NET_TASK = policy([
+    { type: 'port_open', params: { port: 22 } },
+    { type: 'file_exists', params: { path: '/etc/netplan/01-netcfg.yaml' } },
+    { type: 'file_contains', params: { path: '/etc/netplan/01-netcfg.yaml', needle: 'eth0' } },
+  ]);
+  assert.equal(checkCommand('ufw allow 80/tcp', NET_TASK).allowed, true);
+  assert.equal(checkCommand('ufw allow 22/tcp', NET_TASK).allowed, true);
+  assert.equal(checkCommand('ufw --force enable', NET_TASK).allowed, true);
+  assert.equal(checkCommand('ufw status verbose', NET_TASK).allowed, true);
+  assert.equal(checkCommand('iptables -L -n', NET_TASK).allowed, true);
+  assert.equal(checkCommand('iptables -A INPUT -p tcp --dport 8080 -j ACCEPT', NET_TASK).allowed, true);
+  assert.equal(checkCommand('mkdir -p /etc/netplan', NET_TASK).allowed, true);
+  assert.equal(checkCommand("printf 'network:\\n' > /etc/netplan/01-netcfg.yaml", NET_TASK).allowed, true);
+  assert.equal(checkCommand('echo hi > /tmp/evil', NET_TASK).allowed, false);
+  assert.equal(checkCommand('rm /etc/netplan', NET_TASK).allowed, false);
+
+  // firewall verbs require a port rule in the task, regardless of the port
+  assert.equal(checkCommand('ufw allow 80', NGINX_TASK).allowed, true);
+  assert.equal(checkCommand('ufw allow 8080', NGINX_TASK).allowed, true);
+  const NO_PORT = policy([{ type: 'file_exists', params: { path: '/etc/netplan/01-netcfg.yaml' } }]);
+  assert.equal(checkCommand('ufw allow 80', NO_PORT).allowed, false);
+  assert.equal(checkCommand('iptables -L -n', NO_PORT).allowed, false);
+});

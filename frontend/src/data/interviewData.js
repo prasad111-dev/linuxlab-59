@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 // Interview Preparation data
-// Flashcard Duel: 26 tiers x 5 commands = 130 flashcards (auto-generated MCQs)
-// Quest Mode: 34 real-world scenarios -> answer command
-// Typing Shooter: 34 commands to type
+// Flashcard Duel: 28 tiers x 5 commands = 140 flashcards (auto-generated MCQs)
+// Quest Mode: 46 real-world scenarios -> answer command
+// Typing Shooter: 46 commands to type
 // ---------------------------------------------------------------------------
 
 export const FLASHCARD_TIERS = [
@@ -292,9 +292,31 @@ export const FLASHCARD_TIERS = [
       { cmd: 'unxz', desc: 'Decompress a .xz file back to its original form' },
     ],
   },
+  {
+    id: 27,
+    name: 'Network Tools & Config',
+    commands: [
+      { cmd: 'ip', desc: 'Show or configure network interfaces, addresses and routes' },
+      { cmd: 'traceroute', desc: 'Trace the route packets take to a remote host' },
+      { cmd: 'nmcli', desc: 'Manage network connections through NetworkManager' },
+      { cmd: 'netplan', desc: 'Declare network interfaces with netplan YAML config files' },
+      { cmd: 'firewall-cmd', desc: 'Manage firewalld zones and rules (RHEL/CentOS)' },
+    ],
+  },
+  {
+    id: 28,
+    name: 'Packet Capture & Advanced Firewalls',
+    commands: [
+      { cmd: 'tcpdump', desc: 'Capture and display packets on a network interface' },
+      { cmd: 'tshark', desc: 'Dump and analyze packets (the Wireshark command-line tool)' },
+      { cmd: 'nft', desc: 'Configure the modern nftables firewall' },
+      { cmd: 'nmap', desc: 'Scan hosts and ports to discover open services' },
+      { cmd: 'mtr', desc: 'Combine ping and traceroute for continuous diagnostics' },
+    ],
+  },
 ];
 
-// Auto-build 130 flashcards: question + answer, options = answer + 3 distractors
+// Auto-build 140 flashcards: question + answer, options = answer + 3 distractors
 export const FLASHCARDS = (() => {
   const pool = FLASHCARD_TIERS.flatMap((t) =>
     t.commands.map((c) => ({ cmd: c.cmd, desc: c.desc, tier: t.name }))
@@ -353,6 +375,18 @@ export const QUESTS = [
   { id: 32, prompt: 'Create a bzip2-compressed tar archive of "app" called backup.tar.bz2.', answer: 'tar -cjf backup.tar.bz2 app' },
   { id: 33, prompt: 'List the contents of backup.tar.gz WITHOUT extracting it.', answer: 'tar -tzf backup.tar.gz' },
   { id: 34, prompt: 'Extract backup.tar.bz2 into the current directory.', answer: 'tar -xjf backup.tar.bz2' },
+  { id: 35, prompt: 'Show every IP address assigned to every interface.', answer: 'ip addr show' },
+  { id: 36, prompt: 'Show the default routing table and default gateway.', answer: 'ip route show' },
+  { id: 37, prompt: 'Test whether host example.com is reachable, sending 3 packets.', answer: 'ping -c 3 example.com' },
+  { id: 38, prompt: 'Trace the network path packets take to example.com.', answer: 'traceroute example.com' },
+  { id: 39, prompt: 'Look up the DNS A record for example.com.', answer: 'dig example.com A' },
+  { id: 40, prompt: 'Look up the DNS records using the system resolver.', answer: 'nslookup example.com' },
+  { id: 41, prompt: 'List all listening TCP sockets with the owning processes.', answer: 'ss -ltnp' },
+  { id: 42, prompt: 'Check which process owns the process for port 8080.', answer: 'lsof -i :8080' },
+  { id: 43, prompt: 'Display the machine ARP cache mapping IPs to MAC addresses.', answer: 'ip neigh show' },
+  { id: 44, prompt: 'Allow TCP port 443/tcp through the default Ubuntu firewall.', answer: 'ufw allow 443/tcp' },
+  { id: 45, prompt: 'Enable the firewall service and refuse new incoming connections (keep current rules).', answer: 'ufw enable' },
+  { id: 46, prompt: 'Capture 20 packets on interface eth0 and save them to cap.pcap.', answer: 'tcpdump -i eth0 -c 20 -w cap.pcap' },
 ];
 
 export const TYPING_COMMANDS = [
@@ -390,6 +424,18 @@ export const TYPING_COMMANDS = [
   'tar -cjf backup.tar.bz2 src',
   'gzip -d app.log.gz',
   'xz -d archive.tar.xz',
+  'ip route show',
+  'ss -ltnp',
+  'dig example.com A',
+  'nslookup example.com',
+  'traceroute example.com',
+  'ping -c 3 example.com',
+  'lsof -i :8080',
+  'ip neigh show',
+  'ufw allow 443/tcp',
+  'tcpdump -i eth0 -c 20',
+  'netstat -tulpn',
+  'mtr -c 5 example.com',
 ];
 
 // ---------------------------------------------------------------------------
@@ -401,7 +447,7 @@ export const MODES = [
   {
     mode: 'flashcard',
     title: 'Flashcard Duel',
-    tagline: '130 multiple-choice flashcards across 26 topic tiers',
+    tagline: '140 multiple-choice flashcards across 28 topic tiers',
     icon: '🧠',
     gradient: 'from-purple-500 to-fuchsia-600',
     route: '/interview/flashcard',
@@ -411,7 +457,7 @@ export const MODES = [
   {
     mode: 'quest',
     title: 'Quest Mode',
-    tagline: '34 real-world scenarios — type the exact command',
+    tagline: '46 real-world scenarios — type the exact command',
     icon: '🗺️',
     gradient: 'from-emerald-500 to-brand-600',
     route: '/interview/quest',
@@ -421,7 +467,7 @@ export const MODES = [
   {
     mode: 'typing',
     title: 'Typing Shooter',
-    tagline: '34 commands — type them fast and accurately',
+    tagline: '46 commands — type them fast and accurately',
     icon: '⌨️',
     gradient: 'from-brand-500 to-amber-600',
     route: '/interview/typing',
@@ -694,6 +740,11 @@ export const DRILL_DATA = {
     { prompt: 'Ticket #400 — Emergency: a cryptominer named "xmrig" is running. Stop it immediately.', answer: 'pkill xmrig', topic: 'Processes', level: 'Emergency', explanation: 'pkill kills all processes matching the name; use pkill -9 for hard kill.' },
     { prompt: 'Ticket #255 — Backup the config folder /srv/app/conf into /backups/app-conf.tgz before we patch the server.', answer: 'tar -czf /backups/app-conf.tgz /srv/app/conf', topic: 'Archives', level: 'Production', explanation: 'tar -czf creates a gzip-compressed archive from the source path.' },
     { prompt: 'Ticket #263 — A corrupt config must be restored. Confirm /backups/app-conf.tgz contains nginx.conf WITHOUT extracting it.', answer: 'tar -tzf /backups/app-conf.tgz', topic: 'Archives', level: 'Production', explanation: 'tar -tzf lists the archive contents only; nothing is written to disk.' },
+    { prompt: 'Ticket #400 — The app cannot reach the database. Show every IP address on every interface.', answer: 'ip addr show', topic: 'Network', level: 'Intermediate', explanation: 'ip addr show lists all interface IPs to spot a misconfigured or missing address.' },
+    { prompt: 'Ticket #402 — Web requests are timing out. Trace the path packets take to db.internal.example.', answer: 'traceroute db.internal.example', topic: 'Network', level: 'Production', explanation: 'traceroute shows every hop so you can see where packets stop.' },
+    { prompt: 'Ticket #405 — DNS looks broken. Query the A record for api.example.com directly.', answer: 'dig api.example.com A', topic: 'Network', level: 'Intermediate', explanation: 'dig queries the DNS server directly and prints the A record.' },
+    { prompt: 'Ticket #408 — Something is squatting on port 8080. Find the owning process.', answer: 'ss -ltnp | grep :8080', topic: 'Network', level: 'Production', explanation: 'ss -tlnp lists listeners with the owning PID; grep filters port 8080.' },
+    { prompt: 'Ticket #412 — Firewall hardening before go-live. Allow HTTPS inbound through ufw.', answer: 'ufw allow 443/tcp', topic: 'Network', level: 'Production', explanation: 'ufw allow 443/tcp opens inbound TCP port 443 for HTTPS traffic.' },
   ],
   'build-command': [
     { prompt: 'Create the user "john".', answer: 'useradd john', topic: 'Users', explanation: 'useradd john creates the account.' },
@@ -710,6 +761,11 @@ export const DRILL_DATA = {
     { prompt: 'Make file.txt immutable so even root cannot modify it.', answer: 'chattr +i file.txt', topic: 'Security', explanation: 'The +i immutable attribute blocks changes until removed with chattr -i.' },
     { prompt: 'Create a bzip2-compressed archive of the logs directory called logs.tar.bz2.', answer: 'tar -cjf logs.tar.bz2 logs', topic: 'Archives', explanation: '-j selects bzip2 compression.' },
     { prompt: 'List what is inside the archive backup.tgz without extracting.', answer: 'tar -tzf backup.tgz', topic: 'Archives', explanation: 'tar -tzf prints the file list; -x would extract.' },
+    { prompt: 'Show the default route and gateway the machine will use.', answer: 'ip route show', topic: 'Network', explanation: 'ip route show prints the routing table including the default gateway.' },
+    { prompt: 'Confirm host example.com is reachable with a single probe.', answer: 'ping -c 1 example.com', topic: 'Network', explanation: 'ping -c 1 sends one ICMP echo request and waits for the reply.' },
+    { prompt: 'Resolve the A record for example.com using the system resolver.', answer: 'nslookup example.com', topic: 'Network', explanation: 'nslookup queries the configured nameservers for the A record.' },
+    { prompt: 'Show the IP-to-MAC mapping table on this machine.', answer: 'ip neigh show', topic: 'Network', explanation: 'ip neigh (ARP) shows which IPs map to which MAC addresses on the local network.' },
+    { prompt: 'Allow SSH (port 22) through the default Ubuntu firewall.', answer: 'ufw allow 22/tcp', topic: 'Network', explanation: 'ufw allow 22/tcp opens inbound SSH so the host stays reachable after enabling the firewall.' },
   ],
   'command-chain': [
     { prompt: 'Find all .log files larger than 100 MB and archive them (feed the list to tar).', answer: 'find . -name "*.log" -size +100M | tar -czf big-logs.tgz -T -', topic: 'Pipelines', explanation: 'tar -T - reads the file list from stdin.' },
@@ -723,6 +779,9 @@ export const DRILL_DATA = {
     { prompt: 'Check which port nginx is listening on.', answer: 'ss -tlnp | grep nginx', topic: 'Network', explanation: 'ss shows sockets; grep filters the nginx process.' },
     { prompt: 'Find and remove every empty file in /tmp.', answer: 'find /tmp -type f -empty -delete', topic: 'Pipelines', explanation: '-empty matches zero-size files, -delete removes them.' },
     { prompt: 'Create an xz-compressed archive of /var/log while printing each file as it is added.', answer: 'tar -cJvf logs.tar.xz /var/log', topic: 'Pipelines', explanation: '-c create, -J xz, -v verbose, -f output filename.' },
+    { prompt: 'Find every process listening on a TCP socket and list them by port.', answer: 'ss -tlnp', topic: 'Network', explanation: 'ss -tlnp lists TCP listeners numerically with owning processes.' },
+    { prompt: 'Count how many packets reach host example.com along the route using continuous diagnostics.', answer: 'mtr -c 5 example.com', topic: 'Network', explanation: 'mtr combines ping + traceroute and prints per-hop loss/latency.' },
+    { prompt: 'Capture 10 packets on eth0 into /tmp/capture.pcap for analysis.', answer: 'tcpdump -i eth0 -c 10 -w /tmp/capture.pcap', topic: 'Network', explanation: 'tcpdump captures; -c limits packets, -w writes to the pcap file.' },
   ],
   'command-speedrun': [
     { prompt: 'Show your current directory.', answer: 'pwd', topic: 'Basics', explanation: 'pwd prints the working directory.' },
@@ -790,6 +849,10 @@ export const MCQ_DATA = {
     { prompt: 'Restart the network service. Which is WRONG?', options: ['systemctl restart NetworkManager', 'systemctl status NetworkManager', 'systemctl try-restart NetworkManager', 'reboot'], correctIndex: 3, topic: 'Services', explanation: 'reboot restarts the whole machine — far heavier than needed.' },
     { prompt: 'Extract backup.tar.gz into the current folder. Which is WRONG?', options: ['tar -xzf backup.tar.gz', 'tar -tzf backup.tar.gz', 'tar -xzvf backup.tar.gz', 'tar -xzf backup.tar.gz -C .'], correctIndex: 1, topic: 'Archives', explanation: 'tar -tzf only LISTS the contents; -x is the flag that extracts.' },
     { prompt: 'Compress app.log into app.log.gz while keeping the original. Which is WRONG?', options: ['gzip app.log', 'gzip -c app.log > app.log.gz', 'gzip -k app.log', 'gzip -9 -k app.log'], correctIndex: 0, topic: 'Archives', explanation: 'Plain gzip replaces the original file; -k keeps it, -c writes to stdout so you can redirect.' },
+    { prompt: 'Check whether host example.com is reachable. Which is WRONG?', options: ['ss -tlnp', 'ping -c 3 example.com', 'curl -I example.com', 'traceroute example.com'], correctIndex: 0, topic: 'Network', explanation: 'ss shows local listening sockets — it never sends packets to a remote host.' },
+    { prompt: 'Look up the DNS A record for example.com. Which is WRONG?', options: ['cat /etc/hosts', 'dig example.com A', 'nslookup example.com', 'host example.com'], correctIndex: 0, topic: 'Network', explanation: '/etc/hosts is a local static file, not a live DNS lookup.' },
+    { prompt: 'List every listening TCP port with its process. Which is WRONG?', options: ['ping localhost', 'ss -tlnp', 'netstat -tulpn', 'lsof -i -nP'], correctIndex: 0, topic: 'Network', explanation: 'ping tests reachability; it does not enumerate ports.' },
+    { prompt: 'Allow HTTPS inbound through the firewall. Which is WRONG?', options: ['ufw deny 443/tcp', 'ufw allow 443/tcp', 'ufw allow https', 'ufw allow 443'], correctIndex: 0, topic: 'Network', explanation: 'deny blocks the port — HTTPS traffic would be refused, not allowed.' },
   ],
   'command-detective': [
     { prompt: 'Output: /dev/sda2 80G 74G 6G 93% / — which command produced it?', options: ['df -h', 'free -h', 'du -sh /', 'lsblk'], correctIndex: 0, topic: 'Disk', explanation: 'df -h prints filesystems with size/used/avail/use% columns.' },
@@ -806,6 +869,9 @@ export const MCQ_DATA = {
     { prompt: 'Output: nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin. Which command/file?', options: ['cat /etc/passwd', 'cat /etc/shadow', 'getent hosts', 'id nobody'], correctIndex: 0, topic: 'Users', explanation: 'User account entries with UID/GID/shell live in /etc/passwd.' },
     { prompt: 'Output: app.log.gz: gzip compressed data, from Unix, original size 1048576. Which command?', options: ['file app.log.gz', 'ls -lh app.log.gz', 'stat app.log.gz', 'gzip -d app.log.gz'], correctIndex: 0, topic: 'Archives', explanation: 'file detects and prints the compression format and original size.' },
     { prompt: 'Output: etc/passwd / etc/shadow / etc/hostname / etc/nginx/nginx.conf. Which command?', options: ['tar -tzf etc.tar.gz', 'ls -l /etc', 'find /etc -name "*.conf"', 'cat etc.tar.gz'], correctIndex: 0, topic: 'Archives', explanation: 'tar -tzf lists archive contents without extracting them.' },
+    { prompt: 'Output: 10.0.0.1 via eth0 dev / default via 10.0.0.1 dev eth0. Which command?', options: ['ip route show', 'ip addr show', 'cat /etc/resolv.conf', 'ip neigh show'], correctIndex: 0, topic: 'Network', explanation: 'ip route shows the routing table including the default gateway.' },
+    { prompt: 'Output: 64 bytes from 93.184.216.34: icmp_seq=1 ttl=54 time=21.3 ms. Which command?', options: ['ping -c 1 example.com', 'traceroute example.com', 'curl example.com', 'dig example.com'], correctIndex: 0, topic: 'Network', explanation: 'The icmp_seq / ttl / time lines are the signature of a ping reply.' },
+    { prompt: 'Output: eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500 / inet 10.0.0.5. Which command?', options: ['ifconfig eth0', 'ip route show', 'ss -tlnp', 'hostname -I'], correctIndex: 0, topic: 'Network', explanation: 'The <UP,BROADCAST,RUNNING> flags and inet line are the classic ifconfig output.' },
   ],
   'predict-output': [
     { prompt: 'echo $((3 + 4 * 2)) — what prints?', options: ['11', '14', '20', '35'], correctIndex: 0, topic: 'Shell', explanation: 'Arithmetic follows precedence: 4*2=8, 3+8=11.' },
@@ -836,6 +902,9 @@ export const MCQ_DATA = {
     { prompt: 'An admin ran systemctl stop nginx to "restart" it. What should they have used?', options: ['systemctl restart nginx', 'systemctl start nginx', 'systemctl daemon-reload', 'nginx -s stop'], correctIndex: 0, topic: 'Services', explanation: 'restart stops then starts; stop leaves it down.' },
     { prompt: 'A script tried to compress a whole folder with gzip and failed with "is a directory". Correct approach?', options: ['tar -czf backup.tar.gz /var/lib/mysql', 'gzip -r /var/lib/mysql', 'chmod 777 then gzip', 'split the files first'], correctIndex: 0, topic: 'Archives', explanation: 'gzip works on single files; to compress a whole tree, archive it with tar first (using -z for gzip).' },
     { prompt: 'An admin restored /backup/etc.tar.gz with tar -xf and it worked. What was missing from the review?', options: ['Verifying the restored files match the live ones (e.g. diff)', 'Compressing the archive', 'Running it as root', 'Nothing'], correctIndex: 0, topic: 'Archives', explanation: 'A backup is only proven once you restore it and compare the data with the source.' },
+    { prompt: 'An app is unreachable but ssh still works. What is the FIRST networking check?', options: ['ss -tlnp | grep :8080', 'rm -rf /tmp/*', 'apt update', 'reboot'], correctIndex: 0, topic: 'Network', explanation: 'Check whether the service actually listens on its port before touching anything else.' },
+    { prompt: 'ping to an IP works but DNS lookups fail. Where is the fault?', options: ['The resolver config (/etc/resolv.conf)', 'The network cable', 'The kernel', 'The firewall'], correctIndex: 0, topic: 'Network', explanation: 'IP-level connectivity is fine; the failure is name resolution, so check the nameserver config.' },
+    { prompt: 'Firewall was just enabled and SSH sessions dropped. How do you regain access?', options: ['Ask the console/out-of-band access and allow 22', 'Reboot the machine', 'Unplug the cable', 'Wait for the firewall to expire'], correctIndex: 0, topic: 'Network', explanation: 'Always allow SSH (ufw allow 22) before enabling ufw; recover via console or a temporary allow.' },
   ],
   'incident-response': [
     { prompt: 'ALERT: CPU at 98%, application unavailable, users cannot log in. Your FIRST step?', options: ['top', 'apt update', 'rm -rf /tmp/*', 'reboot'], correctIndex: 0, topic: 'Incident', explanation: 'top shows the culprit process before you change anything.' },
@@ -867,6 +936,10 @@ export const TICKET_DATA = {
     { priority: 'high', title: 'DNS seems broken', prompt: 'Check which DNS servers the machine is configured to use.', answer: 'cat /etc/resolv.conf', topic: 'Network', explanation: 'resolv.conf lists the nameservers.' },
     { priority: 'low', title: 'Schedule the nightly backup', prompt: 'Run /opt/backup.sh every night at 2am via cron.', answer: 'echo "0 2 * * * /opt/backup.sh" | crontab -', topic: 'Scheduling', explanation: 'The echoed cron line is installed with crontab -.', },
     { priority: 'high', title: 'Confirm a backup before restoring', prompt: 'nginx.conf was corrupted. Verify /backups/nginx-conf.tgz contains it WITHOUT extracting.', answer: 'tar -tzf /backups/nginx-conf.tgz', topic: 'Archives', explanation: 'tar -tzf lists the archive contents without touching the filesystem.' },
+    { priority: 'high', title: 'Interface has no IP', prompt: 'eth0 shows no address after boot. Display every interface and its addresses.', answer: 'ip addr show', topic: 'Network', explanation: 'ip addr show reveals missing/misconfigured addresses across interfaces.' },
+    { priority: 'high', title: 'Service not listening', prompt: 'The app is up but unreachable. Show which TCP ports are actually listening.', answer: 'ss -tln', topic: 'Network', explanation: 'ss -tln lists all listening TCP ports numerically.' },
+    { priority: 'critical', title: 'DNS outage for users', prompt: 'Users cannot resolve app.linuxlab.local. Query its A record directly.', answer: 'dig app.linuxlab.local A', topic: 'Network', explanation: 'dig queries the DNS server directly, bypassing any local cache.' },
+    { priority: 'high', title: 'Firewall hardening', prompt: 'Before go-live, allow inbound HTTPS (443) through ufw.', answer: 'ufw allow 443/tcp', topic: 'Network', explanation: 'ufw allow 443/tcp opens inbound HTTPS so the site is reachable.' },
   ],
 };
 
@@ -884,6 +957,8 @@ export const CHECKLIST_DATA = {
     { title: 'Test the response', prompt: 'Check that the server answers locally with curl.', answer: 'curl -I http://localhost', topic: 'Network', explanation: '-I fetches headers; 200/OK means it responds.' },
     { title: 'Open the firewall', prompt: 'Allow HTTPS (port 443) through ufw.', answer: 'ufw allow 443/tcp', topic: 'Network', explanation: 'ufw allow 443/tcp opens the port for TLS traffic.' },
     { title: 'Confirm the port', prompt: 'Show which port nginx is actually listening on.', answer: 'ss -tlnp | grep nginx', topic: 'Network', explanation: 'ss lists listening sockets; grep filters nginx.' },
+    { title: 'Verify external reachability', prompt: 'Trace the route packets take to the public site before announcing go-live.', answer: 'traceroute example.com', topic: 'Network', explanation: 'traceroute shows every hop so reachability issues are visible immediately.' },
+    { title: 'Verify DNS records', prompt: 'Confirm the site A record resolves to the correct IP.', answer: 'dig example.com A', topic: 'Network', explanation: 'dig prints the A record returned by the authoritative resolver.' },
   ],
 };
 
@@ -905,6 +980,9 @@ export const FREE_DATA = {
     { prompt: 'How would you troubleshoot a service that keeps crashing?', topic: 'Troubleshooting', model: 'systemctl status, journalctl -u for logs, check configs, resource limits, then restart or escalate.' },
     { prompt: 'Explain the difference between gzip, bzip2 and xz, and when you would use each.', topic: 'Archives', model: 'All compress a single file. gzip is fastest with a modest ratio, bzip2 compresses better, xz gives the best ratio but is slowest. With tar, pick the flag per need: -z gzip, -j bzip2, -J xz. Use xz for long-term storage of logs, gzip where speed matters.' },
     { prompt: 'How do you prove a backup actually works before you rely on it?', topic: 'Archives', model: 'Restore it into a scratch directory (tar -xf backup.tar.gz -C /tmp/restore), compare the restored data with the source using diff/cmp, and confirm the files are byte-identical.' },
+    { prompt: 'Walk through how you would diagnose a host that is up but unreachable by name.', topic: 'Network', model: 'Split the problem: check the local stack (ip addr show, ip route show), confirm the service listens (ss -tlnp), then test reachability (ping, traceroute) and name resolution (dig, nslookup). Each layer narrows the fault.' },
+    { prompt: 'What is the difference between ping and traceroute, and when is each the right tool?', topic: 'Network', model: 'ping tests end-to-end reachability and latency to one host; traceroute reveals each hop (RTT + name/IP) so you can find where packets stop. Use ping for a quick up/down, traceroute when ping fails to find the break.' },
+    { prompt: 'How does a DNS lookup actually work when you type nslookup example.com?', topic: 'Network', model: 'The resolver queries a configured nameserver, which walks the root, TLD and authoritative servers to fetch the A/AAAA record, then returns it with a TTL for caching.' },
   ],
 };
 
@@ -981,6 +1059,9 @@ export const CAREER_DATA = {
           { prompt: 'Show which process owns port 22.', answer: 'ss -tlnp | grep :22', topic: 'Network' },
           { prompt: 'Kill every process named "leak".', answer: 'pkill leak', topic: 'Processes' },
           { prompt: 'Watch the journal for a unit live.', answer: 'journalctl -u myapp -f', topic: 'Logs' },
+          { prompt: 'Trace the network path to the database server.', answer: 'traceroute -n db.internal.example', topic: 'Network' },
+          { prompt: 'Show every interface IP to catch a misconfigured NIC.', answer: 'ip addr show', topic: 'Network' },
+          { prompt: 'Confirm port 443 is actually open with a firewall rule check.', answer: 'ufw status verbose', topic: 'Network' },
         ],
       },
     ],
@@ -1184,6 +1265,9 @@ export const DAILY_POOL = {
     { prompt: 'Set the group to devs on project.txt.', answer: 'chgrp devs project.txt', topic: 'Ownership' },
     { prompt: 'Show the hostname.', answer: 'hostname', topic: 'System' },
     { prompt: 'List the contents of backup.tar.gz without extracting.', answer: 'tar -tzf backup.tar.gz', topic: 'Archives' },
+    { prompt: 'Show every IP address on every interface.', answer: 'ip addr show', topic: 'Network' },
+    { prompt: 'Show the routing table and default gateway.', answer: 'ip route show', topic: 'Network' },
+    { prompt: 'Test reachability of example.com with 3 packets.', answer: 'ping -c 3 example.com', topic: 'Network' },
   ],
   mcq: [
     { prompt: 'Which command shows free memory?', options: ['free -h', 'df -h', 'ls -h', 'du -h'], correctIndex: 0, topic: 'System' },
@@ -1198,6 +1282,10 @@ export const DAILY_POOL = {
     { prompt: 'Which file lists user accounts?', options: ['/etc/passwd', '/etc/hosts', '/etc/fstab', '/proc/meminfo'], correctIndex: 0, topic: 'Users' },
     { prompt: 'Which flag makes tar compress with xz?', options: ['-J', '-z', '-j', '-c'], correctIndex: 0, topic: 'Archives' },
     { prompt: 'Which command shows what is inside backup.tar.gz WITHOUT extracting?', options: ['tar -tzf backup.tar.gz', 'tar -xzf backup.tar.gz', 'gzip -d backup.tar.gz', 'cat backup.tar.gz'], correctIndex: 0, topic: 'Archives' },
+    { prompt: 'Which command traces the route packets take to a host?', options: ['traceroute example.com', 'ping -c 1 example.com', 'ss -tlnp', 'ip addr show'], correctIndex: 0, topic: 'Network' },
+    { prompt: 'Which command resolves a DNS A record directly from a nameserver?', options: ['dig example.com A', 'cat /etc/hosts', 'grep example /etc/hosts', 'ping example.com'], correctIndex: 0, topic: 'Network' },
+    { prompt: 'Which command shows the IP-to-MAC (ARP) mapping table?', options: ['ip neigh show', 'ip addr show', 'ip route show', 'cat /etc/resolv.conf'], correctIndex: 0, topic: 'Network' },
+    { prompt: 'Which command shows which process owns a listening port?', options: ['ss -tlnp', 'df -h', 'ps aux | head', 'uptime'], correctIndex: 0, topic: 'Network' },
   ],
 };
 
@@ -1212,6 +1300,8 @@ export const SCENARIO_FALLBACK = [
   { prompt: 'Disk is at 90%. Find the biggest directories under /var.', answer: 'du -h --max-depth=1 /var | sort -rh | head -10', topic: 'Disk', explanation: 'du measures usage, sort -rh orders descending.' },
   { prompt: 'Backups stopped running. Show the crontab to inspect the schedule.', answer: 'crontab -l', topic: 'Scheduling', explanation: 'crontab -l prints the current cron entries.' },
   { prompt: 'A config was corrupted. Confirm /backups/etc.tar.gz contains /etc/passwd before restoring.', answer: 'tar -tzf /backups/etc.tar.gz | grep etc/passwd', topic: 'Archives', explanation: 'tar -tzf lists the archive; grep confirms the file is inside.' },
+  { prompt: 'The app is unreachable on port 8080. Check whether anything is listening.', answer: 'ss -tlnp | grep :8080', topic: 'Network', explanation: 'ss -tlnp lists TCP listeners with PIDs; grep isolates port 8080.' },
+  { prompt: 'DNS is failing for the internal name. Query the A record directly to bypass caches.', answer: 'dig app.internal.example A', topic: 'Network', explanation: 'dig talks to the resolver directly and prints the record it returns.' },
 ];
 
 // ---------------------------------------------------------------------------

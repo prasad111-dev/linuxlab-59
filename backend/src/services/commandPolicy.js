@@ -20,7 +20,8 @@ const READ_ONLY = new Set([
   'basename', 'dirname', 'seq', 'test', 'time', 'tty', 'stty', 'yes',
   'sha256sum', 'sha1sum', 'md5sum', 'cksum', 'find', 'namei', 'tree',
   'curl', 'wget', 'ss', 'netstat', 'lsof', 'ip', 'route', 'arp', 'ping',
-  'dig', 'nslookup', 'host', 'dnsdomainname', 'getent',
+  'ifconfig', 'traceroute', 'dig', 'nslookup', 'host', 'getent',
+  'dnsdomainname', 'nmap',
 ]);
 
 const PIPE_FILTERS = new Set([

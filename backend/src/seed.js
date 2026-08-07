@@ -1008,6 +1008,179 @@ const SEED_TASKS = [
       },
     ],
   },
+  {
+    title: 'Audit the network stack before go-live',
+    categorySlug: 'networking',
+    difficulty: 'intermediate',
+    estimatedMinutes: 45,
+    points: 200,
+    scenario:
+      'Your team is taking a brand-new Ubuntu host live as the payments web server, and the network ' +
+      'team wants a full connectivity audit before any traffic is switched over. Work through the standard ' +
+      'diagnostics layer by layer using the commands every Linux admin reaches for: interfaces and IP ' +
+      'addresses (ip a / ifconfig), connectivity (ping, traceroute), DNS resolution (nslookup, dig, ' +
+      'getent hosts), listening ports (ss / netstat), the static network configuration files ' +
+      '(/etc/netplan), and finally the firewall rules (ufw and iptables). Everything is local — no external ' +
+      'internet is required — so test against 127.0.0.1 and the loopback hostname the lab seeds into /etc/hosts.',
+    objectives: [
+      'Phase 1 - Inspect interfaces and IP addresses with ip a / ip addr show / ifconfig',
+      'Phase 2 - Test local connectivity with ping -c 3 127.0.0.1',
+      'Phase 3 - Trace the route to a target with traceroute -n 127.0.0.1',
+      'Phase 4 - Resolve the seeded app hostname with nslookup, dig and getent hosts, then ping it',
+      'Phase 5 - Review the DNS config files /etc/resolv.conf and /etc/hosts',
+      'Phase 6 - List listening sockets and owning processes with ss -tulpn / netstat -tulpn',
+      'Phase 7 - Declare a static IP config in /etc/netplan/01-netcfg.yaml for eth0',
+      'Phase 8 - Open web and SSH with ufw (allow 80/tcp, allow 22/tcp, enable)',
+      'Phase 9 - Inspect iptables and add an explicit ACCEPT for port 8080',
+      'Phase 10 - Confirm the final state with ip a, ss -tulpn, ufw status and iptables -L -n',
+    ],
+    requirements: [
+      'ip a (or ip addr show) lists eth0 with an IPv4 address; ifconfig shows it too',
+      'ping -c 3 127.0.0.1 receives replies',
+      'traceroute -n 127.0.0.1 reaches 127.0.0.1 in one hop',
+      'app.linuxlab.local resolves to 127.0.0.1 (getent hosts) and pings successfully',
+      'ss -tulpn / netstat -tulpn shows sshd listening on port 22',
+      '/etc/netplan/01-netcfg.yaml exists and declares a static address for eth0',
+      'ufw is active and allows 80/tcp and 22/tcp',
+      'iptables has an explicit ACCEPT rule for TCP port 8080',
+    ],
+    instructions: [
+      'Phase 1 - List interfaces and addresses: ip a (or ip addr show, or the classic ifconfig). Confirm eth0 has an IPv4 address.',
+      'Phase 2 - Test connectivity to the loopback: ping -c 3 127.0.0.1. Each reply line should read "bytes from".',
+      'Phase 3 - Trace the path packets take: traceroute -n 127.0.0.1 (-n skips reverse-DNS lookups so it works offline).',
+      'Phase 4 - The lab seeds a host entry for app.linuxlab.local in /etc/hosts. Look it up with nslookup app.linuxlab.local, dig app.linuxlab.local and host app.linuxlab.local, confirm the system resolver sees it with getent hosts app.linuxlab.local, then prove it is reachable with ping -c 2 app.linuxlab.local.',
+      'Phase 5 - Inspect the DNS config files: cat /etc/resolv.conf and cat /etc/hosts.',
+      'Phase 6 - List every listening socket with its owning process: ss -tulpn (or netstat -tulpn). sshd should be listening on port 22.',
+      'Phase 7 - Declare the static network config: create /etc/netplan/01-netcfg.yaml defining eth0 with dhcp4: false and an addresses: line (e.g. 192.168.10.10/24). You only need to write the config file — do not apply it.',
+      'Phase 8 - Open the firewall with ufw: ufw allow 80/tcp, ufw allow 22/tcp, then ufw --force enable, and verify with ufw status verbose.',
+      'Phase 9 - Inspect the raw firewall rules with iptables -L -n, add an explicit ACCEPT for the app backend port with iptables -A INPUT -p tcp --dport 8080 -j ACCEPT, and list again.',
+      'Phase 10 - Final audit: ip a, ss -tulpn, ufw status verbose and iptables -L -n should all confirm the healthy state.',
+    ],
+    expectedOutcome:
+      'ip a shows eth0 with an IPv4 address, ping and traceroute succeed against 127.0.0.1, ' +
+      'app.linuxlab.local resolves from /etc/hosts and pings, sshd is listening on port 22, ' +
+      '/etc/netplan/01-netcfg.yaml declares a static eth0 address, ufw is active with 80/tcp and 22/tcp ' +
+      'allowed, and iptables has an explicit ACCEPT for port 8080.',
+    learningOutcomes: [
+      'Inspect interfaces and addresses with ip and ifconfig',
+      'Test connectivity with ping and traceroute',
+      'Resolve hostnames with nslookup, dig and getent hosts',
+      'Audit listening sockets with ss and netstat',
+      'Declare static network configuration in netplan YAML',
+      'Manage firewall rules with ufw and iptables',
+    ],
+    hints: [
+      'ip a and ip addr show are the same command; ifconfig is the legacy equivalent.',
+      'Always bound ping with -c so it stops: ping -c 3 127.0.0.1.',
+      'traceroute -n avoids reverse-DNS lookups, so it works without external DNS.',
+      'app.linuxlab.local resolves because the lab seeds it into /etc/hosts — getent hosts consults that file.',
+      'ufw enable needs --force to skip the interactive confirmation prompt.',
+      'The netplan file only needs a valid-looking static block (dhcp4: false + addresses:); you do not need netplan apply.',
+    ],
+    solution:
+      'ip a\n' +
+      'ifconfig\n' +
+      'ping -c 3 127.0.0.1\n' +
+      'traceroute -n 127.0.0.1\n' +
+      'nslookup app.linuxlab.local\n' +
+      'dig app.linuxlab.local\n' +
+      'getent hosts app.linuxlab.local\n' +
+      'ping -c 2 app.linuxlab.local\n' +
+      'cat /etc/resolv.conf\n' +
+      'cat /etc/hosts\n' +
+      'ss -tulpn\n' +
+      'netstat -tulpn\n' +
+      "printf 'network:\\n  version: 2\\n  ethernets:\\n    eth0:\\n      dhcp4: false\\n      addresses:\\n        - 192.168.10.10/24\\n' > /etc/netplan/01-netcfg.yaml\n" +
+      'ufw allow 80/tcp\n' +
+      'ufw allow 22/tcp\n' +
+      'ufw --force enable\n' +
+      'ufw status verbose\n' +
+      'iptables -L -n\n' +
+      'iptables -A INPUT -p tcp --dport 8080 -j ACCEPT\n' +
+      'iptables -L -n',
+    setupCommands: [
+      'mkdir -p /run/sshd',
+      'printf "\\n127.0.0.1 app.linuxlab.local\\n" >> /etc/hosts',
+      'pgrep -x sshd >/dev/null 2>&1 || /usr/sbin/sshd',
+    ],
+    validationRules: [
+      { type: 'command_contains', label: 'Show the eth0 interface with ip a / ip addr show', params: { command: 'ip a', needle: 'eth0' } },
+      { type: 'command_contains', label: 'Show IPv4 addresses with ip a (inet lines)', params: { command: 'ip a', needle: 'inet ' } },
+      { type: 'command_contains', label: 'The classic ifconfig must also list eth0', params: { command: 'ifconfig', needle: 'eth0' } },
+      { type: 'command_contains', label: 'ping -c 3 127.0.0.1 must receive replies', params: { command: 'ping -c 3 127.0.0.1', needle: 'bytes from' } },
+      { type: 'command_contains', label: 'traceroute -n 127.0.0.1 must reach 127.0.0.1', params: { command: 'traceroute -n 127.0.0.1', needle: '127.0.0.1' } },
+      { type: 'command_contains', label: 'app.linuxlab.local must resolve to 127.0.0.1', params: { command: 'getent hosts app.linuxlab.local', needle: '127.0.0.1' } },
+      { type: 'command_contains', label: 'app.linuxlab.local must be reachable over ICMP', params: { command: 'ping -c 2 app.linuxlab.local', needle: 'bytes from' } },
+      { type: 'command_contains', label: 'ss -tulpn must show sshd listening on port 22', params: { command: 'ss -tulpn', needle: ':22' } },
+      { type: 'port_open', label: 'Open port 22 (sshd must accept connections)', params: { port: 22 } },
+      { type: 'file_exists', label: 'Create the static IP config /etc/netplan/01-netcfg.yaml', params: { path: '/etc/netplan/01-netcfg.yaml' } },
+      { type: 'file_contains', label: 'The netplan config must define the eth0 interface', params: { path: '/etc/netplan/01-netcfg.yaml', needle: 'eth0' } },
+      { type: 'file_contains', label: 'The netplan config must declare static addresses (addresses:)', params: { path: '/etc/netplan/01-netcfg.yaml', needle: 'addresses:' } },
+      { type: 'command_contains', label: 'ufw must allow inbound web traffic (80/tcp)', params: { command: 'ufw status verbose', needle: '80/tcp' } },
+      { type: 'command_contains', label: 'ufw must allow inbound SSH (22/tcp)', params: { command: 'ufw status verbose', needle: '22/tcp' } },
+      { type: 'command_contains', label: 'ufw must be active/enabled', params: { command: 'ufw status verbose', needle: 'Status: active' } },
+      { type: 'command_contains', label: 'iptables must have an ACCEPT rule for port 8080', params: { command: 'iptables -L -n', needle: 'dpt:8080' } },
+    ],
+    sections: [
+      {
+        title: 'Phase 1-3 — Interfaces, connectivity and route tracing',
+        instructions: [
+          'List every interface and IP address with ip a (or ip addr show) and the classic ifconfig.',
+          'Confirm eth0 carries an IPv4 address.',
+          'Test the loopback with ping -c 3 127.0.0.1.',
+          'Trace the path with traceroute -n 127.0.0.1.',
+        ],
+        checks: [
+          { type: 'command_contains', label: 'Show the eth0 interface with ip a / ip addr show', params: { command: 'ip a', needle: 'eth0' } },
+          { type: 'command_contains', label: 'Show IPv4 addresses with ip a (inet lines)', params: { command: 'ip a', needle: 'inet ' } },
+          { type: 'command_contains', label: 'The classic ifconfig must also list eth0', params: { command: 'ifconfig', needle: 'eth0' } },
+          { type: 'command_contains', label: 'ping -c 3 127.0.0.1 must receive replies', params: { command: 'ping -c 3 127.0.0.1', needle: 'bytes from' } },
+          { type: 'command_contains', label: 'traceroute -n 127.0.0.1 must reach 127.0.0.1', params: { command: 'traceroute -n 127.0.0.1', needle: '127.0.0.1' } },
+        ],
+      },
+      {
+        title: 'Phase 4-6 — DNS resolution, config files and listening ports',
+        instructions: [
+          'Look up app.linuxlab.local with nslookup, dig and host.',
+          'Confirm the system resolver sees it with getent hosts app.linuxlab.local and prove reachability with ping -c 2 app.linuxlab.local.',
+          'Review the DNS config files: cat /etc/resolv.conf and cat /etc/hosts.',
+          'List every listening socket with ss -tulpn (or netstat -tulpn) and identify what is on port 22.',
+        ],
+        checks: [
+          { type: 'command_contains', label: 'app.linuxlab.local must resolve to 127.0.0.1', params: { command: 'getent hosts app.linuxlab.local', needle: '127.0.0.1' } },
+          { type: 'command_contains', label: 'app.linuxlab.local must be reachable over ICMP', params: { command: 'ping -c 2 app.linuxlab.local', needle: 'bytes from' } },
+          { type: 'command_contains', label: 'ss -tulpn must show sshd listening on port 22', params: { command: 'ss -tulpn', needle: ':22' } },
+          { type: 'port_open', label: 'Open port 22 (sshd must accept connections)', params: { port: 22 } },
+        ],
+      },
+      {
+        title: 'Phase 7 — Static network configuration (netplan)',
+        instructions: [
+          'Create /etc/netplan/01-netcfg.yaml describing eth0 with dhcp4: false and an addresses: block.',
+          'You only need to write the config file — you do not need to run netplan apply.',
+        ],
+        checks: [
+          { type: 'file_exists', label: 'Create the static IP config /etc/netplan/01-netcfg.yaml', params: { path: '/etc/netplan/01-netcfg.yaml' } },
+          { type: 'file_contains', label: 'The netplan config must define the eth0 interface', params: { path: '/etc/netplan/01-netcfg.yaml', needle: 'eth0' } },
+          { type: 'file_contains', label: 'The netplan config must declare static addresses (addresses:)', params: { path: '/etc/netplan/01-netcfg.yaml', needle: 'addresses:' } },
+        ],
+      },
+      {
+        title: 'Phase 8-9 — Firewall: ufw and iptables',
+        instructions: [
+          'Allow web and SSH with ufw: ufw allow 80/tcp, ufw allow 22/tcp, then ufw --force enable.',
+          'Verify with ufw status verbose — it must be active and list both rules.',
+          'Inspect the raw rules with iptables -L -n, add an explicit ACCEPT for the app backend port, and list again.',
+        ],
+        checks: [
+          { type: 'command_contains', label: 'ufw must allow inbound web traffic (80/tcp)', params: { command: 'ufw status verbose', needle: '80/tcp' } },
+          { type: 'command_contains', label: 'ufw must allow inbound SSH (22/tcp)', params: { command: 'ufw status verbose', needle: '22/tcp' } },
+          { type: 'command_contains', label: 'ufw must be active/enabled', params: { command: 'ufw status verbose', needle: 'Status: active' } },
+          { type: 'command_contains', label: 'iptables must have an ACCEPT rule for port 8080', params: { command: 'iptables -L -n', needle: 'dpt:8080' } },
+        ],
+      },
+    ],
+  },
 ];
 
 async function seedDatabase() {

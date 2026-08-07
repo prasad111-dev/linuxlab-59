@@ -39,9 +39,9 @@ describe('buildDaily', () => {
 
 describe('interview data invariants', () => {
   it('quest / typing / flashcard pools have the advertised sizes', () => {
-    expect(QUESTS).toHaveLength(34);
-    expect(TYPING_COMMANDS).toHaveLength(34);
-    expect(FLASHCARDS).toHaveLength(130);
+    expect(QUESTS).toHaveLength(46);
+    expect(TYPING_COMMANDS).toHaveLength(46);
+    expect(FLASHCARDS).toHaveLength(140);
     expect(SCENARIO_FALLBACK.length).toBeGreaterThanOrEqual(5);
   });
 
