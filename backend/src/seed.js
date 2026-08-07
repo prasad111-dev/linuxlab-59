@@ -250,77 +250,179 @@ const SEED_TASKS = [
   {
     title: 'Onboard a TCS employee',
     categorySlug: 'user-management',
-    difficulty: 'beginner',
-    estimatedMinutes: 25,
-    points: 120,
+    difficulty: 'intermediate',
+    estimatedMinutes: 45,
+    points: 180,
     scenario:
-      'A new TCS employee, Priya Sharma, is joining the Infrastructure & Cloud team tomorrow morning. ' +
-      'She needs a Linux workstation account with the right group memberships, a secured home directory, ' +
-      'SSH key-based login, and sudo access for development tools. The HR ticket (INC-4821) is urgent — ' +
-      'complete all steps so she can start on day one.',
+      'TCS HR opened ticket INC-4821: Priya Sharma joins the Infrastructure & Cloud team as a Linux ' +
+      'administrator tomorrow morning. Her workstation account must be provisioned from scratch — verified ' +
+      'system state, team groups, a locked-down user (UID 2001) with a strong password policy, SSH key ' +
+      'login, sudo access, a renamed corporate account (priya.sharma) with a migrated home directory, and a ' +
+      'clean temporary-account lifecycle. Work through all 13 phases; the on-call engineer will audit the ' +
+      'final state on day one.',
     objectives: [
-      'Create user priya with a home directory and bash shell',
-      'Create groups tcs-employees and tcs-infra',
-      'Add priya to both groups',
-      'Set up SSH key authentication for priya',
-      'Grant priya sudo access for development tools',
-      'Set correct home directory permissions',
+      'Phase 1 - Verify who is logged in and inspect the system (whoami, who, w, id, $USER/$HOME, /etc/passwd, /etc/shadow, /etc/group)',
+      'Phase 2 - Create the team groups tcs-employees, tcs-infra, and developers',
+      'Phase 3 - Create user priya with UID 2001, a bash shell, and a home directory',
+      'Phase 4 - Set a password, enforce aging (expire 90 days, warn 10 days early), and lock/unlock the account',
+      'Phase 5 - Add priya to tcs-employees, tcs-infra, and sudo, then revoke developers access',
+      'Phase 6 - Configure SSH key login for priya (.ssh 700, authorized_keys 600, owned by priya)',
+      'Phase 7 - Secure the home directory (mode 700, owned priya:priya)',
+      'Phase 8 - Review login history with last, lastb, lastlog, users, and loginctl',
+      'Phase 9 - Rename the account to priya.sharma and migrate the home directory',
+      'Phase 10 - Manage priya.sharma processes with ps and pkill',
+      'Phase 11 - Verify account switching (su) and sudo access',
+      'Phase 12 - Inspect the /etc user/group configuration files and login defaults',
+      'Phase 13 - Provision a temporary tempdev account and remove it cleanly at the end',
     ],
     requirements: [
-      'User priya exists with /bin/bash as login shell',
-      'Group tcs-employees exists',
-      'Group tcs-infra exists',
-      'priya is a member of both tcs-employees and tcs-infra',
-      '/home/priya/.ssh/authorized_keys exists and is readable by priya',
-      'priya has sudo access (is in the sudo group)',
-      '/home/priya is owned by priya:priya with permissions 700',
+      'Groups tcs-employees, tcs-infra, and developers exist',
+      'User priya.sharma exists with UID 2001, a /bin/bash login shell, and home directory /home/priya.sharma',
+      'The old priya account no longer exists (rename completed)',
+      'priya.sharma is a member of priya, sudo, tcs-employees, and tcs-infra, and was removed from developers',
+      'Password is set, the account is unlocked, and aging is enforced (min 7, max 90, warn 10)',
+      'priya.sharma can use sudo (sudo -l grants (ALL) ALL)',
+      '/home/priya.sharma is mode 700 and owned priya.sharma:priya',
+      '/home/priya.sharma/.ssh is mode 700 and /home/priya.sharma/.ssh/authorized_keys exists with mode 600, both owned priya.sharma:priya',
+      'The temporary tempdev account was removed (must not exist at the end)',
     ],
     instructions: [
-      'Create the tcs-employees and tcs-infra groups first.',
-      'Create priya with a home directory, bash shell, and primary group priya.',
-      'Add priya to both tcs-employees and tcs-infra groups.',
-      'Create /home/priya/.ssh and add an authorized_keys file with a test public key.',
-      'Add priya to the sudo group for development tool access.',
-      'Lock down the home directory: owner priya, mode 700.',
-      'Verify with: id priya, ls -la /home/priya/.ssh/, sudo -l -U priya',
+      'Phase 1 - Confirm you are root with whoami, who, w, id, echo $USER and echo $HOME, then review the account files: cat /etc/passwd, cut -d: -f1 /etc/passwd, cat /etc/shadow, cat /etc/group.',
+      'Phase 2 - Create the groups with: groupadd tcs-employees, groupadd tcs-infra, groupadd developers.',
+      'Phase 3 - Create priya with a home directory, UID 2001, and bash shell: useradd -m -u 2001 -s /bin/bash priya. Verify with id priya and ls -la /home/priya.',
+      'Phase 4 - Set the password (interactive): passwd priya, then enforce aging with chage -M 90 priya, chage -m 7 priya, chage -W 10 priya, and review with chage -l priya. Demonstrate the lock/unlock lifecycle with passwd -l priya, passwd -S priya, passwd -u priya, then show account expiry handling with chage -E 0 priya and chage -E -1 priya.',
+      'Phase 5 - Add membership in one shot: usermod -aG tcs-employees,tcs-infra,developers,sudo priya, then revoke developers access with gpasswd -d priya developers. Confirm with groups priya.',
+      'Phase 6 - Set up SSH keys: mkdir -p /home/priya/.ssh, chmod 700 /home/priya/.ssh, write a test public key to /home/priya/.ssh/authorized_keys, chmod 600 it, and chown -R priya:priya /home/priya/.ssh.',
+      'Phase 7 - Secure the home: chmod 700 /home/priya and chown -R priya:priya /home/priya, then confirm with ls -ld /home/priya.',
+      'Phase 8 - Review login records with last, lastb, lastlog, users, and loginctl.',
+      'Phase 9 - Rename the corporate account and migrate the home: usermod -l priya.sharma priya, then usermod -d /home/priya.sharma -m priya.sharma. Verify with id priya.sharma and ls -ld /home/priya.sharma.',
+      'Phase 10 - List priya.sharma processes with ps -u priya.sharma and terminate them with pkill -u priya.sharma.',
+      'Phase 11 - Verify switching and privileges: su priya.sharma (switch, then exit) and sudo -i or sudo -l -U priya.sharma.',
+      'Phase 12 - Inspect the configuration: cat /etc/passwd, cat /etc/shadow, cat /etc/group, cat /etc/gshadow, cat /etc/login.defs, and ls -la /etc/skel.',
+      'Phase 13 - Provision a temporary account: useradd tempdev, verify with id tempdev, then remove it with userdel -r tempdev and confirm it is gone (id tempdev must fail).',
     ],
     expectedOutcome:
-      'id priya shows membership in priya, sudo, tcs-employees, and tcs-infra groups. ' +
-      '/home/priya/.ssh/authorized_keys exists and the home directory is mode 700.',
+      'id priya.sharma shows UID 2001 and membership in priya, sudo, tcs-employees, and tcs-infra. ' +
+      'passwd -S priya.sharma reports an unlocked account (P) with aging 7 90 10 and chage -l shows the ' +
+      '90-day policy. /home/priya.sharma and .ssh are mode 700/600 with priya.sharma:priya ownership, the ' +
+      'old priya account and tempdev are gone, and sudo -l -U priya.sharma grants (ALL) ALL.',
     learningOutcomes: [
-      'Create users and groups for enterprise environments',
-      'Set up SSH key-based authentication',
-      'Manage sudo access for developers',
-      'Secure home directory permissions',
+      'Create and harden enterprise user accounts (UID, shell, home)',
+      'Enforce password aging and the account lock/unlock lifecycle',
+      'Manage group membership, including sudo grants and revocation',
+      'Configure SSH key-based authentication with correct ownership',
+      'Rename accounts and migrate home directories with usermod',
+      'Provision and tear down temporary accounts safely',
     ],
     hints: [
-      'Use groupadd for each group, then useradd -m -s /bin/bash -G tcs-employees,tcs-infra priya.',
-      'SSH keys go in /home/priya/.ssh/authorized_keys — create the .ssh dir first.',
-      'Add sudo access with: usermod -aG sudo priya',
-      'Home directory permissions: chmod 700 /home/priya',
+      'Confirm you are root first: whoami (you will be root in this lab).',
+      'Create priya with: useradd -m -u 2001 -s /bin/bash priya — the -m flag creates /home/priya.',
+      'passwd priya is interactive: type the password when prompted, then enforce aging with chage -M 90 -m 7 -W 10 priya.',
+      'Membership in one shot: usermod -aG tcs-employees,tcs-infra,sudo priya, then gpasswd -d priya developers.',
+      'SSH key flow: mkdir -p /home/priya/.ssh, chmod 700, write the key to authorized_keys, chmod 600, chown -R priya:priya.',
+      'Rename: usermod -l priya.sharma priya, then usermod -d /home/priya.sharma -m priya.sharma.',
+      'tempdev lifecycle: useradd tempdev, verify with id tempdev, then userdel -r tempdev.',
     ],
     solution:
+      '# Phase 1 - verify the current user and system info\n' +
+      'whoami\n' +
+      'who\n' +
+      'w\n' +
+      'id\n' +
+      'echo $USER\n' +
+      'echo $HOME\n' +
+      'cat /etc/passwd\n' +
+      'cut -d: -f1 /etc/passwd\n' +
+      'cat /etc/shadow\n' +
+      'cat /etc/group\n' +
+      '# Phase 2 - create the team groups\n' +
       'groupadd tcs-employees\n' +
       'groupadd tcs-infra\n' +
-      'useradd -m -s /bin/bash -G tcs-employees,tcs-infra,sudo priya\n' +
+      'groupadd developers\n' +
+      '# Phase 3 - create priya (UID 2001, bash, home dir)\n' +
+      'useradd -m -u 2001 -s /bin/bash priya\n' +
+      'id priya\n' +
+      'ls -la /home/priya\n' +
+      '# Phase 4 - password, aging policy, lock/unlock, expiry demo\n' +
+      'passwd priya\n' +
+      'chage -M 90 priya\n' +
+      'chage -m 7 priya\n' +
+      'chage -W 10 priya\n' +
+      'chage -l priya\n' +
+      'passwd -l priya\n' +
+      'passwd -S priya\n' +
+      'passwd -u priya\n' +
+      'chage -E 0 priya\n' +
+      'chage -E -1 priya\n' +
+      '# Phase 5 - membership incl. sudo, then revoke developers\n' +
+      'usermod -aG tcs-employees,tcs-infra,developers,sudo priya\n' +
+      'gpasswd -d priya developers\n' +
+      'groups priya\n' +
+      '# Phase 6 - SSH key authentication\n' +
       'mkdir -p /home/priya/.ssh\n' +
-      'echo "ssh-rsa AAAA...priya-key" > /home/priya/.ssh/authorized_keys\n' +
       'chmod 700 /home/priya/.ssh\n' +
+      'echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB... priya-sharma@tcs" > /home/priya/.ssh/authorized_keys\n' +
       'chmod 600 /home/priya/.ssh/authorized_keys\n' +
       'chown -R priya:priya /home/priya/.ssh\n' +
-      'chmod 700 /home/priya',
+      '# Phase 7 - secure the home directory\n' +
+      'chmod 700 /home/priya\n' +
+      'chown -R priya:priya /home/priya\n' +
+      'ls -ld /home/priya\n' +
+      '# Phase 8 - review login history\n' +
+      'last\n' +
+      'lastb\n' +
+      'lastlog\n' +
+      'users\n' +
+      'loginctl\n' +
+      '# Phase 9 - rename to priya.sharma and migrate the home\n' +
+      'usermod -l priya.sharma priya\n' +
+      'usermod -d /home/priya.sharma -m priya.sharma\n' +
+      'id priya.sharma\n' +
+      'ls -ld /home/priya.sharma\n' +
+      '# Phase 10 - manage processes\n' +
+      'ps -u priya.sharma\n' +
+      'pkill -u priya.sharma\n' +
+      '# Phase 11 - verify su and sudo\n' +
+      'su priya.sharma\n' +
+      'sudo -i\n' +
+      '# Phase 12 - inspect /etc user and group configuration\n' +
+      'cat /etc/passwd\n' +
+      'cat /etc/shadow\n' +
+      'cat /etc/group\n' +
+      'cat /etc/gshadow\n' +
+      'cat /etc/login.defs\n' +
+      'ls -la /etc/skel\n' +
+      '# Phase 13 - tempdev user lifecycle (create then remove)\n' +
+      'useradd tempdev\n' +
+      'id tempdev\n' +
+      'userdel -r tempdev\n' +
+      'id tempdev',
     setupCommands: [],
     validationRules: [
-      { type: 'user_exists', label: 'Create the user priya', params: { username: 'priya' } },
       { type: 'group_exists', label: 'Create the group tcs-employees', params: { group: 'tcs-employees' } },
       { type: 'group_exists', label: 'Create the group tcs-infra', params: { group: 'tcs-infra' } },
-      { type: 'command_contains', label: 'Add priya to the tcs-employees group', params: { command: 'groups priya', needle: 'tcs-employees' } },
-      { type: 'command_contains', label: 'Add priya to the tcs-infra group', params: { command: 'groups priya', needle: 'tcs-infra' } },
-      { type: 'command_contains', label: 'Set priya login shell to /bin/bash', params: { command: 'getent passwd priya', needle: '/bin/bash' } },
-      { type: 'file_exists', label: 'Create /home/priya/.ssh/authorized_keys (for SSH key login)', params: { path: '/home/priya/.ssh/authorized_keys' } },
-      { type: 'file_permissions', label: 'Set /home/priya/.ssh/authorized_keys permissions to 600', params: { path: '/home/priya/.ssh/authorized_keys', expected: '600' } },
-      { type: 'file_permissions', label: 'Set /home/priya permissions to 700', params: { path: '/home/priya', expected: '700' } },
-      { type: 'command_contains', label: 'Give priya sudo access (add priya to the sudo group)', params: { command: 'groups priya', needle: 'sudo' } },
+      { type: 'group_exists', label: 'Create the group developers', params: { group: 'developers' } },
+      { type: 'user_exists', label: 'Rename priya to priya.sharma (account exists)', params: { username: 'priya.sharma' } },
+      { type: 'user_absent', label: 'Rename priya to priya.sharma (old priya account is gone)', params: { username: 'priya' } },
+      { type: 'user_absent', label: 'Remove the temporary tempdev account at the end', params: { username: 'tempdev' } },
+      { type: 'command_contains', label: 'Create priya with UID 2001', params: { command: 'getent passwd priya.sharma', needle: '2001' } },
+      { type: 'command_contains', label: 'Set priya.sharma login shell to /bin/bash', params: { command: 'getent passwd priya.sharma', needle: '/bin/bash' } },
+      { type: 'command_contains', label: 'Migrate the home directory to /home/priya.sharma', params: { command: 'getent passwd priya.sharma', needle: '/home/priya.sharma' } },
+      { type: 'command_contains', label: 'Set a password and leave the account unlocked', params: { command: 'passwd -S priya.sharma', needle: ' P ' } },
+      { type: 'command_contains', label: 'Enforce password aging (min 7, max 90, warn 10)', params: { command: 'passwd -S priya.sharma', needle: '7 90 10' } },
+      { type: 'command_contains', label: 'Add priya.sharma to the tcs-employees group', params: { command: 'groups priya.sharma', needle: 'tcs-employees' } },
+      { type: 'command_contains', label: 'Add priya.sharma to the tcs-infra group', params: { command: 'groups priya.sharma', needle: 'tcs-infra' } },
+      { type: 'command_contains', label: 'Add priya.sharma to the sudo group', params: { command: 'groups priya.sharma', needle: 'sudo' } },
+      { type: 'command_contains', label: 'Grant priya.sharma sudo privileges (sudo -l shows (ALL) ALL)', params: { command: 'sudo -l -U priya.sharma', needle: 'ALL) ALL' } },
+      { type: 'dir_exists', label: 'Create the /home/priya.sharma home directory', params: { path: '/home/priya.sharma' } },
+      { type: 'dir_exists', label: 'Create the /home/priya.sharma/.ssh directory', params: { path: '/home/priya.sharma/.ssh' } },
+      { type: 'file_exists', label: 'Create /home/priya.sharma/.ssh/authorized_keys', params: { path: '/home/priya.sharma/.ssh/authorized_keys' } },
+      { type: 'file_permissions', label: 'Set /home/priya.sharma/.ssh/authorized_keys permissions to 600', params: { path: '/home/priya.sharma/.ssh/authorized_keys', expected: '600' } },
+      { type: 'file_permissions', label: 'Set /home/priya.sharma/.ssh permissions to 700', params: { path: '/home/priya.sharma/.ssh', expected: '700' } },
+      { type: 'file_permissions', label: 'Set /home/priya.sharma permissions to 700', params: { path: '/home/priya.sharma', expected: '700' } },
+      { type: 'file_owner', label: 'Own /home/priya.sharma as priya.sharma:priya', params: { path: '/home/priya.sharma', expected: 'priya.sharma:priya' } },
+      { type: 'file_owner', label: 'Own /home/priya.sharma/.ssh as priya.sharma:priya', params: { path: '/home/priya.sharma/.ssh', expected: 'priya.sharma:priya' } },
+      { type: 'file_owner', label: 'Own /home/priya.sharma/.ssh/authorized_keys as priya.sharma:priya', params: { path: '/home/priya.sharma/.ssh/authorized_keys', expected: 'priya.sharma:priya' } },
     ],
   },
   {

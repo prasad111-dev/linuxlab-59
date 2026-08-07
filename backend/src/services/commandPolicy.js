@@ -11,6 +11,7 @@ const READ_ONLY = new Set([
   'ls', 'pwd', 'cd', 'cat', 'less', 'more', 'head', 'tail',
   'grep', 'egrep', 'fgrep', 'man', 'info', 'whatis', 'apropos', 'help',
   'clear', 'reset', 'history', 'fc', 'whoami', 'who', 'w', 'id', 'getent',
+  'users', 'last', 'lastb', 'lastlog', 'loginctl', 'ac', 'lastcomm',
   'groups', 'stat', 'uname', 'hostname', 'uptime', 'which', 'type',
   'whereis', 'env', 'printenv', 'export', 'source', 'echo', 'printf',
   'date', 'sleep', 'true', 'false', 'exit', 'logout', 'df', 'du', 'free',
@@ -34,6 +35,7 @@ const PACKAGE_WORDS = new Set([
 
 const USER_WORDS = new Set([
   'useradd', 'adduser', 'usermod', 'userdel', 'passwd', 'chpasswd', 'chsh', 'chfn', 'login', 'su',
+  'chage', 'pkill', 'kill', 'killall',
 ]);
 
 const GROUP_WORDS = new Set([
@@ -272,6 +274,11 @@ function buildPolicy(task) {
     }
   }
 
+  // User tasks manage each user's home directory (create, chmod, chown, ssh).
+  if (users.size > 0) {
+    for (const u of users) paths.add(`/home/${u}`);
+  }
+
   const hints = [];
   if (packages) hints.push('package management (apt/apt-get/dpkg)');
   if (users.size > 0) {
@@ -297,8 +304,18 @@ function buildPolicy(task) {
   };
 }
 
-function isAllowedAction(segment, policy) {
+function isAllowedAction(segment, policy, hadSudo = false) {
   if (policy.allowAll) return true;
+
+  // User-management tasks may verify privileges with `sudo -i` / `sudo -s` /
+  // `sudo -l`, or `sudo -l -U <user>` / `sudo -u <user>` when the target is one
+  // of the task's users. These forms make no sense without a managed user.
+  if (hadSudo && policy.users.size > 0) {
+    const t = segment.trim();
+    if (t === '-i' || t === '-s' || t === '-l') return true;
+    const m = t.match(/^-(?:l\s+-U|u)\s+(\S+)/);
+    if (m && policy.users.has(String(m[1]).replace(/^['"]|['"]$/g, ''))) return true;
+  }
 
   const word = firstWord(segment);
 
@@ -354,16 +371,18 @@ function checkCommand(line, policy) {
   const cleaned = cleanTerminalLine(line);
   const text = applyBackspaces(cleaned).trim();
   if (!text) return { allowed: true };
+  if (text.startsWith('#')) return { allowed: true }; // shell comment / no-op
 
   const segments = splitSegments(text);
   for (const rawSeg of segments) {
+    const hadSudo = /^\s*sudo(\s|$)/.test(rawSeg);
     const seg = stripPrefix(rawSeg);
     if (!seg) continue;
 
     const pipeline = splitPipeline(seg);
     const main = pipeline[0];
     if (!main) continue;
-    if (!isAllowedAction(main, policy)) {
+    if (!isAllowedAction(main, policy, hadSudo)) {
       return { allowed: false, command: firstWord(main), hint: policy.hint };
     }
     for (let i = 1; i < pipeline.length; i++) {

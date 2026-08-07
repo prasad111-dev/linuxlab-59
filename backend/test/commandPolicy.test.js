@@ -96,6 +96,49 @@ test('user commands only target the task users', () => {
   assert.equal(checkCommand('cat /etc/passwd', USER_TASK).allowed, true);
 });
 
+test('aging, process, and login-history commands work for user tasks', () => {
+  const USER_TASK = policy([
+    { type: 'user_exists', params: { username: 'rahul' } },
+    { type: 'group_exists', params: { group: 'devs' } },
+  ]);
+  assert.equal(checkCommand('chage -M 90 rahul', USER_TASK).allowed, true);
+  assert.equal(checkCommand('chage -m 7 rahul', USER_TASK).allowed, true);
+  assert.equal(checkCommand('chage -l rahul', USER_TASK).allowed, true);
+  assert.equal(checkCommand('chage -M 90 bob', USER_TASK).allowed, false);
+  assert.equal(checkCommand('pkill -u rahul', USER_TASK).allowed, true);
+  assert.equal(checkCommand('pkill -u bob', USER_TASK).allowed, false);
+  assert.equal(checkCommand('su rahul', USER_TASK).allowed, true);
+  // login-history inspection is read-only and always allowed
+  for (const cmd of ['last', 'lastb', 'lastlog', 'users', 'loginctl']) {
+    assert.equal(checkCommand(cmd, NGINX_TASK).allowed, true, cmd);
+    assert.equal(checkCommand(cmd, USER_TASK).allowed, true, cmd);
+  }
+});
+
+test('user tasks may manage each managed users home directory', () => {
+  const USER_TASK = policy([
+    { type: 'user_exists', params: { username: 'rahul' } },
+    { type: 'file_exists', params: { path: '/home/rahul/.ssh/authorized_keys' } },
+  ]);
+  assert.equal(checkCommand('mkdir -p /home/rahul/.ssh', USER_TASK).allowed, true);
+  assert.equal(checkCommand('chmod 700 /home/rahul', USER_TASK).allowed, true);
+  assert.equal(checkCommand('chmod 600 /home/rahul/.ssh/authorized_keys', USER_TASK).allowed, true);
+  assert.equal(checkCommand('chown -R rahul:rahul /home/rahul', USER_TASK).allowed, true);
+  assert.equal(checkCommand('chmod 700 /home/bob', USER_TASK).allowed, false);
+});
+
+test('sudo verification is allowed for user tasks, scoped to the task users', () => {
+  const USER_TASK = policy([{ type: 'user_exists', params: { username: 'rahul' } }]);
+  assert.equal(checkCommand('sudo -i', USER_TASK).allowed, true);
+  assert.equal(checkCommand('sudo -s', USER_TASK).allowed, true);
+  assert.equal(checkCommand('sudo -l', USER_TASK).allowed, true);
+  assert.equal(checkCommand('sudo -l -U rahul', USER_TASK).allowed, true);
+  assert.equal(checkCommand('sudo -u rahul id', USER_TASK).allowed, true);
+  assert.equal(checkCommand('sudo -l -U bob', USER_TASK).allowed, false);
+  assert.equal(checkCommand('sudo -i', NGINX_TASK).allowed, false);
+  assert.equal(checkCommand('sudo rm -rf /', NGINX_TASK).allowed, false);
+});
+
 test('safe file commands may create parent dirs of task paths, destructive ones may not', () => {
   assert.equal(checkCommand('mkdir -p /var/www/acme', NGINX_TASK).allowed, true);
   assert.equal(checkCommand('mkdir -p /var/www', NGINX_TASK).allowed, true);
