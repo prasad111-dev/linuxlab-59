@@ -51,6 +51,7 @@ async function buildApp() {
       cb(null, ok);
     },
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
   });
 
   await app.register(compress, { global: true, threshold: 1024 });
