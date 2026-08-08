@@ -1,4 +1,5 @@
 const Attempt = require('../models/Attempt');
+const InterviewSession = require('../models/InterviewSession');
 const User = require('../models/User');
 
 function periodStart(period, now = new Date()) {
@@ -15,26 +16,59 @@ function periodStart(period, now = new Date()) {
   return null;
 }
 
-async function getLeaderboard(period = 'all') {
-  const match = { pointsAwarded: { $gt: 0 } };
-  const start = periodStart(period);
-  if (start) match.startedAt = { $gte: start };
+/** Pure merge of practical-attempt rows and interview-session rows, sorted by
+ *  points (desc), passed tasks (desc), then user id for stable ranks. Kept
+ *  free of the DB so it can be unit-tested. */
+function mergePoints(attemptRows, interviewRows) {
+  const merged = new Map();
+  for (const a of attemptRows) {
+    merged.set(String(a._id), { _id: a._id, points: a.points, tasks: a.tasks, passedTasks: a.passedTasks });
+  }
+  for (const i of interviewRows) {
+    const key = String(i._id);
+    const entry = merged.get(key) || { _id: i._id, points: 0, tasks: 0, passedTasks: 0 };
+    entry.points += i.interviewPoints;
+    merged.set(key, entry);
+  }
+  return [...merged.values()].sort(
+    (a, b) =>
+      b.points - a.points ||
+      b.passedTasks - a.passedTasks ||
+      (String(a._id) < String(b._id) ? -1 : 1)
+  );
+}
 
-  const rows = await Attempt.aggregate([
-    { $match: match },
-    {
-      $group: {
-        _id: '$user',
-        points: { $sum: '$pointsAwarded' },
-        tasks: { $sum: 1 },
-        passedTasks: { $sum: { $cond: ['$passed', 1, 0] } },
+async function aggregatePoints(start) {
+  const attemptMatch = { pointsAwarded: { $gt: 0 } };
+  const interviewMatch = { pointsAwarded: { $gt: 0 } };
+  if (start) {
+    attemptMatch.startedAt = { $gte: start };
+    interviewMatch.createdAt = { $gte: start };
+  }
+
+  const [attemptRows, interviewRows] = await Promise.all([
+    Attempt.aggregate([
+      { $match: attemptMatch },
+      {
+        $group: {
+          _id: '$user',
+          points: { $sum: '$pointsAwarded' },
+          tasks: { $sum: 1 },
+          passedTasks: { $sum: { $cond: ['$passed', 1, 0] } },
+        },
       },
-    },
-    // Tie-break: more passed tasks first, then stable by user id so ranks are
-    // deterministic instead of Mongo's arbitrary order.
-    { $sort: { points: -1, passedTasks: -1, _id: 1 } },
-    { $limit: 50 },
+    ]),
+    InterviewSession.aggregate([
+      { $match: interviewMatch },
+      { $group: { _id: '$user', interviewPoints: { $sum: '$pointsAwarded' } } },
+    ]),
   ]);
+
+  return mergePoints(attemptRows, interviewRows);
+}
+
+async function getLeaderboard(period = 'all') {
+  const rows = (await aggregatePoints(periodStart(period))).slice(0, 50);
 
   const ids = rows.map((r) => r._id);
   const users = await User.find({ _id: { $in: ids } })
@@ -45,7 +79,7 @@ async function getLeaderboard(period = 'all') {
 
   return rows.map((r, i) => ({
     rank: i + 1,
-    user: userMap.get(r._id.toString()) || null,
+    user: userMap.get(String(r._id)) || null,
     points: r.points,
     tasks: r.tasks,
     passedTasks: r.passedTasks,
@@ -53,17 +87,9 @@ async function getLeaderboard(period = 'all') {
 }
 
 async function getUserRank(userId, period = 'all') {
-  const match = { pointsAwarded: { $gt: 0 } };
-  const start = periodStart(period);
-  if (start) match.startedAt = { $gte: start };
-
-  const rows = await Attempt.aggregate([
-    { $match: match },
-    { $group: { _id: '$user', points: { $sum: '$pointsAwarded' }, passedTasks: { $sum: { $cond: ['$passed', 1, 0] } } } },
-    { $sort: { points: -1, passedTasks: -1, _id: 1 } },
-  ]);
-  const rank = rows.findIndex((r) => r._id && r._id.toString() === userId.toString());
+  const rows = await aggregatePoints(periodStart(period));
+  const rank = rows.findIndex((r) => String(r._id) === String(userId));
   return rank === -1 ? null : rank + 1;
 }
 
-module.exports = { getLeaderboard, getUserRank, periodStart };
+module.exports = { getLeaderboard, getUserRank, periodStart, mergePoints };

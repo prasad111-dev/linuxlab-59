@@ -35,7 +35,7 @@ export default function Leaderboard() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Leaderboard</h1>
-          <p className="mt-1 text-slate-500 dark:text-slate-400">Earn points by solving practicals — climb the ranks.</p>
+          <p className="mt-1 text-slate-500 dark:text-slate-400">Earn points by solving practicals and answering interview drills — climb the ranks.</p>
         </div>
         <div className="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-white/5">
           {PERIODS.map((p) => {
@@ -76,7 +76,8 @@ export default function Leaderboard() {
           <div className="py-16 text-center text-slate-500 dark:text-slate-400">No submissions yet — be the first to earn points!</div>
         )}
         {!loading && rows.length > 0 && (
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:text-slate-400">
                 <th className="px-4 py-3">Rank</th>
@@ -107,12 +108,14 @@ export default function Leaderboard() {
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
       </div>
 
       <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
-        Points come from task completions plus bonuses for speed, using no hints, and daily streaks.
+        Points come from task completions plus bonuses for speed, using no hints, and daily streaks — and 1 point per correct
+        interview-practice answer.
       </p>
     </div>
   );

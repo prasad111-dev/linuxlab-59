@@ -160,6 +160,9 @@ module.exports = async function interviewRoutes(app) {
         ? Math.round((score / maxScore) * 100)
         : 0;
     const weakTopics = computeWeakTopics(answers);
+    // 1 leaderboard point per correct answer — every interview activity mode
+    // reports its answers with a `correct` flag, so this applies uniformly.
+    const pointsAwarded = Math.max(0, Math.min(answers.filter((a) => a.correct).length, maxScore));
 
     const session = await InterviewSession.create({
       user: req.userId,
@@ -167,6 +170,7 @@ module.exports = async function interviewRoutes(app) {
       score,
       maxScore,
       accuracy,
+      pointsAwarded,
       timeTakenSeconds: Math.max(0, Math.floor(Number(body.timeTakenSeconds) || 0)),
       wpm: Math.max(0, Math.round(Number(body.wpm) || 0)),
       answers,
@@ -190,11 +194,16 @@ module.exports = async function interviewRoutes(app) {
     session.aiReport = aiReport;
     await session.save();
 
-    // Practice counts toward the daily streak, not just logging in
+    // Practice counts toward the daily streak, not just logging in. Correct
+    // answers also earn leaderboard points (1 point each) via a single atomic
+    // write so concurrent sessions can never clobber each other's increment.
     const user = await User.findById(req.userId);
     if (user) {
       updateStreak(user, new Date());
-      await user.save();
+      const update = { $set: { streak: user.streak } };
+      if (pointsAwarded > 0) update.$inc = { points: pointsAwarded };
+      await User.updateOne({ _id: user._id }, update);
+      user.points += pointsAwarded;
     }
 
     return session.toSafeJSON();

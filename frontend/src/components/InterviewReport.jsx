@@ -77,7 +77,7 @@ export default function InterviewReport({ session, onRetry }) {
           Your AI analysis is ready below — it is saved to your interview history.
         </p>
 
-        <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="card text-center">
             <p className="text-2xl font-black">{correct}/{total}</p>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Correct</p>
@@ -91,6 +91,10 @@ export default function InterviewReport({ session, onRetry }) {
           <div className="card text-center">
             <p className="text-2xl font-black">{session.wpm || '—'}</p>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">WPM</p>
+          </div>
+          <div className="card text-center">
+            <p className="text-2xl font-black text-brand-500">+{session.pointsAwarded ?? 0}</p>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Points earned</p>
           </div>
         </div>
 
