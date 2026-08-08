@@ -96,6 +96,7 @@ export default function TypingShooter() {
       finish();
       return;
     }
+    if (!value) return;
     const typed = value;
     const correct = typed === target;
     const cmdErrors = correct ? 0 : Math.max(1, Math.abs(typed.length - target.length) + 1);

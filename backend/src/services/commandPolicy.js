@@ -16,7 +16,7 @@ const READ_ONLY = new Set([
   'whereis', 'env', 'printenv', 'export', 'source', 'echo', 'printf',
   'date', 'sleep', 'true', 'false', 'exit', 'logout', 'df', 'du', 'free',
   'top', 'ps', 'pgrep', 'pidof', 'wc', 'sort', 'uniq', 'cut', 'tr', 'awk',
-  'xargs', 'nl', 'od', 'hexdump', 'file', 'readlink', 'realpath',
+  'nl', 'od', 'hexdump', 'file', 'readlink', 'realpath',
   'basename', 'dirname', 'seq', 'test', 'time', 'tty', 'stty', 'yes',
   'sha256sum', 'sha1sum', 'md5sum', 'cksum', 'find', 'namei', 'tree',
   'curl', 'wget', 'ss', 'netstat', 'lsof', 'ip', 'route', 'arp', 'ping',
@@ -145,6 +145,30 @@ function targetIsParentDir(segment, paths) {
     }
   }
   return false;
+}
+
+/**
+ * First non-flag word of an `xargs ...` segment — the command xargs would run.
+ * Returns '' when nothing executable follows (bare xargs is a no-op).
+ */
+function xargsExecutedCommand(segment) {
+  const NO_ARG = /^-(?:0|o|r|t|p|v|q|x)\b/;
+  const WITH_ARG = /^-(?:n|P|L|l|s|S|R|T|d|E|I)\b/;
+  const INLINE = /^-(?:d|E|I)\S/;
+  const tokens = String(segment).split(/\s+/);
+  for (let i = 1; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (!t) continue;
+    if (NO_ARG.test(t)) continue;
+    if (INLINE.test(t)) continue; // flag with attached value (-I{})
+    if (WITH_ARG.test(t)) {
+      i += 1; // skip the flag's separate argument (-n 1)
+      continue;
+    }
+    if (t.startsWith('-')) continue;
+    return t.replace(/^['"]|['"]$/g, '');
+  }
+  return '';
 }
 
 /**
@@ -307,7 +331,6 @@ function buildPolicy(task) {
 
 function isAllowedAction(segment, policy, hadSudo = false) {
   if (policy.allowAll) return true;
-
   // User-management tasks may verify privileges with `sudo -i` / `sudo -s` /
   // `sudo -l`, or `sudo -l -U <user>` / `sudo -u <user>` when the target is one
   // of the task's users. These forms make no sense without a managed user.
@@ -327,6 +350,14 @@ function isAllowedAction(segment, policy, hadSudo = false) {
   }
 
   if (READ_ONLY.has(word)) return true;
+
+  // xargs executes whatever follows its flags, so the command it runs must
+  // itself be policy-safe — otherwise `echo /etc/shadow | xargs rm -f` would
+  // slip arbitrary commands past the gate.
+  if (word === 'xargs') {
+    const target = xargsExecutedCommand(segment);
+    return !target || READ_ONLY.has(target) || PIPE_FILTERS.has(target);
+  }
 
   if (PACKAGE_WORDS.has(word)) return policy.packages;
   if (USER_WORDS.has(word)) {
@@ -374,6 +405,16 @@ function checkCommand(line, policy) {
   if (!text) return { allowed: true };
   if (text.startsWith('#')) return { allowed: true }; // shell comment / no-op
 
+  // Command substitution (`$(...)`, backticks) can hide arbitrary commands and
+  // bypass the policy — block it outright. Variable expansion `${...}` is fine.
+  if (text.includes('$(') || text.includes('`')) {
+    return {
+      allowed: false,
+      command: '$(…) or backticks',
+      hint: 'command substitution is not allowed in this lab',
+    };
+  }
+
   const segments = splitSegments(text);
   for (const rawSeg of segments) {
     const hadSudo = /^\s*sudo(\s|$)/.test(rawSeg);
@@ -387,8 +428,17 @@ function checkCommand(line, policy) {
       return { allowed: false, command: firstWord(main), hint: policy.hint };
     }
     for (let i = 1; i < pipeline.length; i++) {
-      const w = firstWord(stripPrefix(pipeline[i]));
-      if (w && !PIPE_FILTERS.has(w) && !(CRON_WORDS.has(w) && policy.cron)) {
+      const filterSeg = stripPrefix(pipeline[i]);
+      const w = firstWord(filterSeg);
+      if (!w) continue;
+      if (w === 'xargs') {
+        const target = xargsExecutedCommand(filterSeg);
+        if (target && !READ_ONLY.has(target) && !PIPE_FILTERS.has(target)) {
+          return { allowed: false, command: target, hint: policy.hint };
+        }
+        continue;
+      }
+      if (!PIPE_FILTERS.has(w) && !(CRON_WORDS.has(w) && policy.cron)) {
         return { allowed: false, command: w, hint: policy.hint };
       }
     }

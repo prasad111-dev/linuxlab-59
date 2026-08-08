@@ -1101,7 +1101,8 @@ const SEED_TASKS = [
     setupCommands: [
       'mkdir -p /run/sshd',
       'printf "\\n127.0.0.1 app.linuxlab.local\\n" >> /etc/hosts',
-      'pgrep -x sshd >/dev/null 2>&1 || /usr/sbin/sshd',
+      'ssh-keygen -A >/dev/null 2>&1 || true',
+      'pgrep -x sshd >/dev/null 2>&1 || { systemctl stop ssh.socket >/dev/null 2>&1 || true; /usr/sbin/sshd; }',
     ],
     validationRules: [
       { type: 'command_contains', label: 'Show the eth0 interface with ip a / ip addr show', params: { command: 'ip a', needle: 'eth0' } },

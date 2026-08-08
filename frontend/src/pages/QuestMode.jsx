@@ -56,6 +56,7 @@ export default function QuestMode() {
     e.preventDefault();
     if (result) return;
     const given = normalize(value);
+    if (!given) return;
     const isCorrect = given === normalize(q.answer);
     setResult({ correct: isCorrect, given });
     setAnswers((prev) => [

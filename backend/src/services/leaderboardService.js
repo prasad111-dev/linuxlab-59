@@ -16,7 +16,7 @@ function periodStart(period, now = new Date()) {
 }
 
 async function getLeaderboard(period = 'all') {
-  const match = {};
+  const match = { pointsAwarded: { $gt: 0 } };
   const start = periodStart(period);
   if (start) match.startedAt = { $gte: start };
 
@@ -30,7 +30,9 @@ async function getLeaderboard(period = 'all') {
         passedTasks: { $sum: { $cond: ['$passed', 1, 0] } },
       },
     },
-    { $sort: { points: -1 } },
+    // Tie-break: more passed tasks first, then stable by user id so ranks are
+    // deterministic instead of Mongo's arbitrary order.
+    { $sort: { points: -1, passedTasks: -1, _id: 1 } },
     { $limit: 50 },
   ]);
 
@@ -50,10 +52,15 @@ async function getLeaderboard(period = 'all') {
   }));
 }
 
-async function getUserRank(userId) {
+async function getUserRank(userId, period = 'all') {
+  const match = { pointsAwarded: { $gt: 0 } };
+  const start = periodStart(period);
+  if (start) match.startedAt = { $gte: start };
+
   const rows = await Attempt.aggregate([
-    { $group: { _id: '$user', points: { $sum: '$pointsAwarded' } } },
-    { $sort: { points: -1 } },
+    { $match: match },
+    { $group: { _id: '$user', points: { $sum: '$pointsAwarded' }, passedTasks: { $sum: { $cond: ['$passed', 1, 0] } } } },
+    { $sort: { points: -1, passedTasks: -1, _id: 1 } },
   ]);
   const rank = rows.findIndex((r) => r._id && r._id.toString() === userId.toString());
   return rank === -1 ? null : rank + 1;

@@ -42,7 +42,7 @@ module.exports = async function attemptRoutes(app) {
     return { ...serializeAttempt(attempt), showSolution };
   });
 
-  app.post('/:id/hint', { preHandler: [requireAuth] }, async (req) => {
+  app.post('/:id/hint', { preHandler: [requireAuth], config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req) => {
     const attempt = await findOwnAttempt(req, { running: true });
     const task = await Task.findById(attempt.task).populate('category');
     if (!task) throw new HttpError(404, 'Task not found');
@@ -65,7 +65,7 @@ module.exports = async function attemptRoutes(app) {
     return { hint, level: attempt.hintsUsed };
   });
 
-  app.post('/:id/explain', { preHandler: [requireAuth] }, async (req) => {
+  app.post('/:id/explain', { preHandler: [requireAuth], config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req) => {
     const attempt = await findOwnAttempt(req, { running: true });
     const task = await Task.findById(attempt.task).populate('category');
     if (!task) throw new HttpError(404, 'Task not found');
@@ -78,7 +78,7 @@ module.exports = async function attemptRoutes(app) {
     return { explanation };
   });
 
-  app.post('/:id/chat', { preHandler: [requireAuth] }, async (req) => {
+  app.post('/:id/chat', { preHandler: [requireAuth], config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
     const attempt = await findOwnAttempt(req, { running: true });
     const task = await Task.findById(attempt.task).populate('category');
     if (!task) throw new HttpError(404, 'Task not found');
@@ -121,11 +121,27 @@ module.exports = async function attemptRoutes(app) {
   });
 
   app.post('/:id/submit', { preHandler: [requireAuth] }, async (req) => {
-    const attempt = await findOwnAttempt(req, { running: true });
+    // Atomically claim the running attempt so a double-submit (double-click,
+    // two tabs) can never evaluate the same session twice or award twice.
+    const attempt = await Attempt.findOneAndUpdate(
+      { _id: req.params.id, user: req.userId, status: 'running' },
+      { $set: { status: 'submitted' } },
+      { new: true }
+    );
+    if (!attempt) throw new HttpError(400, 'No active session for this attempt');
+
     const task = await Task.findById(attempt.task).populate('category');
     if (!task) throw new HttpError(404, 'Task not found');
 
-    const result = await evaluateAttempt(attempt, task);
+    let result;
+    try {
+      result = await evaluateAttempt(attempt, task);
+    } catch (e) {
+      // Evaluation failed (e.g. the container died mid-run). Release the claim
+      // so the student can retry instead of being stuck on a dead session.
+      await Attempt.updateOne({ _id: attempt._id }, { $set: { status: 'running' } });
+      throw e;
+    }
 
     attempt.status = 'evaluated';
     attempt.score = result.score;
@@ -158,9 +174,11 @@ module.exports = async function attemptRoutes(app) {
 
     const user = await User.findById(attempt.user);
     if (user) {
+      // Points: atomic $inc so concurrent submits of different tasks can never
+      // clobber each other's increment (read-modify-write race).
       updateStreak(user, new Date());
-      if (delta > 0) user.points += delta;
-      await user.save();
+      await User.updateOne({ _id: user._id }, { $set: { streak: user.streak }, $inc: { points: delta } });
+      user.points += delta;
     }
 
     // Container is done — destroy it (ephemeral environment)
@@ -172,10 +190,13 @@ module.exports = async function attemptRoutes(app) {
     let newlyUnlocked = [];
     if (user) {
       const passedAttempts = await Attempt.find({ user: user._id, passed: true })
-        .select('category score maxScore timeTakenSeconds')
+        .select('task category score maxScore timeTakenSeconds')
         .lean();
+      const passedTaskIds = new Set(
+        passedAttempts.map((a) => a.task && a.task.toString()).filter(Boolean)
+      );
       const ctx = {
-        tasksCompleted: passedAttempts.length,
+        tasksCompleted: passedTaskIds.size,
         perfectScore: passedAttempts.some((a) => a.maxScore > 0 && a.score === a.maxScore),
         fastLearner: result.passed && result.timeTakenSeconds <= (task.estimatedMinutes || 0) * 30,
         categoriesCount: new Set(

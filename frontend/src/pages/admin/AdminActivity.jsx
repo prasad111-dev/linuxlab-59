@@ -113,11 +113,28 @@ export default function AdminActivity() {
 
   useEffect(() => {
     load();
-    const t = setInterval(() => {
+    let t = setInterval(() => {
       setRefreshing(true);
       load();
     }, 5000);
-    return () => clearInterval(t);
+    const onVis = () => {
+      if (document.hidden) {
+        clearInterval(t);
+        t = null;
+      } else if (!t) {
+        setRefreshing(true);
+        load();
+        t = setInterval(() => {
+          setRefreshing(true);
+          load();
+        }, 5000);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, []);
 
   const manualRefresh = () => {

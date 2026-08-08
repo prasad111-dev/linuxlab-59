@@ -18,6 +18,9 @@ async function callGemini(system, user, opts = {}) {
       [{ role: 'user', parts: [{ text: user }] }],
     generationConfig: {
       maxOutputTokens: opts.maxTokens ?? 1024,
+      temperature: typeof opts.temperature === 'number' ? opts.temperature : undefined,
+      topP: typeof opts.topP === 'number' ? opts.topP : undefined,
+      topK: typeof opts.topK === 'number' ? opts.topK : undefined,
     },
   };
 
@@ -28,6 +31,9 @@ async function callGemini(system, user, opts = {}) {
       'x-goog-api-key': config.gemini.apiKey,
     },
     body: JSON.stringify(body),
+    // Hard cap per call so a stalled Gemini request can never hold a request
+    // (and its rate-limit slot) open indefinitely.
+    signal: AbortSignal.timeout(opts.timeoutMs ?? 30000),
   });
 
   if (!res.ok) {
@@ -265,7 +271,7 @@ async function generateInterviewQuestions(mode, opts = {}) {
     throw new HttpError(502, 'Gemini returned unparseable question data');
   }
 
-  return parsed
+  const mapped = parsed
     .filter((q) => q && typeof q === 'object' && q.prompt)
     .slice(0, count)
     .map((q) => ({
@@ -279,6 +285,12 @@ async function generateInterviewQuestions(mode, opts = {}) {
       correctIndex: Number.isInteger(q.correctIndex) ? q.correctIndex : -1,
       model: String(q.model || '').slice(0, 300),
     }));
+
+  // MCQ questions must carry a valid correctIndex, otherwise the drill cannot
+  // be answered — drop the malformed ones instead of shipping them to the UI.
+  return mode === 'mcq'
+    ? mapped.filter((q) => q.options.length > 0 && q.correctIndex >= 0 && q.correctIndex < q.options.length)
+    : mapped;
 }
 
 /**
@@ -310,11 +322,8 @@ async function gradeInterviewAnswer(question, answer) {
   })();
 
   if (!obj || typeof obj !== 'object') {
-    return {
-      score: 3,
-      feedback: 'The AI grader could not parse a score, so your answer was recorded as a pass. Review the expected points below.',
-      missing: question.model || '',
-    };
+    // Never auto-pass on a parse failure — that silently inflated scores.
+    throw new HttpError(502, 'AI grader could not parse its verdict');
   }
 
   const score = Math.max(0, Math.min(5, Math.round(Number(obj.score) || 0)));

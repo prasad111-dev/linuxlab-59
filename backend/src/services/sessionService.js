@@ -12,6 +12,9 @@ const { HttpError } = require('../utils/httpError');
 async function startSession(userId, taskId) {
   const task = await Task.findById(taskId).populate('category');
   if (!task) throw new HttpError(404, 'Task not found');
+  if (task.status !== 'published') {
+    throw new HttpError(403, 'This task is not published yet');
+  }
 
   await terminateRunning(userId, task._id);
 

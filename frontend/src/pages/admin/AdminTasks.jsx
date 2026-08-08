@@ -26,8 +26,12 @@ export default function AdminTasks() {
   const filtered = status === 'all' ? tasks : tasks.filter((t) => t.status === status);
 
   const togglePublish = async (t) => {
-    const updated = await api(`/tasks/${t.id}/publish`, { method: 'POST' });
-    setTasks((ts) => ts.map((x) => (x.id === t.id ? updated : x)));
+    try {
+      const updated = await api(`/tasks/${t.id}/publish`, { method: 'POST' });
+      setTasks((ts) => ts.map((x) => (x.id === t.id ? updated : x)));
+    } catch (e) {
+      window.alert(e.message);
+    }
   };
 
   const remove = async (t) => {

@@ -44,6 +44,9 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+userSchema.index({ lastLoginAt: -1 });
+userSchema.index({ totalActiveMs: -1 });
+
 userSchema.methods.toSafeJSON = function toSafeJSON() {
   return {
     id: this._id.toString(),

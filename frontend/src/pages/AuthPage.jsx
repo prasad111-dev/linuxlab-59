@@ -14,6 +14,10 @@ export default function AuthPage() {
   useEffect(() => {
     const token = params.get('token');
     if (token) {
+      // Remove the token from the address bar right away so it never lingers
+      // in browser history or gets replayed on refresh.
+      const cleanUrl = window.location.pathname + window.location.search;
+      window.history.replaceState({}, '', cleanUrl);
       login(token);
       navigate(location.state?.from || '/dashboard', { replace: true });
     }

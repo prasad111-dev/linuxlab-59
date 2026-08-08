@@ -6,8 +6,23 @@ const { callGemini } = require('./geminiService');
 const { buildRuleCommand } = require('./ruleCommands');
 
 function humanLabel(rule, passed) {
-  if (passed) return rule.label;
   return rule.label;
+}
+
+/** Run one rule command with a single retry — transient container blips (a
+ *  process being killed mid-restart, a busy socket) must not count as a hard
+ *  evaluation failure. Returns the orchestrator output or null when both
+ *  attempts fail. */
+async function execWithRetry(containerId, command, timeoutMs) {
+  for (let i = 0; i < 2; i++) {
+    try {
+      return await orchestrator.execInContainer(containerId, command, timeoutMs);
+    } catch (e) {
+      if (i === 0) await new Promise((r) => setTimeout(r, 400));
+      else throw e;
+    }
+  }
+  return null;
 }
 
 /**
@@ -22,7 +37,10 @@ async function runLiveChecks(task, containerId, timeoutMs = 10000) {
         return { index, label: rule.label, type: rule.type, passed: false, actual: 'unsupported rule type' };
       }
       try {
-        const out = await orchestrator.execInContainer(containerId, command, timeoutMs);
+        const out = await execWithRetry(containerId, command, timeoutMs);
+        if (!out) {
+          return { index, label: rule.label, type: rule.type, passed: false, actual: 'container unreachable' };
+        }
         const passed = String(out.stdout || '').trim().split('\n').pop() === 'OK';
         return {
           index,
@@ -48,6 +66,8 @@ async function runLiveChecks(task, containerId, timeoutMs = 10000) {
 async function evaluateAttempt(attempt, task) {
   const results = [];
   let containerOk = true;
+  // Measure at the start: wall time spent by the student, not the evaluation.
+  const timeTakenSeconds = Math.max(1, Math.round((Date.now() - attempt.startedAt.getTime()) / 1000));
 
   for (const rule of task.validationRules || []) {
     const command = buildRuleCommand(rule);
@@ -56,13 +76,13 @@ async function evaluateAttempt(attempt, task) {
       continue;
     }
     try {
-      const out = await orchestrator.execInContainer(attempt.containerId, command, 20000);
-      const passed = String(out.stdout || '').trim().split('\n').pop() === 'OK';
+      const out = await execWithRetry(attempt.containerId, command, 20000);
+      const passed = out ? String(out.stdout || '').trim().split('\n').pop() === 'OK' : false;
       results.push({
         label: humanLabel(rule, passed),
         passed,
         expected: rule.params?.expected || rule.label,
-        actual: passed ? 'OK' : (out.stdout || out.stderr || 'no output').trim().slice(0, 300),
+        actual: passed ? 'OK' : (out && (out.stdout || out.stderr || 'no output').trim().slice(0, 300)) || 'container unreachable',
       });
     } catch (e) {
       containerOk = false;
@@ -78,8 +98,7 @@ async function evaluateAttempt(attempt, task) {
   const passedCount = results.filter((r) => r.passed).length;
   const score = totalRules ? Math.round((passedCount / totalRules) * task.points) : 0;
   const maxScore = task.points;
-  const passed = maxScore > 0 && score / maxScore >= config.passMark / 100;
-  const timeTakenSeconds = Math.max(1, Math.round((Date.now() - attempt.startedAt.getTime()) / 1000));
+  const passed = totalRules > 0 && maxScore > 0 && score / maxScore >= config.passMark / 100;
 
   const mistakes = results.filter((r) => !r.passed);
   const rulesSummary = results
@@ -87,9 +106,11 @@ async function evaluateAttempt(attempt, task) {
     .join('\n');
 
   let feedback =
-    mistakes.length === 0
-      ? 'Excellent work! Every validation check passed. Your configuration is correct and production-ready.'
-      : `You passed ${passedCount} of ${totalRules} checks. Review the failed checks below and retry.`;
+    totalRules === 0
+      ? 'This task has no validation checks configured — ask your instructor to add rules before it can be scored.'
+      : mistakes.length === 0
+        ? 'Excellent work! Every validation check passed. Your configuration is correct and production-ready.'
+        : `You passed ${passedCount} of ${totalRules} checks. Review the failed checks below and retry.`;
 
   let optimization = '';
   let geminiComment = '';

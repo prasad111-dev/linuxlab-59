@@ -24,6 +24,16 @@ function makeUser(overrides = {}) {
     async save() {
       this.saveCalls += 1;
     },
+    updateCalls: 0,
+    async updateOne(query, update) {
+      this.updateCalls += 1;
+      if (update.$inc) {
+        for (const [k, v] of Object.entries(update.$inc)) this[k] = (this[k] || 0) + v;
+      }
+      if (update.$set) {
+        for (const [k, v] of Object.entries(update.$set)) this[k] = v;
+      }
+    },
     ...overrides,
   };
   return user;
@@ -48,6 +58,7 @@ beforeEach(async () => {
   await app.ready();
   user = makeUser();
   User.findById = async () => user;
+  User.updateOne = (query, update) => user.updateOne(query, update);
   token = await issueToken({ _id: { toString: () => 'u1' }, email: 's@x.com', role: 'student', name: 'S' });
 });
 
@@ -60,6 +71,7 @@ test('idle heartbeat (active:false) is ignored: no presence update, no banking, 
   const res = await beat(false);
   assert.equal(res.statusCode, 200);
   assert.equal(user.saveCalls, 0, 'idle beats must not persist anything');
+  assert.equal(user.updateCalls, 0, 'idle beats must not write via updateOne either');
   assert.equal(user.totalActiveMs, 1000);
   assert.equal(user.sessions.length, 1);
   assert.equal(user.sessions[0].logoutAt, null);
@@ -71,7 +83,7 @@ test('first active beat opens a session but banks nothing (no previous heartbeat
 
   const res = await beat(true);
   assert.equal(res.statusCode, 200);
-  assert.equal(user.saveCalls, 1);
+  assert.equal(user.updateCalls, 1, 'active beats persist via updateOne');
   assert.equal(user.sessions.length, 1);
   assert.ok(user.sessions[0].loginAt, 'session loginAt must be set');
   assert.equal(user.sessions[0].logoutAt, null);

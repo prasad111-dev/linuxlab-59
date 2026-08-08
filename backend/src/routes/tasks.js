@@ -123,8 +123,20 @@ module.exports = async function taskRoutes(app) {
   app.post('/:id/publish', { preHandler: [requireAdmin] }, async (req) => {
     const task = await Task.findById(req.params.id);
     if (!task) throw new HttpError(404, 'Task not found');
-    task.status = task.status === 'published' ? 'draft' : 'published';
-    task.publishedAt = task.status === 'published' ? new Date() : null;
+
+    if (task.status === 'draft') {
+      // A task with no validation checks can never be scored — block publishing
+      // it so students never waste a session on an unscorable practical.
+      const validRules = (task.validationRules || []).filter((r) => r && r.label && r.type);
+      if (validRules.length === 0) {
+        throw new HttpError(400, 'Cannot publish: add at least one validation rule first');
+      }
+      task.status = 'published';
+      task.publishedAt = new Date();
+    } else {
+      task.status = 'draft';
+      task.publishedAt = null;
+    }
     await task.save();
 
     if (task.status === 'published') {

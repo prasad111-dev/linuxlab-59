@@ -32,11 +32,31 @@ function loginLogRow(u, now) {
   };
 }
 
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Map an array with bounded concurrency (active-sessions poll can have up to
+ *  200 running containers; checking them one-by-one is unnecessarily slow). */
+async function mapConcurrent(items, limit, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i;
+      i += 1;
+      out[idx] = await fn(items[idx], idx);
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
 module.exports = async function adminRoutes(app) {
   app.get('/users', { preHandler: [requireAdmin] }, async (req) => {
     const q = (req.query.q || '').trim();
     const filter = q
-      ? { $or: [{ email: { $regex: q, $options: 'i' } }, { name: { $regex: q, $options: 'i' } }] }
+      ? { $or: [{ email: { $regex: escapeRegex(q), $options: 'i' } }, { name: { $regex: escapeRegex(q), $options: 'i' } }] }
       : {};
     const users = await User.find(filter).sort({ createdAt: -1 }).limit(200);
     return users.map((u) => u.toSafeJSON());
@@ -170,10 +190,11 @@ module.exports = async function adminRoutes(app) {
     });
 
     const sessions = [];
-    for (const a of running) {
+    const toSave = [];
+    await mapConcurrent(running, 8, async (a) => {
       if (!orchestratorReachable) {
         sessions.push(toSession(a, null, null));
-        continue;
+        return;
       }
       let alive = false;
       if (a.containerId) {
@@ -183,8 +204,8 @@ module.exports = async function adminRoutes(app) {
         // Container is gone — the student left and the cleanup was missed.
         if (a.containerId) await orchestrator.destroyContainer(a.containerId).catch(() => {});
         a.status = 'terminated';
-        await a.save();
-        continue;
+        toSave.push(a);
+        return;
       }
       // Heartbeat stopped (page closed / user gone) while the container still runs.
       // Fall back to startedAt while the first heartbeat arrives (after a deploy).
@@ -194,12 +215,13 @@ module.exports = async function adminRoutes(app) {
       if (Date.now() - lastActive > IDLE_MS) {
         await orchestrator.destroyContainer(a.containerId).catch(() => {});
         a.status = 'terminated';
-        await a.save();
-        continue;
+        toSave.push(a);
+        return;
       }
       const idleSeconds = Math.floor((Date.now() - lastActive) / 1000);
       sessions.push(toSession(a, true, idleSeconds));
-    }
+    });
+    await Promise.all(toSave.map((a) => a.save()));
 
     return { sessions, orchestratorReachable };
   });

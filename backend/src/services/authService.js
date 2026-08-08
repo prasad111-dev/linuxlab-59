@@ -27,6 +27,7 @@ function getClient() {
 
 // In-memory OAuth state store (single-instance on free Render, acceptable).
 const pendingStates = new Map();
+const STATE_TTL_MS = 10 * 60 * 1000;
 
 function normalizeOrigin(value) {
   try {
@@ -54,7 +55,7 @@ function buildAuthUrl(frontend) {
     pendingStates.set(state, { nonce, at: Date.now(), frontend: resolveFrontend(frontend) });
     // Clear stale entries
     for (const [k, v] of pendingStates) {
-      if (Date.now() - v.at > 10 * 60 * 1000) pendingStates.delete(k);
+      if (Date.now() - v.at > STATE_TTL_MS) pendingStates.delete(k);
     }
     return client.authorizationUrl({
       scope: 'openid email profile',
@@ -73,11 +74,20 @@ async function handleCallback(req) {
   if (!stored) {
     throw new HttpError(400, 'Invalid or expired OAuth state');
   }
+  if (Date.now() - stored.at > STATE_TTL_MS) {
+    throw new HttpError(400, 'OAuth state expired — please try signing in again');
+  }
   const tokenSet = await client.callback(config.google.redirectUri, params, {
     nonce: stored.nonce,
     state: params.state,
   });
   const claims = tokenSet.claims();
+
+  // Only accept verified email addresses — an unverified Google account must
+  // never be linked to an account or given access by its claimed email.
+  if (claims.email && claims.email_verified !== true) {
+    throw new HttpError(403, 'Your Google account email is not verified');
+  }
 
   const user = await upsertUser({
     googleId: String(claims.sub),

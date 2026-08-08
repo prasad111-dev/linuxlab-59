@@ -1,5 +1,6 @@
 const { verifyToken } = require('../services/authService');
 const { HttpError } = require('../utils/httpError');
+const User = require('../models/User');
 
 async function requireAuth(req) {
   const header = req.headers.authorization || '';
@@ -16,6 +17,13 @@ async function requireAdmin(req) {
   if (req.userRole !== 'admin') {
     throw new HttpError(403, 'Admin access required');
   }
+  // Don't trust the role stamped into the JWT forever — a demoted admin must
+  // lose access immediately, not on the next login. Re-read from the DB.
+  const user = await User.findById(req.userId).select('role').lean();
+  if (!user || user.role !== 'admin') {
+    throw new HttpError(403, 'Admin access required');
+  }
+  req.userRole = user.role;
 }
 
 async function optionalAuth(req) {

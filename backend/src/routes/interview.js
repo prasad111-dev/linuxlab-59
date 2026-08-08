@@ -102,7 +102,7 @@ module.exports = async function interviewRoutes(app) {
   // Gemini-powered question generator: fresh questions for any drill mode.
   // Body: { mode, topic?, count? } — mode determines the JSON shape returned
   // (command / mcq / free) so the frontend can render them directly.
-  app.post('/questions/generate', { preHandler: [requireAuth] }, async (req) => {
+  app.post('/questions/generate', { preHandler: [requireAuth], config: { rateLimit: { max: 5, timeWindow: '1 minute' } } }, async (req) => {
     const body = req.body || {};
     const mode = validMode(String(body.mode || '').trim());
     const questions = await generateInterviewQuestions(mode, {
@@ -114,7 +114,7 @@ module.exports = async function interviewRoutes(app) {
 
   // Gemini free-answer grading for interview-simulation style drills.
   // Body: { question: {prompt, topic?, model?}, answer }.
-  app.post('/grade', { preHandler: [requireAuth] }, async (req) => {
+  app.post('/grade', { preHandler: [requireAuth], config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
     const body = req.body || {};
     const question = body.question && typeof body.question === 'object' ? body.question : {};
     if (!question.prompt) throw new HttpError(400, 'question.prompt is required');
@@ -133,7 +133,7 @@ module.exports = async function interviewRoutes(app) {
   // AI verdict on a typed command — accepts any valid approach, not just the
   // canonical command. Body: { question: {prompt, answer?, topic?}, answer }.
   // Falls back to exact-match on the client when Gemini is unavailable.
-  app.post('/evaluate-command', { preHandler: [requireAuth] }, async (req) => {
+  app.post('/evaluate-command', { preHandler: [requireAuth], config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
     const body = req.body || {};
     const question = body.question && typeof body.question === 'object' ? body.question : {};
     if (!question.prompt) throw new HttpError(400, 'question.prompt is required');
@@ -148,7 +148,7 @@ module.exports = async function interviewRoutes(app) {
     );
   });
 
-  app.post('/sessions', { preHandler: [requireAuth] }, async (req) => {
+  app.post('/sessions', { preHandler: [requireAuth], config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req) => {
     const body = req.body || {};
     const mode = validMode(String(body.mode || '').trim());
     const answers = clampAnswers(body.answers);

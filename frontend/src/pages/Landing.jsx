@@ -138,6 +138,11 @@ const STATS = [
 export default function Landing() {
   const { user } = useAuth();
 
+  const scrollToSection = (e, id) => {
+    e.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="overflow-hidden">
       {/* HERO */}
@@ -176,7 +181,7 @@ export default function Landing() {
                 Login with Google
               </a>
             )}
-            <a href="#features" className="btn-ghost !px-6 !py-3 !text-base">
+            <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="btn-ghost !px-6 !py-3 !text-base">
               <Play size={18} /> See how it works
             </a>
           </div>

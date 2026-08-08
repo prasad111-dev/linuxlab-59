@@ -8,6 +8,25 @@ const GAP_MS = 5 * 60 * 1000;
 const MAX_SESSION_MS = 12 * 60 * 60 * 1000;
 const MAX_SESSIONS = 50;
 const MAX_DAYS = 90;
+const MAX_DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Distribute a [startMs, endMs) span into the per-day buckets, splitting at
+ *  local midnight so a heartbeat that straddles two days is attributed to
+ *  both correctly. */
+function bankSpan(user, startMs, endMs) {
+  let cursor = startMs;
+  while (cursor < endMs) {
+    const d = new Date(cursor);
+    const nextDay = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
+    const chunkEnd = Math.min(endMs, nextDay);
+    const chunk = chunkEnd - cursor;
+    const key = localDateKey(new Date(cursor));
+    const idx = user.activeTimeByDay.findIndex((x) => x.date === key);
+    if (idx >= 0) user.activeTimeByDay[idx].ms = Math.min(MAX_DAY_MS, user.activeTimeByDay[idx].ms + chunk);
+    else user.activeTimeByDay.push({ date: key, ms: Math.min(MAX_DAY_MS, chunk) });
+    cursor = chunkEnd;
+  }
+}
 
 module.exports = async function authRoutes(app) {
   app.get(
@@ -52,13 +71,11 @@ module.exports = async function authRoutes(app) {
       const gap = prev ? now - prev : 0;
 
       // Bank time only when the gap between heartbeats is sane (0–5 min).
-      if (prev && gap > 0 && gap < GAP_MS) {
-        user.totalActiveMs = (user.totalActiveMs || 0) + gap;
-
-        const day = localDateKey(new Date(now));
-        const dayIdx = user.activeTimeByDay.findIndex((d) => d.date === day);
-        if (dayIdx >= 0) user.activeTimeByDay[dayIdx].ms += gap;
-        else user.activeTimeByDay.push({ date: day, ms: gap });
+      // A gap exactly at the limit is still contiguous — bank it too.
+      let delta = 0;
+      if (prev && gap > 0 && gap <= GAP_MS) {
+        delta = gap;
+        bankSpan(user, prev, now);
 
         const open = user.sessions.find((s) => !s.logoutAt);
         if (open) open.ms += gap;
@@ -80,9 +97,20 @@ module.exports = async function authRoutes(app) {
       if (user.sessions.length > MAX_SESSIONS) user.sessions = user.sessions.slice(-MAX_SESSIONS);
       if (user.activeTimeByDay.length > MAX_DAYS) user.activeTimeByDay = user.activeTimeByDay.slice(-MAX_DAYS);
 
-      user.lastSeenAt = new Date(now);
-      user.lastHeartbeatAt = new Date(now);
-      await user.save();
+      // Targeted write instead of a full-document save: the presence endpoint
+      // is hit every 5s per active user, so this keeps contention minimal.
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            lastSeenAt: new Date(now),
+            lastHeartbeatAt: new Date(now),
+            sessions: user.sessions,
+            activeTimeByDay: user.activeTimeByDay,
+          },
+          $inc: { totalActiveMs: delta },
+        }
+      );
       return { ok: true };
     }
   );

@@ -25,7 +25,17 @@ async function request(path, options = {}) {
 
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new HttpError(502, json.error || `Orchestrator error ${res.status}`);
+    let message = json.error || `Orchestrator error ${res.status}`;
+    if (Array.isArray(json.errors) && json.errors.length > 0) {
+      const detail = json.errors
+        .map((er) => {
+          const why = er.error || `exit ${er.exitCode}`;
+          return `${er.command}: ${why}${er.stderr ? ` - ${er.stderr}` : ''}`;
+        })
+        .join('; ');
+      message = `${message} (${detail})`;
+    }
+    throw new HttpError(502, message);
   }
   return json;
 }

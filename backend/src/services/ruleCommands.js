@@ -26,16 +26,16 @@ function buildRuleCommand(rule) {
     file_contains: () =>
       `grep -qF ${shellQuote(p.needle)} ${shellQuote(p.path)} 2>/dev/null && echo OK || echo FAIL`,
     file_permissions: () =>
-      `[ "$(stat -c '%a' ${shellQuote(p.path)} 2>/dev/null)" = "${p.expected}" ] && echo OK || echo FAIL`,
+      `[ "$(stat -c '%a' ${shellQuote(p.path)} 2>/dev/null)" = ${shellQuote(p.expected)} ] && echo OK || echo FAIL`,
     file_owner: () =>
-      `[ "$(stat -c '%U:%G' ${shellQuote(p.path)} 2>/dev/null)" = "${p.expected}" ] && echo OK || echo FAIL`,
+      `[ "$(stat -c '%U:%G' ${shellQuote(p.path)} 2>/dev/null)" = ${shellQuote(p.expected)} ] && echo OK || echo FAIL`,
     file_type: () =>
-      `[ "$(stat -c '%F' ${shellQuote(p.path)} 2>/dev/null)" = "${p.expected}" ] && echo OK || echo FAIL`,
+      `[ "$(stat -c '%F' ${shellQuote(p.path)} 2>/dev/null)" = ${shellQuote(p.expected)} ] && echo OK || echo FAIL`,
     file_linkcount: () =>
-      `[ "$(stat -c '%h' ${shellQuote(p.path)} 2>/dev/null)" = "${p.expected}" ] && echo OK || echo FAIL`,
+      `[ "$(stat -c '%h' ${shellQuote(p.path)} 2>/dev/null)" = ${shellQuote(p.expected)} ] && echo OK || echo FAIL`,
     symlink_exists: () => `test -L ${shellQuote(p.path)} && echo OK || echo FAIL`,
     symlink_target: () =>
-      `[ "$(readlink ${shellQuote(p.path)} 2>/dev/null)" = "${p.target}" ] && echo OK || echo FAIL`,
+      `[ "$(readlink ${shellQuote(p.path)} 2>/dev/null)" = ${shellQuote(p.target)} ] && echo OK || echo FAIL`,
     hardlink_exists: () =>
       `[ ${shellQuote(p.a)} -ef ${shellQuote(p.b)} ] && echo OK || echo FAIL`,
     command_contains: () => `${p.command} 2>&1 | grep -qF ${shellQuote(p.needle)} && echo OK || echo FAIL`,
