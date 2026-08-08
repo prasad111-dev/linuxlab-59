@@ -48,18 +48,18 @@ export default function Practicals() {
             Real IT support tickets. Each one spins up an isolated Linux container.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+          <div className="relative sm:w-64">
             <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search tasks…"
-              className="input !w-64 !pl-9"
+              className="input !pl-9"
             />
           </div>
-          <button onClick={() => setSuggestOpen(true)} className="btn-ghost whitespace-nowrap">
-            <Lightbulb size={16} /> Suggest
+          <button onClick={() => setSuggestOpen(true)} className="btn-secondary whitespace-nowrap">
+            <Lightbulb size={16} /> Suggest a task from your side
           </button>
         </div>
       </div>

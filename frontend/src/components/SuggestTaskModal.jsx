@@ -76,15 +76,23 @@ export default function SuggestTaskModal({ onClose }) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="flex items-center gap-2 text-2xl font-extrabold">
-              <Lightbulb size={22} className="text-amber-500" /> Suggest a task scenario
+              <Lightbulb size={22} className="text-amber-500" /> Suggest a task from your side
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Got a real-world Linux problem in mind? Pitch it — an admin will review it.
+              Got a real-world Linux problem in mind? Pitch it from your side — an admin will review it.
             </p>
           </div>
           <button onClick={onClose} aria-label="Close" className="icon-btn">
             <X size={18} />
           </button>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          <p className="font-semibold">Suggest a task from your side</p>
+          <p className="mt-0.5">
+            Write up a Linux problem you'd like to practice, submit it, and our team will review it and may turn it
+            into a real practical for everyone.
+          </p>
         </div>
 
         {!user ? (
