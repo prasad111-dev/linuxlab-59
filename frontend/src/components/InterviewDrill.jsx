@@ -589,10 +589,10 @@ function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, gra
               autoCorrect="off"
               autoFocus
               disabled={evaluating}
-              className="flex-1 bg-transparent font-mono text-sm text-slate-100 outline-none placeholder:text-slate-500"
+              className="min-w-0 flex-1 bg-transparent font-mono text-sm text-slate-100 outline-none placeholder:text-slate-500"
               placeholder="type the command…"
             />
-            <button type="submit" disabled={!typed.trim() || evaluating} className="btn-primary !px-3 !py-1.5 text-sm">
+            <button type="submit" disabled={!typed.trim() || evaluating} className="btn-primary !px-3 !py-1.5 text-sm shrink-0">
               {evaluating ? <Spinner size={14} className="mr-1 text-white" /> : null}
               {evaluating ? 'Checking…' : 'Run'}
             </button>
@@ -848,10 +848,10 @@ function ChecklistView({ meta, steps, answers, save, onFinish }) {
               spellCheck={false}
               autoCapitalize="off"
               autoCorrect="off"
-              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-white/10 dark:bg-white/5"
+              className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-200 dark:border-white/10 dark:bg-white/5"
               placeholder={`step ${idx + 1} command…`}
             />
-            <button type="submit" disabled={checking} className="btn-primary">
+            <button type="submit" disabled={checking} className="btn-primary !px-3 shrink-0">
               {checking ? <Spinner size={14} className="mr-1 text-white" /> : null}
               {checking ? 'Checking…' : 'Run step'}
             </button>
