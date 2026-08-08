@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle, Sparkles, RefreshCw, Zap } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Sparkles, RefreshCw, Zap, Shuffle, Bookmark, BookmarkCheck } from 'lucide-react';
 import { api } from '../lib/api';
 import { cn } from '../lib/format';
 import { useInterviewProgress } from '../lib/useInterviewProgress';
@@ -93,6 +93,9 @@ export default function InterviewDrill({ mode: modeProp }) {
   const [bankQuestions, setBankQuestions] = useState(null);
   const [bankTopics, setBankTopics] = useState([]);
   const [bankTopic, setBankTopic] = useState('');
+  const [bankShuffled, setBankShuffled] = useState(false);
+  const [reviewIds, setReviewIds] = useState([]);
+  const [reviewOnly, setReviewOnly] = useState(false);
   const [careerLevel, setCareerLevel] = useState(0);
   const [careerIdx, setCareerIdx] = useState(0);
   const [failedLevels, setFailedLevels] = useState([]);
@@ -140,8 +143,11 @@ export default function InterviewDrill({ mode: modeProp }) {
       setBankQuestions(data.questions.map((q) => ({ ...q, _type: 'free' })));
       setBankTopics(data.topics || []);
       setBankTopic(data.topic || '');
+      setBankShuffled(!!data.shuffled);
+      setReviewIds(data.reviewIds || []);
+      setReviewOnly(!!data.reviewOnly);
       setAnswers(data.answers || []);
-      setIndex((data.answers || []).length);
+      setIndex(typeof data.index === 'number' ? data.index : (data.answers || []).length);
     } else {
       loadBank();
     }
@@ -150,13 +156,16 @@ export default function InterviewDrill({ mode: modeProp }) {
 
   const list = useMemo(() => {
     if (engine === 'gemini') return genQuestions || [];
-    if (engine === 'bank') return bankQuestions || [];
+    if (engine === 'bank') {
+      if (reviewOnly) return (bankQuestions || []).filter((q) => reviewIds.includes(q.id));
+      return bankQuestions || [];
+    }
     if (engine === 'career') {
       const lvl = careerConfig.levels[careerLevel];
       return (lvl ? lvl.questions : []).map((q) => ({ ...q, _type: 'command' }));
     }
     return baseList;
-  }, [engine, baseList, genQuestions, bankQuestions, careerConfig, careerLevel]);
+  }, [engine, baseList, genQuestions, bankQuestions, careerConfig, careerLevel, reviewOnly, reviewIds]);
 
   const timed = meta.timed;
   const timePer = mode === 'command-speedrun' ? 5 : mode === 'command-battle' ? 10 : 0;
@@ -220,16 +229,50 @@ export default function InterviewDrill({ mode: modeProp }) {
       setBankQuestions(qs);
       setBankTopics(res.topics || []);
       setBankTopic(topic);
+      setBankShuffled(false);
+      setReviewOnly(false);
       setAnswers([]);
       setIndex(0);
-      save({ questions: qs, answers: [], topics: res.topics || [], topic });
+      save({ questions: qs, answers: [], topics: res.topics || [], topic, shuffled: false, reviewIds: reviewIds || [], reviewOnly: false });
     } catch {
       setBankQuestions([]);
       setBankTopics([]);
-      save({ questions: [], answers: [], topics: [], topic: '' });
+      save({ questions: [], answers: [], topics: [], topic: '', shuffled: false, reviewIds: reviewIds || [], reviewOnly: false });
     } finally {
       setGenerating(false);
     }
+  }
+
+  function shuffleBank() {
+    if (!bankQuestions || bankQuestions.length < 2) return;
+    const qs = [...bankQuestions];
+    for (let i = qs.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [qs[i], qs[j]] = [qs[j], qs[i]];
+    }
+    setBankQuestions(qs);
+    setBankShuffled(true);
+    setAnswers([]);
+    setIndex(0);
+    save({ ...(data || {}), questions: qs, answers: [], topic: bankTopic, topics: bankTopics, shuffled: true, reviewIds, reviewOnly });
+  }
+
+  function toggleReview(id) {
+    const has = reviewIds.includes(id);
+    const next = has ? reviewIds.filter((x) => x !== id) : [...reviewIds, id];
+    setReviewIds(next);
+    if (has && reviewOnly && list[index]?.id === id) {
+      setIndex(Math.max(0, Math.min(index, next.length - 1)));
+    }
+    save({ ...(data || {}), questions: bankQuestions, answers, topic: bankTopic, topics: bankTopics, shuffled: bankShuffled, reviewIds: next, reviewOnly });
+  }
+
+  function toggleReviewOnly() {
+    const next = !reviewOnly;
+    setReviewOnly(next);
+    setAnswers([]);
+    setIndex(0);
+    save({ ...(data || {}), questions: bankQuestions, answers: [], topic: bankTopic, topics: bankTopics, shuffled: bankShuffled, reviewIds, reviewOnly: next });
   }
 
   function recordAnswer(correct, userAnswer, explanation) {
@@ -247,8 +290,31 @@ export default function InterviewDrill({ mode: modeProp }) {
     };
     const next = [...answers, a];
     setAnswers(next);
+
+    // Auto-track review flags for the bank drill: wrong answers get flagged,
+    // and answering correctly while in review-only mode clears the flag.
+    let nextReviewIds = reviewIds;
+    if (engine === 'bank' && q.id) {
+      if (correct && reviewOnly) {
+        nextReviewIds = reviewIds.filter((x) => x !== q.id);
+      } else if (!correct && !reviewIds.includes(q.id)) {
+        nextReviewIds = [...reviewIds, q.id];
+      }
+      if (nextReviewIds !== reviewIds) setReviewIds(nextReviewIds);
+    }
+
+    // In review-only mode the list shrinks as questions are cleared, so the
+    // saved position is the visible slot, not the running answer count.
+    let savedIndex = next.length;
+    if (engine === 'bank' && reviewOnly) {
+      const removed = correct && nextReviewIds.length < reviewIds.length;
+      savedIndex = removed ? Math.min(index, Math.max(0, nextReviewIds.length - 1)) : index + 1;
+    }
+
     if (engine === 'career') {
       save({ ...data, answers: next, careerLevel });
+    } else if (engine === 'bank') {
+      save({ ...data, answers: next, index: savedIndex, reviewIds: nextReviewIds });
     } else {
       save({ ...data, answers: next, index: next.length });
     }
@@ -279,6 +345,18 @@ export default function InterviewDrill({ mode: modeProp }) {
           }
         } else {
           setCareerIdx((i) => i + 1);
+        }
+      } else if (engine === 'bank' && reviewOnly) {
+        // In review-only mode a correct answer removes the question, so the
+        // next one slides into the same slot — don't advance the index.
+        const removed = correct && nextReviewIds.length < reviewIds.length;
+        if (removed) {
+          if (nextReviewIds.length === 0) setIndex(0);
+          else setIndex((i) => Math.min(i, nextReviewIds.length - 1));
+        } else if (index + 1 >= list.length) {
+          finishSession(next);
+        } else {
+          setIndex((i) => i + 1);
         }
       } else if (index + 1 >= list.length) {
         finishSession(next);
@@ -488,6 +566,21 @@ export default function InterviewDrill({ mode: modeProp }) {
 
   const q = list[index];
   if (!q) {
+    if (engine === 'bank' && reviewOnly) {
+      return (
+        <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+          <div className="text-5xl">🎉</div>
+          <h2 className="mt-4 text-xl font-extrabold">Nothing left to review</h2>
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
+            Answer questions correctly and they clear out of your review list. Keep practicing to sharpen up.
+          </p>
+          <div className="mt-6 flex justify-center gap-2">
+            <button onClick={toggleReviewOnly} className="btn-primary">Back to all questions</button>
+            <Link to="/interview" className="btn-ghost"><ArrowLeft size={16} /> Back to hub</Link>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
         <p className="text-slate-500">Getting this drill ready…</p>
@@ -528,6 +621,23 @@ export default function InterviewDrill({ mode: modeProp }) {
               {t}
             </button>
           ))}
+          {reviewIds.length > 0 && (
+            <button
+              onClick={toggleReviewOnly}
+              className={cn('ml-auto rounded-full px-3 py-1 text-xs font-bold transition', reviewOnly ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-400 dark:bg-amber-500/15 dark:text-amber-300' : 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400')}
+            >
+              <BookmarkCheck size={12} className="mr-1 inline" /> Review only ({reviewIds.length})
+            </button>
+          )}
+          {!reviewOnly && bankQuestions?.length > 1 && (
+            <button
+              onClick={shuffleBank}
+              className={cn('rounded-full px-3 py-1 text-xs font-bold transition', bankShuffled ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-400')}
+              title="Shuffle question order"
+            >
+              <Shuffle size={12} className="mr-1 inline" /> {bankShuffled ? 'Shuffled' : 'Shuffle'}
+            </button>
+          )}
           {generating && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-500">
               <RefreshCw size={13} className="animate-spin" /> Loading…
@@ -536,7 +646,22 @@ export default function InterviewDrill({ mode: modeProp }) {
         </div>
       )}
       {timed && <TimedBar secondsLeft={secondsLeft} total={timePer} />}
-      <Progress index={index} total={list.length} />
+      {engine === 'bank' ? (
+        <div className="mt-5 flex items-center gap-4">
+          <div className="flex-1">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <span>{Math.min(index, list.length)} / {list.length} answered</span>
+              <span>{list.length ? Math.round((index / list.length) * 100) : 0}%</span>
+            </div>
+            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
+              <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-fuchsia-500 transition-all duration-300" style={{ width: `${list.length ? Math.round((index / list.length) * 100) : 0}%` }} />
+            </div>
+          </div>
+          <ProgressRing index={index} total={list.length} />
+        </div>
+      ) : (
+        <Progress index={index} total={list.length} />
+      )}
       <QuestionCard
         q={q}
         selected={selected}
@@ -552,6 +677,8 @@ export default function InterviewDrill({ mode: modeProp }) {
         timed={timed}
         secondsLeft={secondsLeft}
         engine={engine}
+        reviewMarked={engine === 'bank' && reviewIds.includes(q.id)}
+        onToggleReview={engine === 'bank' ? toggleReview : null}
       />
       {saving && (
         <div className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
@@ -611,7 +738,38 @@ function TimedBar({ secondsLeft, total }) {
   );
 }
 
-function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, grading, evaluating, submitFree, submitCommand, submitMcq, timed, secondsLeft, engine }) {
+function ProgressRing({ index, total }) {
+  const R = 20;
+  const C = 2 * Math.PI * R;
+  const pct = total ? Math.min(1, index / total) : 0;
+  const done = total ? index >= total : false;
+  return (
+    <div
+      className="relative h-12 w-12 shrink-0"
+      title={`${Math.round(pct * 100)}% complete`}
+    >
+      <svg viewBox="0 0 48 48" className="h-12 w-12 -rotate-90">
+        <circle cx="24" cy="24" r={R} fill="none" strokeWidth="5" className="stroke-slate-100 dark:stroke-white/10" />
+        <circle
+          cx="24"
+          cy="24"
+          r={R}
+          fill="none"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray={C}
+          strokeDashoffset={C * (1 - pct)}
+          className={cn('transition-all duration-300', done ? 'stroke-emerald-500' : 'stroke-brand-500')}
+        />
+      </svg>
+      <span className={cn('absolute inset-0 flex items-center justify-center text-[10px] font-black', done ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400')}>
+        {done ? '✓' : `${Math.round(pct * 100)}%`}
+      </span>
+    </div>
+  );
+}
+
+function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, grading, evaluating, submitFree, submitCommand, submitMcq, timed, secondsLeft, engine, reviewMarked, onToggleReview }) {
   if (!q) return null;
   const isCommand = q._type === 'command';
   const isMcq = q._type === 'mcq';
@@ -635,7 +793,18 @@ function QuestionCard({ q, selected, typed, setTyped, freeText, setFreeText, gra
         </span>
       )}
       {q.title && <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{q.title}</p>}
-      <h2 className="text-lg font-extrabold leading-snug">{q.prompt}</h2>
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-lg font-extrabold leading-snug">{q.prompt}</h2>
+        {onToggleReview && (
+          <button
+            onClick={() => onToggleReview(q.id)}
+            className={cn('shrink-0 rounded-lg border p-1.5 transition', reviewMarked ? 'border-amber-300 bg-amber-50 text-amber-600 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-400' : 'border-slate-200 text-slate-400 hover:border-amber-300 hover:text-amber-500 dark:border-white/10')}
+            title={reviewMarked ? 'Remove from review list' : 'Mark for review'}
+          >
+            {reviewMarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+          </button>
+        )}
+      </div>
 
       {isCommand && !selected && (
         <div className="mt-4 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-lg dark:border-white/10">
