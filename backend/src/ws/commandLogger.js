@@ -43,8 +43,10 @@ function createCommandLogger() {
       return commands;
     },
     flush() {
+      const cmds = commands.slice();
       commands.length = 0;
       buf = '';
+      return cmds;
     },
   };
 }

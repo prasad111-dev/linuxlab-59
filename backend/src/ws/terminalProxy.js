@@ -71,9 +71,8 @@ function setupTerminalProxy(server) {
       const gate = enforcePolicy ? createCommandGate(buildPolicy(task), send) : null;
 
       const persist = () => {
-        if (logger.commands.length === 0) return Promise.resolve();
-        const cmds = logger.commands;
-        logger.flush();
+        const cmds = logger.flush();
+        if (cmds.length === 0) return Promise.resolve();
         // Lightweight write: only append the new commands, keep the last 250
         // so the DB stays small and the server handles many concurrent users.
         return Attempt.updateOne(
