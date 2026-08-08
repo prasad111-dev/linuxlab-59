@@ -3,7 +3,11 @@ const Task = require('../models/Task');
 const Attempt = require('../models/Attempt');
 const orchestrator = require('./orchestratorClient');
 const { callGemini } = require('./geminiService');
-const { buildRuleCommand } = require('./ruleCommands');
+const { buildRuleCommand, matchesCommandHistory } = require('./ruleCommands');
+
+function isHistoryRule(rule) {
+  return rule.type === 'command_history_contains';
+}
 
 function humanLabel(rule, passed) {
   return rule.label;
@@ -26,12 +30,23 @@ async function execWithRetry(containerId, command, timeoutMs) {
 }
 
 /**
- * Run every validation rule against the live container.
+ * Run every validation rule against the live container (or the student's
+ * command history for command_history_contains rules).
  * Returns { checks, passedCount, totalRules, updatedAt }.
  */
-async function runLiveChecks(task, containerId, timeoutMs = 10000) {
+async function runLiveChecks(task, containerId, timeoutMs = 10000, commandHistory = []) {
   const results = await Promise.all(
     (task.validationRules || []).map(async (rule, index) => {
+      if (isHistoryRule(rule)) {
+        const passed = matchesCommandHistory(rule, commandHistory);
+        return {
+          index,
+          label: rule.label,
+          type: rule.type,
+          passed,
+          actual: passed ? 'command found in history' : 'command not run yet',
+        };
+      }
       const command = buildRuleCommand(rule);
       if (!command) {
         return { index, label: rule.label, type: rule.type, passed: false, actual: 'unsupported rule type' };
@@ -70,6 +85,16 @@ async function evaluateAttempt(attempt, task) {
   const timeTakenSeconds = Math.max(1, Math.round((Date.now() - attempt.startedAt.getTime()) / 1000));
 
   for (const rule of task.validationRules || []) {
+    if (isHistoryRule(rule)) {
+      const passed = matchesCommandHistory(rule, attempt.commandHistory || []);
+      results.push({
+        label: humanLabel(rule, passed),
+        passed,
+        expected: rule.params?.command || rule.label,
+        actual: passed ? 'command found in history' : 'command not run',
+      });
+      continue;
+    }
     const command = buildRuleCommand(rule);
     if (!command) {
       results.push({ label: rule.label, passed: false, expected: 'valid rule', actual: 'unsupported rule type' });

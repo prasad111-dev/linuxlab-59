@@ -24,6 +24,16 @@ function sendToAttempt(attemptId, text) {
   return true;
 }
 
+/** Force-flush a live session's command history to the DB. The submit route
+ *  calls this so history-based checks never miss commands that are still
+ *  buffered in the terminal logger. */
+async function flushAttemptHistory(attemptId) {
+  const conn = connections.get(String(attemptId));
+  if (conn && typeof conn.persist === 'function') {
+    await conn.persist();
+  }
+}
+
 function setupTerminalProxy(server) {
   const { WebSocketServer } = require('ws');
   const wss = new WebSocketServer({ server, path: '/api/ws/terminal' });
@@ -45,9 +55,6 @@ function setupTerminalProxy(server) {
       if (attempt.status !== 'running') return ws.close(4003, 'attempt is not running');
 
       const unregister = () => connections.delete(String(attemptId));
-      connections.set(String(attemptId), { browserWs: ws });
-      ws.on('close', unregister);
-      ws.on('error', unregister);
 
       const enforcePolicy = config.terminalPolicy === 'task';
       const task = enforcePolicy ? await Task.findById(attempt.task).lean().catch(() => null) : null;
@@ -64,17 +71,20 @@ function setupTerminalProxy(server) {
       const gate = enforcePolicy ? createCommandGate(buildPolicy(task), send) : null;
 
       const persist = () => {
-        if (logger.commands.length > 0) {
-          const cmds = logger.commands;
-          logger.flush();
-          // Lightweight write: only append the new commands, keep the last 250
-          // so the DB stays small and the server handles many concurrent users.
-          Attempt.updateOne(
-            { _id: attempt._id },
-            { $push: { commandHistory: { $each: cmds, $slice: -250 } } }
-          ).catch(() => {});
-        }
+        if (logger.commands.length === 0) return Promise.resolve();
+        const cmds = logger.commands;
+        logger.flush();
+        // Lightweight write: only append the new commands, keep the last 250
+        // so the DB stays small and the server handles many concurrent users.
+        return Attempt.updateOne(
+          { _id: attempt._id },
+          { $push: { commandHistory: { $each: cmds, $slice: -250 } } }
+        ).then(() => {}, () => {});
       };
+
+      connections.set(String(attemptId), { browserWs: ws, persist });
+      ws.on('close', unregister);
+      ws.on('error', unregister);
 
       upstream.on('open', () => {
         for (const m of gateOutput) upstream.send(m);
@@ -129,7 +139,7 @@ function setupTerminalProxy(server) {
         }
       });
 
-      interval = setInterval(persist, 30_000);
+      interval = setInterval(persist, 10_000);
     } catch (e) {
       clearInterval(interval);
       try {
@@ -143,4 +153,4 @@ function setupTerminalProxy(server) {
   wss.on('error', () => {});
 }
 
-module.exports = { setupTerminalProxy, sendToAttempt };
+module.exports = { setupTerminalProxy, sendToAttempt, flushAttemptHistory };

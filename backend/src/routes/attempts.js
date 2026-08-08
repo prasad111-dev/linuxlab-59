@@ -10,6 +10,7 @@ const { generateHint, generateExplain, chatWithAi } = require('../services/gemin
 const { checkAndUnlock } = require('../services/achievementService');
 const { updateStreak } = require('../services/streakService');
 const { startSession, terminateRunning } = require('../services/sessionService');
+const { flushAttemptHistory } = require('../ws/terminalProxy');
 const orchestrator = require('../services/orchestratorClient');
 
 async function findOwnAttempt(req, { running = false } = {}) {
@@ -52,7 +53,7 @@ module.exports = async function attemptRoutes(app) {
       hint = task.hints[attempt.hintsUsed];
     } else {
       const live = attempt.containerId
-        ? await runLiveChecks(task, attempt.containerId).catch(() => null)
+        ? await runLiveChecks(task, attempt.containerId, 10000, attempt.commandHistory).catch(() => null)
         : null;
       try {
         hint = await generateHint(task, attempt, live);
@@ -70,7 +71,7 @@ module.exports = async function attemptRoutes(app) {
     const task = await Task.findById(attempt.task).populate('category');
     if (!task) throw new HttpError(404, 'Task not found');
     const live = attempt.containerId
-      ? await runLiveChecks(task, attempt.containerId).catch(() => null)
+      ? await runLiveChecks(task, attempt.containerId, 10000, attempt.commandHistory).catch(() => null)
       : null;
     const explanation = await generateExplain(task, live);
     attempt.explainUsed += 1;
@@ -86,7 +87,7 @@ module.exports = async function attemptRoutes(app) {
     if (!message) throw new HttpError(400, 'message is required');
 
     const live = attempt.containerId
-      ? await runLiveChecks(task, attempt.containerId).catch(() => null)
+      ? await runLiveChecks(task, attempt.containerId, 10000, attempt.commandHistory).catch(() => null)
       : null;
     const history = attempt.aiChat || [];
 
@@ -117,7 +118,7 @@ module.exports = async function attemptRoutes(app) {
       };
     }
 
-    return runLiveChecks(task, attempt.containerId);
+    return runLiveChecks(task, attempt.containerId, 10000, attempt.commandHistory);
   });
 
   app.post('/:id/submit', { preHandler: [requireAuth] }, async (req) => {
@@ -129,6 +130,10 @@ module.exports = async function attemptRoutes(app) {
       { new: true }
     );
     if (!attempt) throw new HttpError(400, 'No active session for this attempt');
+
+    // Flush any commands still buffered in the live terminal logger so
+    // history-based checks never miss the student's most recent commands.
+    await flushAttemptHistory(attempt._id.toString());
 
     const task = await Task.findById(attempt.task).populate('category');
     if (!task) throw new HttpError(404, 'Task not found');

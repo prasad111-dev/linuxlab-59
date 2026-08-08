@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { buildRuleCommand, shellQuote } = require('../src/services/ruleCommands');
+const { buildRuleCommand, shellQuote, matchesCommandHistory } = require('../src/services/ruleCommands');
 
 test('shellQuote wraps and escapes single quotes', () => {
   assert.equal(shellQuote("it's"), `'it'\\''s'`);
@@ -46,4 +46,36 @@ test('parameters are embedded safely (no raw shell injection)', () => {
   assert.ok(cmd.startsWith("test -f 'x; rm -rf /'"), cmd);
   const out = execFileSync('sh', ['-c', cmd], { encoding: 'utf8' });
   assert.match(out, /FAIL/, 'injected payload must not execute; the missing file must report FAIL');
+});
+
+test('command_history_contains matches the exact command a student ran', () => {
+  const rule = { type: 'command_history_contains', params: { command: 'ping -c 3 127.0.0.1' } };
+  assert.equal(matchesCommandHistory(rule, []), false);
+  assert.equal(matchesCommandHistory(rule, ['ls -la', 'ping -c 3 127.0.0.1']), true);
+});
+
+test('command_history_contains tolerates extra flags, arg reordering and sudo prefixes', () => {
+  const rule = { type: 'command_history_contains', params: { command: 'ping -c 3 127.0.0.1' } };
+  assert.equal(matchesCommandHistory(rule, ['ping 127.0.0.1 -c 3']), true);
+  assert.equal(matchesCommandHistory(rule, ['sudo ping -c 3 -q 127.0.0.1']), true);
+});
+
+test('command_history_contains rejects commands missing key tokens', () => {
+  const rule = { type: 'command_history_contains', params: { command: 'ping -c 3 127.0.0.1' } };
+  assert.equal(matchesCommandHistory(rule, ['ping 127.0.0.1']), false);
+  assert.equal(matchesCommandHistory(rule, ['ping -c 3 localhost']), false);
+});
+
+test('command_history_contains accepts any listed alias', () => {
+  const rule = {
+    type: 'command_history_contains',
+    params: { command: 'ss -tulpn', aliases: ['netstat -tulpn'] },
+  };
+  assert.equal(matchesCommandHistory(rule, ['ss -tulpn']), true);
+  assert.equal(matchesCommandHistory(rule, ['netstat -tulpn']), true);
+  assert.equal(matchesCommandHistory(rule, ['ss -lnt']), false);
+});
+
+test('command_history_contains without params never matches', () => {
+  assert.equal(matchesCommandHistory({ type: 'command_history_contains', params: {} }, ['anything']), false);
 });

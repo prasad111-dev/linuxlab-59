@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { SEED_TASKS } = require('../src/seed');
-const { buildRuleCommand } = require('../src/services/ruleCommands');
+const { buildRuleCommand, matchesCommandHistory } = require('../src/services/ruleCommands');
 const { buildPolicy, checkCommand } = require('../src/services/commandPolicy');
 
 /**
@@ -56,12 +56,32 @@ after(() => {
   if (sandbox) fs.rmSync(sandbox, { recursive: true, force: true });
 });
 
-test('every validation rule builds a valid check command', () => {
+test('every validation rule is supported (shell or history based)', () => {
   assert.equal(TASK.validationRules.length, 16);
-  for (const rule of TASK.validationRules) {
+  const historyRules = TASK.validationRules.filter((r) => r.type === 'command_history_contains');
+  const shellRules = TASK.validationRules.filter((r) => r.type !== 'command_history_contains');
+  assert.equal(historyRules.length, 8, 'the phase 1-2 observation commands must be history based so they do not auto-tick from live container state');
+  for (const rule of shellRules) {
     const cmd = buildRuleCommand(rule);
     assert.ok(cmd, `no command for ${rule.type}: ${rule.label}`);
     assert.match(cmd, /echo OK \|\| echo FAIL$/, `${rule.label}: ${cmd}`);
+  }
+  for (const rule of historyRules) {
+    assert.equal(buildRuleCommand(rule), null, `${rule.label} must not build a live shell check`);
+  }
+});
+
+test('history-based checks tick only after the student actually runs the commands', () => {
+  const historyRules = TASK.validationRules.filter((r) => r.type === 'command_history_contains');
+  for (const rule of historyRules) {
+    assert.equal(matchesCommandHistory(rule, []), false, `${rule.label} must fail with no command history`);
+  }
+  const history = TASK.solution
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  for (const rule of historyRules) {
+    assert.equal(matchesCommandHistory(rule, history), true, `${rule.label} must pass after the full solution runs`);
   }
 });
 

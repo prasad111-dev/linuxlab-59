@@ -45,4 +45,40 @@ function buildRuleCommand(rule) {
   return builder();
 }
 
-module.exports = { shellQuote, buildRuleCommand };
+function tokenize(cmd) {
+  return String(cmd)
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/** True when every token of `expected` is present in `entry` (order-agnostic,
+ *  so harmless extra flags or `sudo` prefixes do not break a match). */
+function tokensCover(entryTokens, expectedTokens) {
+  const pool = new Set(entryTokens);
+  return expectedTokens.every((t) => pool.has(t));
+}
+
+/**
+ * `command_history_contains` — verifies the student actually *ran* the command
+ * instead of relying on live container state (e.g. `ping 127.0.0.1` always
+ * succeeds, `ss -tulpn` always lists port 22 once sshd is up). Params:
+ *   command:  the canonical command (whitespace-split tokens must all appear)
+ *   aliases:  optional alternative commands that also satisfy the rule
+ * Returns true when any recorded history entry matches command or an alias.
+ */
+function matchesCommandHistory(rule, history) {
+  const p = rule.params || {};
+  const candidates = [p.command, ...(Array.isArray(p.aliases) ? p.aliases : [])].filter((c) => typeof c === 'string' && c.trim());
+  if (candidates.length === 0) return false;
+  const expectedList = candidates.map(tokenize);
+  for (const entry of history || []) {
+    const entryTokens = tokenize(entry);
+    for (const expected of expectedList) {
+      if (tokensCover(entryTokens, expected)) return true;
+    }
+  }
+  return false;
+}
+
+module.exports = { shellQuote, buildRuleCommand, matchesCommandHistory };

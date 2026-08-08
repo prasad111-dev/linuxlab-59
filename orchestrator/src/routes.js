@@ -11,11 +11,16 @@ async function runSetup(containerId, command, attempts = 12) {
   let lastErr;
   for (let i = 0; i < attempts; i++) {
     try {
-      return await execInContainer(containerId, command, 20000);
+      const result = await execInContainer(containerId, command, 20000);
+      if (result.exitCode === 0) return result;
+      // Non-zero exits early in boot are usually races with systemd (e.g. /run
+      // is a fresh tmpfs, sshd host keys still generating). Retry the same
+      // command so transient boot state does not fail the whole task setup.
+      lastErr = new Error(`exit ${result.exitCode}: ${String(result.stderr || '').trim().slice(0, 300)}`);
     } catch (e) {
       lastErr = e;
-      await new Promise((r) => setTimeout(r, 1000));
     }
+    await new Promise((r) => setTimeout(r, 1000));
   }
   throw lastErr;
 }
