@@ -357,7 +357,7 @@ export default function Dashboard() {
 
         <section>
           <div className="flex items-end justify-between gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
                 <Star size={16} />
               </span>

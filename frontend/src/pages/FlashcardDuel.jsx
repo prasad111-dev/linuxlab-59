@@ -138,7 +138,7 @@ export default function FlashcardDuel() {
 
       {/* Tier progress — unlocked tiers are clickable to jump straight back to
           an earlier quiz; locked tiers stay locked until the previous one is done */}
-      <div className="mt-5 grid grid-cols-10 gap-1.5">
+      <div className="mt-5 grid grid-cols-5 gap-1.5 sm:grid-cols-10">
         {FLASHCARD_TIERS.map((t, i) => {
           const tierAnswered = Math.max(0, Math.min(5, answers.length - i * 5));
           const completed = tierAnswered === 5;

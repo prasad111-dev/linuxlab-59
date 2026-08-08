@@ -67,7 +67,7 @@ export default function Profile() {
         <div className="flex-1 text-center sm:text-left">
           <p className="text-xl font-extrabold">{u.name}</p>
           <p className="text-sm text-slate-500 dark:text-slate-400">{u.email}</p>
-          <div className="mt-2 flex justify-center gap-3 sm:justify-start">
+          <div className="mt-2 flex flex-wrap justify-center gap-3 sm:justify-start">
             <span className="badge bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
               <Flame size={12} className="mr-1 inline" /> {streak} day streak
             </span>

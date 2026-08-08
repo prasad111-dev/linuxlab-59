@@ -709,10 +709,10 @@ function TicketView({ meta, tickets, answers, save, onFinish }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <Header meta={meta} />
-      <div className="mt-5 flex items-center gap-3">
+      <div className="mt-5 flex flex-wrap items-center gap-3">
         <span className="badge bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300">Tickets closed {done.length}/{tickets.length}</span>
         <span className="badge bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">{done.filter((_, i) => tickets[i]?.priority === 'critical').length} critical done</span>
-        <span className="ml-auto text-xs font-semibold text-slate-400">Complete the queue before your shift ends</span>
+        <span className="ml-auto hidden text-xs font-semibold text-slate-400 sm:block">Complete the queue before your shift ends</span>
       </div>
 
       <div className="mt-4 space-y-2">

@@ -58,7 +58,7 @@ export default function AdminSuggestions() {
 
       {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10">{error}</p>}
 
-      <div className="mt-6 flex gap-2">
+      <div className="mt-6 flex flex-wrap gap-2">
         {['all', 'pending', 'approved', 'rejected'].map((s) => (
           <button
             key={s}

@@ -303,7 +303,7 @@ export default function LabPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
+    <div className="flex h-dvh flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
       {/* Top bar */}
       <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-slate-900">
         <Link to="/dashboard" className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5">
@@ -350,7 +350,7 @@ export default function LabPage() {
       </div>
 
       {/* Mobile action row */}
-      <div className="flex gap-2 border-b border-slate-200 bg-white px-3 py-2 md:hidden dark:border-white/10 dark:bg-slate-900">
+      <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-white px-3 py-2 md:hidden dark:border-white/10 dark:bg-slate-900">
         <button onClick={getHint} disabled={chatBusy} className="btn-ghost flex-1">
           <Lightbulb size={15} className="text-amber-500" /> Hint
         </button>

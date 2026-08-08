@@ -78,7 +78,7 @@ export default function History() {
                 {a.category?.icon} {a.category?.name || ''} · {timeAgo(a.createdAt)}
               </p>
             </div>
-            <div className="hidden text-right sm:block">
+            <div className="text-right">
               {a.status === 'evaluated' ? (
                 <>
                   <p className={cn('font-black', a.passed ? 'text-emerald-500' : 'text-red-500')}>

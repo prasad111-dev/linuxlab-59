@@ -81,7 +81,7 @@ function RuleRow({ rule, onChange, onRemove }) {
   const meta = RULE_TYPES.find((x) => x.value === rule.type) || { fields: [] };
   return (
     <div className="rounded-xl border border-slate-200 p-3 dark:border-white/10">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
         <select className={input + ' sm:w-64'} value={rule.type} onChange={(e) => onChange({ type: e.target.value })}>
           {RULE_TYPES.map((r) => (
             <option key={r.value} value={r.value}>{r.value.replace(/_/g, ' ')}</option>
@@ -93,7 +93,7 @@ function RuleRow({ rule, onChange, onRemove }) {
           onChange={(e) => onChange({ label: e.target.value })}
           placeholder="Rule label shown to students"
         />
-        <button type="button" onClick={onRemove} className="icon-btn text-red-500">
+        <button type="button" onClick={onRemove} className="icon-btn text-red-500 self-end sm:self-auto">
           <Trash2 size={16} />
         </button>
       </div>

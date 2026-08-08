@@ -50,7 +50,8 @@ export default function AdminUsers() {
         {loading && <FullPageSpinner label="Loading users…" />}
         {!loading && users.length === 0 && <div className="py-16 text-center text-slate-500 dark:text-slate-400">No users found.</div>}
         {!loading && users.length > 0 && (
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:text-slate-400">
                 <th className="px-4 py-3">User</th>
@@ -94,7 +95,8 @@ export default function AdminUsers() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
       </div>
 

@@ -127,7 +127,7 @@ export default function AdminDashboard() {
             )}
             {stats.attemptsByCategory.map((a) => (
               <div key={a.category.name} className="flex items-center gap-3">
-                <span className="w-40 truncate text-sm font-medium">
+                <span className="w-32 truncate text-sm font-medium sm:w-40">
                   {a.category.icon} {a.category.name}
                 </span>
                 <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">

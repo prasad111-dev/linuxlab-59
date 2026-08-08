@@ -87,7 +87,7 @@ export default function Navbar() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white shadow-lg shadow-brand-500/30">
             <Terminal size={20} />
           </div>
-          <span className="text-lg font-extrabold tracking-tight">
+          <span className="hidden text-lg font-extrabold tracking-tight sm:inline">
             Linux<span className="gradient-text">Lab</span>-59
           </span>
         </Link>
@@ -135,7 +135,7 @@ export default function Navbar() {
                   )}
                 </button>
                 {bellOpen && (
-                  <div className="absolute right-0 z-50 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-white/10 dark:bg-slate-900">
+                  <div className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-white/10 dark:bg-slate-900 max-md:fixed max-md:inset-x-3 max-md:top-16 max-md:mt-0 max-md:w-auto">
                     <div className="flex items-center justify-between px-2 py-1">
                       <span className="text-sm font-bold">Notifications</span>
                       {notifs.unread > 0 && (
@@ -212,8 +212,9 @@ export default function Navbar() {
               </div>
             </>
           ) : (
-            <Link to="/auth" className="btn-primary">
-              Login with Google
+            <Link to="/auth" className="btn-primary whitespace-nowrap">
+              <span className="sm:hidden">Login</span>
+              <span className="hidden sm:inline">Login with Google</span>
             </Link>
           )}
 
