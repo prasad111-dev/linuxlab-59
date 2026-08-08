@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { cleanInlineMarkdown, renderMarkdownish } from '../components/InterviewReport';
+import { cleanInlineMarkdown } from '../lib/format';
+import { renderMarkdownish } from '../components/InterviewReport';
 
 function textOf(node) {
   if (node == null) return '';

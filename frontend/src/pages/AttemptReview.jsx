@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { FullPageSpinner } from '../components/Spinner';
-import { formatDuration, cn } from '../lib/format';
+import { formatDuration, cn, cleanInlineMarkdown } from '../lib/format';
 
 export default function AttemptReview() {
   const { id } = useParams();
@@ -124,7 +124,7 @@ export default function AttemptReview() {
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
             <Sparkles size={20} className="text-brand-500" /> AI feedback
           </h2>
-          <p className="mt-2 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{data.feedback}</p>
+          <p className="mt-2 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{cleanInlineMarkdown(data.feedback)}</p>
         </div>
       )}
 
@@ -133,7 +133,7 @@ export default function AttemptReview() {
           <h2 className="flex items-center gap-2 text-lg font-extrabold">
             <Sparkles size={20} className="text-amber-500" /> Improvements
           </h2>
-          <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{data.optimization}</p>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">{cleanInlineMarkdown(data.optimization)}</p>
         </div>
       )}
 

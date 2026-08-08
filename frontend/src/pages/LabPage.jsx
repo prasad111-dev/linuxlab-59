@@ -20,7 +20,7 @@ import {
 import { api, getToken, API_URL } from '../lib/api';
 import XTerm from '../components/XTerm';
 import { FullPageSpinner } from '../components/Spinner';
-import { formatClock, formatDuration, cn } from '../lib/format';
+import { formatClock, formatDuration, cn, cleanInlineMarkdown } from '../lib/format';
 
 function sliceBySections(items, sections) {
   const out = [];
@@ -491,7 +491,7 @@ export default function LabPage() {
                         : 'bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200'
                     )}
                   >
-                    {m.text}
+                    {m.role === 'ai' ? cleanInlineMarkdown(m.text) : m.text}
                   </div>
                 </div>
               ))}
@@ -592,13 +592,13 @@ export default function LabPage() {
 
             <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm dark:bg-white/5">
               <p className="font-bold">Feedback</p>
-              <p className="mt-1 whitespace-pre-line text-slate-600 dark:text-slate-300">{result.result.feedback}</p>
+              <p className="mt-1 whitespace-pre-line text-slate-600 dark:text-slate-300">{cleanInlineMarkdown(result.result.feedback)}</p>
             </div>
 
             {result.result.optimization && (
               <div className="mt-4 rounded-xl bg-brand-50 p-4 text-sm dark:bg-brand-500/10">
                 <p className="font-bold text-brand-700 dark:text-brand-400">Improvements</p>
-                <p className="mt-1 text-slate-600 dark:text-slate-300">{result.result.optimization}</p>
+                <p className="mt-1 text-slate-600 dark:text-slate-300">{cleanInlineMarkdown(result.result.optimization)}</p>
               </div>
             )}
 

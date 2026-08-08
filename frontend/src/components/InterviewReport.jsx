@@ -1,20 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, RotateCcw, ArrowLeft, XCircle, CheckCircle2 } from 'lucide-react';
-import { cn } from '../lib/format';
+import { cn, cleanInlineMarkdown } from '../lib/format';
 import { Spinner } from './Spinner';
 import { modeMeta } from '../data/interviewData';
-
-export function cleanInlineMarkdown(text) {
-  // Remove markdown emphasis markers so raw **, __, * and backticks never leak
-  // into the rendered report. Order matters: bold first so single-* (which
-  // could be a glob like "*.log") is only stripped when it has a closing pair.
-  return String(text)
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/__([^_]+)__/g, '$1')
-    .replace(/\*([^*]+)\*/g, '$1');
-}
 
 export function renderMarkdownish(text) {
   const lines = String(text || '').split('\n');

@@ -12,6 +12,18 @@ export function timeAgo(dateStr) {
   return d.toLocaleDateString();
 }
 
+export function cleanInlineMarkdown(text) {
+  // Remove markdown emphasis markers so raw **, __, * and backticks never
+  // leak into rendered AI text. Order matters: backticks and bold first, so
+  // single-* (which could be a glob like "*.log") is only stripped when it
+  // has a closing pair.
+  return String(text)
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1');
+}
+
 export function formatDuration(seconds) {
   if (!seconds && seconds !== 0) return '—';
   const s = Math.max(0, Math.floor(seconds));
