@@ -28,6 +28,7 @@ const INTERVIEW_MODES = [
   'predict-output',
   'scenario-generator',
   'career-simulator',
+  'top-145-questions',
 ];
 
 const MODE_SET = new Set(INTERVIEW_MODES);
@@ -62,6 +63,7 @@ function modeLabel(mode) {
     'predict-output': 'Predict the Output',
     'scenario-generator': 'Scenario Generator',
     'career-simulator': 'Career Simulator',
+    'top-145-questions': 'Top 145 Interview Questions',
   };
   return labels[mode] || String(mode || 'Linux').replace(/[-_]/g, ' ');
 }

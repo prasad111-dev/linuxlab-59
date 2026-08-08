@@ -1,9 +1,11 @@
 const InterviewSession = require('../models/InterviewSession');
 const InterviewProgress = require('../models/InterviewProgress');
+const InterviewQuestion = require('../models/InterviewQuestion');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { HttpError } = require('../utils/httpError');
 const { isInterviewMode } = require('../constants/interviewModes');
+const { ensureBuiltInQuestions } = require('../services/questionBankService');
 const { updateStreak } = require('../services/streakService');
 const {
   generateInterviewReport,
@@ -146,6 +148,93 @@ module.exports = async function interviewRoutes(app) {
       },
       String(body.answer).slice(0, 1200)
     );
+  });
+
+  // Built-in "Top 145" question bank. First read seeds the collection from
+  // the bundled data file; afterwards the collection is admin-managed.
+  app.get('/bank', { preHandler: [requireAuth] }, async (req) => {
+    await ensureBuiltInQuestions();
+    const topic = String(req.query.topic || '').trim();
+    const includeInactive = req.query.includeInactive === 'true' && req.userRole === 'admin';
+    const limit = Math.min(parseInt(req.query.limit, 10) || 200, 500);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+
+    const filter = {};
+    if (topic) filter.topic = topic;
+    if (!includeInactive) filter.isActive = true;
+
+    const [questions, total, topics] = await Promise.all([
+      InterviewQuestion.find(filter)
+        .sort({ topic: 1, createdAt: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      InterviewQuestion.countDocuments(filter),
+      InterviewQuestion.distinct('topic'),
+    ]);
+
+    return {
+      questions: questions.map((q) => q.toSafeJSON()),
+      topics: topics.sort(),
+      total,
+      page,
+      limit,
+      seeded: true,
+    };
+  });
+
+  app.get('/bank/:id', { preHandler: [requireAuth] }, async (req) => {
+    const question = await InterviewQuestion.findById(req.params.id);
+    if (!question) throw new HttpError(404, 'Question not found');
+    return question.toSafeJSON();
+  });
+
+  app.post('/bank', { preHandler: [requireAuth] }, async (req) => {
+    if (req.userRole !== 'admin') throw new HttpError(403, 'Admin access required');
+    const body = req.body || {};
+    const prompt = String(body.prompt || '').trim();
+    if (!prompt) throw new HttpError(400, 'prompt is required');
+    const existing = await InterviewQuestion.findOne({ prompt });
+    if (existing) throw new HttpError(409, 'A question with that prompt already exists');
+    const question = await InterviewQuestion.create({
+      prompt,
+      topic: String(body.topic || 'General').trim() || 'General',
+      model: String(body.model || '').trim(),
+      isBuiltIn: false,
+      isActive: body.isActive !== false,
+    });
+    return question.toSafeJSON();
+  });
+
+  app.put('/bank/:id', { preHandler: [requireAuth] }, async (req) => {
+    if (req.userRole !== 'admin') throw new HttpError(403, 'Admin access required');
+    const question = await InterviewQuestion.findById(req.params.id);
+    if (!question) throw new HttpError(404, 'Question not found');
+    const body = req.body || {};
+    if (body.prompt !== undefined) {
+      const prompt = String(body.prompt || '').trim();
+      if (!prompt) throw new HttpError(400, 'prompt is required');
+      const dup = await InterviewQuestion.findOne({ prompt, _id: { $ne: question._id } });
+      if (dup) throw new HttpError(409, 'A question with that prompt already exists');
+      question.prompt = prompt;
+    }
+    if (body.topic !== undefined) question.topic = String(body.topic).trim() || 'General';
+    if (body.model !== undefined) question.model = String(body.model || '').trim();
+    if (body.isActive !== undefined) question.isActive = Boolean(body.isActive);
+    await question.save();
+    return question.toSafeJSON();
+  });
+
+  app.delete('/bank/:id', { preHandler: [requireAuth] }, async (req) => {
+    if (req.userRole !== 'admin') throw new HttpError(403, 'Admin access required');
+    const question = await InterviewQuestion.findById(req.params.id);
+    if (!question) throw new HttpError(404, 'Question not found');
+    if (question.isBuiltIn) {
+      question.isActive = false;
+      await question.save();
+      return { ok: true, disabled: true };
+    }
+    await InterviewQuestion.deleteOne({ _id: question._id });
+    return { ok: true, disabled: false };
   });
 
   app.post('/sessions', { preHandler: [requireAuth], config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req) => {

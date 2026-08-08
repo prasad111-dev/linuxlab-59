@@ -32,6 +32,7 @@ const AdminSuggestions = lazy(() => import('./pages/admin/AdminSuggestions'));
 const AdminActivity = lazy(() => import('./pages/admin/AdminActivity'));
 const AdminEngagement = lazy(() => import('./pages/admin/AdminEngagement'));
 const AdminAttempts = lazy(() => import('./pages/admin/AdminAttempts'));
+const AdminInterviewQuestions = lazy(() => import('./pages/admin/AdminInterviewQuestions'));
 
 function AppLayout() {
   return (
@@ -261,6 +262,14 @@ export default function App() {
           element={
             <Protected admin>
               <AdminAttempts />
+            </Protected>
+          }
+        />
+        <Route
+          path="/admin/interview-questions"
+          element={
+            <Protected admin>
+              <AdminInterviewQuestions />
             </Protected>
           }
         />

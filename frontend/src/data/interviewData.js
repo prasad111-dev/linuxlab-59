@@ -664,6 +664,17 @@ export const MODES = [
     category: 'Simulations & labs',
     gemini: true,
   },
+  {
+    mode: 'top-145-questions',
+    title: 'Top 145 Interview Questions',
+    tagline: 'The most-asked Linux admin interview questions — practice free-text answers',
+    icon: '🎯',
+    gradient: 'from-red-500 to-orange-600',
+    route: '/interview/drill/top-145-questions',
+    engine: 'bank',
+    category: 'Simulations & labs',
+    gemini: true,
+  },
 
   // --- Career & daily ---
   {

@@ -20,6 +20,7 @@ import {
   Brain,
   Activity,
   Clock,
+  MessagesSquare,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useTheme } from '../lib/theme';
@@ -198,6 +199,7 @@ export default function Navbar() {
                           <MenuItem icon={Clock} label="Time analytics" to="/admin/engagement" onClick={() => setMenuOpen(false)} />
                           <MenuItem icon={ListChecks} label="Attempts" to="/admin/attempts" onClick={() => setMenuOpen(false)} />
                           <MenuItem icon={Lightbulb} label="Suggestions" to="/admin/suggestions" onClick={() => setMenuOpen(false)} />
+                          <MenuItem icon={MessagesSquare} label="Interview questions" to="/admin/interview-questions" onClick={() => setMenuOpen(false)} />
                         </>
                       )}
                     </div>

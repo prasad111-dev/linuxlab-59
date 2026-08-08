@@ -90,6 +90,9 @@ export default function InterviewDrill({ mode: modeProp }) {
   const [saving, setSaving] = useState(false);
   const [genQuestions, setGenQuestions] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [bankQuestions, setBankQuestions] = useState(null);
+  const [bankTopics, setBankTopics] = useState([]);
+  const [bankTopic, setBankTopic] = useState('');
   const [careerLevel, setCareerLevel] = useState(0);
   const [careerIdx, setCareerIdx] = useState(0);
   const [failedLevels, setFailedLevels] = useState([]);
@@ -131,14 +134,29 @@ export default function InterviewDrill({ mode: modeProp }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, engine, data]);
 
+  useEffect(() => {
+    if (!loaded || engine !== 'bank') return;
+    if (data && Array.isArray(data.questions) && data.questions.length > 0) {
+      setBankQuestions(data.questions.map((q) => ({ ...q, _type: 'free' })));
+      setBankTopics(data.topics || []);
+      setBankTopic(data.topic || '');
+      setAnswers(data.answers || []);
+      setIndex((data.answers || []).length);
+    } else {
+      loadBank();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, engine, data]);
+
   const list = useMemo(() => {
     if (engine === 'gemini') return genQuestions || [];
+    if (engine === 'bank') return bankQuestions || [];
     if (engine === 'career') {
       const lvl = careerConfig.levels[careerLevel];
       return (lvl ? lvl.questions : []).map((q) => ({ ...q, _type: 'command' }));
     }
     return baseList;
-  }, [engine, baseList, genQuestions, careerConfig, careerLevel]);
+  }, [engine, baseList, genQuestions, bankQuestions, careerConfig, careerLevel]);
 
   const timed = meta.timed;
   const timePer = mode === 'command-speedrun' ? 5 : mode === 'command-battle' ? 10 : 0;
@@ -186,6 +204,29 @@ export default function InterviewDrill({ mode: modeProp }) {
       setGenQuestions(SCENARIO_FALLBACK.map((q) => ({ ...q, _type: 'command' })));
       setAnswers([]);
       setIndex(0);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function loadBank(topicOverride) {
+    setGenerating(true);
+    try {
+      const topic = topicOverride === undefined ? bankTopic : topicOverride;
+      const qsParam = topic ? `?topic=${encodeURIComponent(topic)}` : '';
+      const res = await api(`/interview/bank${qsParam}`);
+      const qs = (res.questions || []).map((q) => ({ ...q, _type: 'free' }));
+      if (qs.length === 0) throw new Error('empty');
+      setBankQuestions(qs);
+      setBankTopics(res.topics || []);
+      setBankTopic(topic);
+      setAnswers([]);
+      setIndex(0);
+      save({ questions: qs, answers: [], topics: res.topics || [], topic });
+    } catch {
+      setBankQuestions([]);
+      setBankTopics([]);
+      save({ questions: [], answers: [], topics: [], topic: '' });
     } finally {
       setGenerating(false);
     }
@@ -365,7 +406,7 @@ export default function InterviewDrill({ mode: modeProp }) {
     );
   }
 
-  if (!loaded || (engine === 'gemini' && !genQuestions) || generating) {
+  if (!loaded || (engine === 'gemini' && !genQuestions) || (engine === 'bank' && !bankQuestions) || generating) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Spinner size={24} className="text-brand-500" />
@@ -467,6 +508,31 @@ export default function InterviewDrill({ mode: modeProp }) {
           <button onClick={generate} className="btn-ghost !px-2 text-xs" disabled={generating}>
             <RefreshCw size={13} /> New scenarios
           </button>
+        </div>
+      )}
+      {engine === 'bank' && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Topic:</span>
+          <button
+            onClick={() => loadBank('')}
+            className={cn('rounded-full px-3 py-1 text-xs font-bold transition', bankTopic === '' ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 ring-2 ring-brand-400' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-400')}
+          >
+            All ({bankQuestions?.length || 0})
+          </button>
+          {bankTopics.map((t) => (
+            <button
+              key={t}
+              onClick={() => loadBank(t)}
+              className={cn('rounded-full px-3 py-1 text-xs font-bold transition', bankTopic === t ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 ring-2 ring-brand-400' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-400')}
+            >
+              {t}
+            </button>
+          ))}
+          {generating && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-500">
+              <RefreshCw size={13} className="animate-spin" /> Loading…
+            </span>
+          )}
         </div>
       )}
       {timed && <TimedBar secondsLeft={secondsLeft} total={timePer} />}
