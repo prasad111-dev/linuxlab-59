@@ -82,20 +82,20 @@ const CATEGORIES = [
 
 const TESTIMONIALS = [
   {
-    name: 'Ananya S.',
-    role: 'CS Student',
+    name: 'Yash J',
+    role: 'CBZ',
     text: 'The scenarios feel like real tickets from my internship. I finally understand users, permissions and SSH for real.',
     avatar: 'AS',
   },
   {
     name: 'Rohan K.',
-    role: 'DevOps Trainee',
+    role: 'CBZ',
     text: 'Practice Again is a lifesaver. I re-did the Nginx task until I got it perfect, and the AI hints actually taught me.',
     avatar: 'RK',
   },
   {
     name: 'Sneha P.',
-    role: 'Linux Admin Student',
+    role: 'DMIHER',
     text: 'Real containers, real systemctl, real iptables. This is what every Linux course should look like.',
     avatar: 'SP',
   },
@@ -287,7 +287,7 @@ export default function Landing() {
       <section className="border-y border-slate-200/60 bg-slate-950 py-20 dark:border-white/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="font-display text-3xl font-black tracking-tight text-white sm:text-4xl">Loved by students</h2>
+            <h2 className="font-display text-3xl font-black tracking-tight text-white sm:text-4xl">Loved by User</h2>
             <p className="mt-4 text-slate-400">Real practice, real progress.</p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
