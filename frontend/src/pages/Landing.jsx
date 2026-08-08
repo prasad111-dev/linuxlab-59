@@ -193,13 +193,13 @@ export default function Landing() {
                 <span className="h-3 w-3 rounded-full bg-red-400" />
                 <span className="h-3 w-3 rounded-full bg-amber-400" />
                 <span className="h-3 w-3 rounded-full bg-emerald-400" />
-                <span className="ml-2 text-xs font-semibold text-slate-400">Prasad@linuxlab: ~/lab</span>
+                <span className="ml-2 text-xs font-semibold text-slate-400">user@linuxlab: ~/lab</span>
               </div>
               <div className="bg-slate-950 p-5 font-mono text-sm text-slate-300">
-                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">groupadd devteam</span></p>
-                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">useradd -m -s /bin/bash rahul</span></p>
-                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">usermod -aG devteam rahul</span></p>
-                <p><span className="text-emerald-400">Prasad@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">chown rahul:devteam /home/rahul</span></p>
+                <p><span className="text-emerald-400">user@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">groupadd devteam</span></p>
+                <p><span className="text-emerald-400">user@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">useradd -m -s /bin/bash Jayesh</span></p>
+                <p><span className="text-emerald-400">user@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">usermod -aG devteam Jayesh</span></p>
+                <p><span className="text-emerald-400">user@lab</span>:<span className="text-brand-400">~</span>$ <span className="text-white">chown Jayesh:devteam /home/Jayesh</span></p>
                 <p className="mt-2 text-slate-400">✓ All validation checks passed — <span className="text-emerald-400">100 / 100 points</span></p>
               </div>
             </div>
